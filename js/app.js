@@ -159,6 +159,7 @@
         state.route = card.dataset.route;
         state.refNumber = (state.route === 'private' ? 'PCN-' : 'CCN-') + (state.route === 'private' ? '0214' : '9281');
         if (state.route !== 'private') state.privateAck = false;
+        if (state.route === 'private' && state.collection === 'onsite') state.collection = null;
         renderRoutes();
         renderPrivateAdvice();
         renderLocations();
@@ -182,7 +183,7 @@
         <p><strong>If these results may be relied on in court — for example in family proceedings — we strongly advise instructing the testing through a solicitor.</strong>
           A legal representative can agree the scope of testing with the other parties in advance, make sure the report addresses exactly what the court needs, and manage how the results are disclosed. Testing instructed that way is far less likely to be challenged or repeated.</p>
         <p>That said, many people choose to test privately first — often to confirm a negative result before seeking legal advice — and we are happy to help.
-          Your results are released to you and to no one else. If matters do go to court, be aware that the court may direct that testing is repeated under formal instruction.</p>
+          Your results are released to you, or an authorised representative, and to no one else. If matters do go to court, be aware that the court may direct that testing is repeated under formal instruction.</p>
         <div class="advice-ack">
           <label class="check-row">
             <input type="checkbox" id="private-ack" ${state.privateAck ? 'checked' : ''}>
@@ -203,13 +204,23 @@
     block.hidden = !state.route || (state.route === 'private' && !state.privateAck);
     if (block.hidden) return;
     const grid = document.getElementById('location-grid');
-    grid.innerHTML = LOCATIONS.map(l => `
+    const isPrivate = state.route === 'private';
+    grid.innerHTML = LOCATIONS.map(l => {
+      if (isPrivate && l.id === 'onsite') return `
+      <div class="route-card location-card locked">
+        <span class="route-title">${l.title}</span>
+        <span class="route-sub">Available to organisations only. Private appointments take place at our Belfast or Derry~Londonderry offices.</span>
+        <span class="location-flag">${icon('info', 15)}<span>Solicitors and trusts can arrange on-site collection in professional environments.</span></span>
+        <span class="route-cta">Organisations only</span>
+      </div>`;
+      return `
       <button class="route-card location-card ${state.collection === l.id ? 'selected' : ''}" data-location="${l.id}">
         <span class="route-title">${l.title}</span>
         <span class="route-sub">${l.sub}</span>
         ${l.flag ? `<span class="location-flag">${icon('info', 15)}<span>${l.flag}</span></span>` : ''}
         <span class="route-cta">${state.collection === l.id ? 'Selected' : 'Choose this location'}</span>
-      </button>`).join('');
+      </button>`;
+    }).join('');
     grid.querySelectorAll('[data-location]').forEach(card =>
       card.addEventListener('click', () => {
         state.collection = card.dataset.location;
@@ -650,6 +661,12 @@
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
         ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the fee note so your accounts team can match it.' })}
+        ${state.route === 'trust' ? `
+        ${field('costCentre', 'Cost centre', { required: true, hint: 'So your finance team can allocate the fee.' })}
+        <div class="form-2col">
+          ${field('approverName', 'Approver name', { required: true })}
+          ${field('authoriserName', 'Authoriser name', { required: true })}
+        </div>` : ''}
       </fieldset>` : ''}
 
       <fieldset>
@@ -719,6 +736,11 @@
         sample.orgTown = 'Belfast';
         sample.orgPostcode = 'BT1 1AA';
         sample.caseref = 'TEST-001';
+        if (state.route === 'trust') {
+          sample.costCentre = 'CC-4021';
+          sample.approverName = 'Test Approver';
+          sample.authoriserName = 'Test Authoriser';
+        }
       }
       if (hasDSD) sample.dsdDrug = 'Codeine';
       if (isPrivate && state.collection === 'onsite') {
@@ -867,6 +889,8 @@
             <p><strong>${isPrivate ? (d.contactName || '—') : (d.org || '—')}</strong></p>
             ${!isPrivate ? `<p>${[d.orgAddress, d.orgTown, d.orgPostcode].filter(Boolean).join(', ') || '—'}</p>` : ''}
             ${!isPrivate && d.caseref ? `<p>Ref: ${d.caseref}</p>` : ''}
+            ${state.route === 'trust' && d.costCentre ? `<p>Cost centre: ${d.costCentre}</p>` : ''}
+            ${state.route === 'trust' && (d.approverName || d.authoriserName) ? `<p>${[d.approverName ? 'Approver: ' + d.approverName : '', d.authoriserName ? 'Authoriser: ' + d.authoriserName : ''].filter(Boolean).join(' · ')}</p>` : ''}
             ${!isPrivate ? `<p>Attn: ${d.contactName || '—'}</p>` : ''}
           </div>
           <div>
@@ -896,7 +920,7 @@
           <div>
             <p class="doc-label">Payment</p>
             <p>${isPrivate
-              ? 'Payment is taken securely in advance by card. Results are released to you on completion of analysis.'
+              ? 'Payment is taken securely in advance by card. Results are released to you, or an authorised representative, on completion of analysis.'
               : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.'}${state.route === 'solicitor' ? ' This fee note can be submitted to the Legal Aid Authority for approval.' : ''}</p>
           </div>
           <div>
@@ -919,6 +943,7 @@
   });
 
   document.getElementById('submit-btn').addEventListener('click', () => {
+    saveClientRecord();
     goTo(state.route === 'private' ? 6 : 7);
   });
 
@@ -1020,8 +1045,18 @@
 
   function bookingWindow() {
     const today = startOfDay(new Date());
-    const min = new Date(today); min.setDate(min.getDate() + 2);
-    const max = new Date(today); max.setDate(max.getDate() + 30);
+    const min = new Date(today);
+    if (state.route === 'private') {
+      let added = 0;
+      while (added < 5) {
+        min.setDate(min.getDate() + 1);
+        const dw = min.getDay();
+        if (dw !== 0 && dw !== 6) added++;
+      }
+    } else {
+      min.setDate(min.getDate() + 2);
+    }
+    const max = new Date(today); max.setDate(max.getDate() + 35);
     return { min, max };
   }
 
@@ -1098,6 +1133,7 @@
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
           ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
+          ${isPrivate ? `<p class="bk-note">Private appointments open five working days ahead — the calendar shows the earliest available dates.</p>` : ''}
         </div>
         <div class="bk-cal-card">
           <div class="bk-cal-head">
@@ -1231,9 +1267,9 @@
             <div class="req-field">
               <p class="req-label">Preferred time of day</p>
               <div class="req-opts" id="req-window">
-                <button type="button" class="req-opt selected" data-win="Morning">Morning</button>
-                <button type="button" class="req-opt" data-win="Afternoon">Afternoon</button>
-                <button type="button" class="req-opt" data-win="Evening">Evening</button>
+                <button type="button" class="req-opt selected" data-win="Morning">Morning<span class="req-opt-sub">08:00–12:00</span></button>
+                <button type="button" class="req-opt" data-win="Afternoon">Afternoon<span class="req-opt-sub">12:00–16:00</span></button>
+                <button type="button" class="req-opt" data-win="Evening">Evening<span class="req-opt-sub">16:00–20:00</span><span class="req-opt-note">higher rate may apply</span></button>
               </div>
             </div>
             ${!isPrivate ? `
@@ -1387,7 +1423,7 @@
         ['Payment received', gbp(state.payment ? state.payment.amount : computeTotals().total) + ' paid by card — receipt ' + (state.payment ? state.payment.receipt : 'NV-8362') + '. A VAT receipt is on its way to ' + (state.details.contactEmail || 'your inbox') + '.'],
         bookingStep,
         ['Analysis', analysisCopy],
-        ['Your results', 'Your report is released to you, and to no one else, as soon as analysis is complete.']
+        ['Your results', 'Your report is released to you, or an authorised representative, and to no one else, as soon as analysis is complete.']
       ]
       : [
         ['Your fee note', 'A PDF of fee note ' + state.refNumber + ' is on its way to ' + (state.details.contactEmail || 'your inbox') + ' — ready to file or present.'],
@@ -1414,10 +1450,130 @@
     document.getElementById('restart').addEventListener('click', () => location.reload());
   }
 
+  /* ---------------- landing gate ---------------- */
+  const GATE_KEY = 'nivha-gate-email';
+  const clientKey = email => 'nivha-client-' + email.trim().toLowerCase();
+
+  function seedDemoClient() {
+    try {
+      localStorage.setItem(clientKey('returning@example.com'), JSON.stringify({
+        route: 'trust',
+        details: {
+          org: 'Example HSC Trust — Family Support Team',
+          orgAddress: '1 Example Street',
+          orgTown: 'Belfast',
+          orgPostcode: 'BT1 1AA',
+          caseref: 'TEST-001',
+          costCentre: 'CC-4021',
+          approverName: 'Test Approver',
+          authoriserName: 'Test Authoriser',
+          contactName: 'Test Contact',
+          contactEmail: 'returning@example.com',
+          contactPhone: '07700 900123'
+        }
+      }));
+    } catch (e) { /* storage unavailable — the gate still works */ }
+  }
+
+  function saveClientRecord() {
+    const email = (state.details.contactEmail || '').trim().toLowerCase();
+    if (!email) return;
+    const keys = ['org', 'orgAddress', 'orgTown', 'orgPostcode', 'caseref', 'costCentre',
+      'approverName', 'authoriserName', 'contactName', 'contactEmail', 'contactPhone'];
+    const details = {};
+    keys.forEach(k => { if (state.details[k]) details[k] = state.details[k]; });
+    try { localStorage.setItem(clientKey(email), JSON.stringify({ route: state.route, details })); } catch (e) {}
+  }
+
+  function renderGate() {
+    const gate = document.getElementById('gate');
+    gate.innerHTML = `
+      <div class="gate-hero">
+        <p class="marker">NIVHA Laboratory Services</p>
+        <h1>Court-ready drug and alcohol testing, with an itemised fee note in about three minutes</h1>
+        <p class="lede">Hair, nail and urine testing for care proceedings, workplace matters and personal reassurance — collected at our Belfast and Derry~Londonderry offices, or on site for organisations.</p>
+      </div>
+      <div class="gate-points">
+        <div class="gate-point"><strong>Instant itemised pricing</strong><p>See exactly what each panel costs before you commit — unlocked with a secure link sent to your inbox.</p></div>
+        <div class="gate-point"><strong>Expert reports for proceedings</strong><p>Reports prepared by our reporting scientists, worded for solicitors, trusts and the courts.</p></div>
+        <div class="gate-point"><strong>Book online</strong><p>Choose a time at our offices, or arrange on-site collection for organisations — no phone calls needed.</p></div>
+      </div>
+      <div class="gate-card" id="gate-card">
+        <h2>Get your secure link</h2>
+        <p>Enter your email address and we send a link that unlocks the fee note tool.</p>
+        <div class="gate-form">
+          <input type="email" id="gate-email" placeholder="you@organisation.co.uk" autocomplete="email">
+          <button class="btn primary" id="gate-send">Email my secure link</button>
+        </div>
+        <p class="gate-error" id="gate-error" hidden>Enter a valid email address to receive your link.</p>
+        <p class="gate-small">We use your email to send the link and may follow up about your fee note.</p>
+        <p class="gate-small">Used NIVHA before? Use the same email and we prefill your organisation and contact details — never donor information.</p>
+      </div>
+      <div class="dev-fill-bar gate-dev">
+        <span>Prototype helper — skip the email step</span>
+        <button type="button" class="btn small ghost" id="dev-gate-new">Enter as new visitor</button>
+        <button type="button" class="btn small ghost" id="dev-gate-return">Enter as returning client</button>
+      </div>`;
+
+    gate.querySelector('#gate-send').addEventListener('click', () => {
+      const email = gate.querySelector('#gate-email').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        gate.querySelector('#gate-error').hidden = false;
+        return;
+      }
+      showGateInbox(email);
+    });
+    gate.querySelector('#gate-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') gate.querySelector('#gate-send').click();
+    });
+    gate.querySelector('#dev-gate-new').addEventListener('click', () => unlock('test@example.com'));
+    gate.querySelector('#dev-gate-return').addEventListener('click', () => unlock('returning@example.com'));
+  }
+
+  function showGateInbox(email) {
+    document.getElementById('gate-card').innerHTML = `
+      <h2>Check your inbox</h2>
+      <p>We have sent a secure link to <strong>${email}</strong>. It stays valid for 24 hours.</p>
+      <div class="gate-inbox">
+        <p class="gate-inbox-meta">From: NIVHA Laboratory Services · Subject: Your secure fee note link</p>
+        <p>Hello — your link to the NIVHA fee note tool is below. It opens your itemised pricing and online booking.</p>
+        <button class="btn primary" id="gate-open">Open your fee note tool</button>
+      </div>
+      <p class="gate-small">Prototype note: no email is actually sent — this preview stands in for the real message.</p>
+      <button class="btn ghost small" id="gate-back">Use a different email</button>`;
+    document.getElementById('gate-open').addEventListener('click', () => unlock(email));
+    document.getElementById('gate-back').addEventListener('click', renderGate);
+  }
+
+  function unlock(email) {
+    try { localStorage.setItem(GATE_KEY, email.trim().toLowerCase()); } catch (e) {}
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(clientKey(email)) || 'null'); } catch (e) {}
+    if (saved && saved.details) {
+      Object.assign(state.details, saved.details);
+      state.returning = true;
+    }
+    document.getElementById('gate').hidden = true;
+    document.querySelector('.stepper').hidden = false;
+    if (state.returning && !document.getElementById('returning-banner')) {
+      const banner = document.createElement('div');
+      banner.className = 'success-banner';
+      banner.id = 'returning-banner';
+      banner.innerHTML = `${icon('check', 20)}<div><strong>Welcome back</strong><span>We have prefilled your organisation and contact details from your last fee note. Donor details always start fresh.</span></div>`;
+      document.getElementById('step-1').prepend(banner);
+    }
+    goTo(1);
+  }
+
+  function initGate() {
+    seedDemoClient();
+    renderGate();
+  }
+
   /* ---------------- init ---------------- */
   renderRoutes();
   renderPrivateAdvice();
   renderLocations();
   renderConcerns();
-  goTo(1);
+  initGate();
 })();

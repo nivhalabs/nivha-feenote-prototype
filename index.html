@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="stylesheet" href="css/style.css?v=11">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 <body>
@@ -26,7 +26,7 @@
   </div>
 </header>
 
-<nav class="stepper" aria-label="Progress">
+<nav class="stepper" aria-label="Progress" hidden>
   <div class="stepper-inner" id="stepper">
     <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Who and where</span></button>
     <button class="step" data-step="2"><span class="step-num">02</span><span class="step-label">What the court needs</span></button>
@@ -37,6 +37,9 @@
 </nav>
 
 <main class="wizard" id="wizard">
+
+  <!-- LANDING GATE — email unlock -->
+  <section class="panel" id="gate"></section>
 
   <!-- STEP 1 — instructing party and location -->
   <section class="panel" id="step-1" hidden>
@@ -156,7 +159,7 @@
   </div>
 </footer>
 
-<script src="js/catalogue.js?v=10"></script>
-<script src="js/app.js?v=10"></script>
+<script src="js/catalogue.js?v=11"></script>
+<script src="js/app.js?v=11"></script>
 </body>
 </html>
