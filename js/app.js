@@ -902,7 +902,7 @@
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
-              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.`
+              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. If the venue or collection room is not as declared on arrival, the visit may be paused or cancelled and the collection fee remains payable. The donor must bring photo ID.`
               : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
           </div>
           <div>
@@ -1158,8 +1158,16 @@
 
   /* ---------------- step 7 (on-site) — visit requested, team confirms availability ---------------- */
   function renderOnsiteArrange(isPrivate, type, d, donorName) {
-    const req = { when: 'asap', date: '', window: 'Morning' };
+    const req = { when: 'asap', date: '', window: 'Morning', risk: null };
     const { min, max } = bookingWindow();
+    let underage = false;
+    if (d.donorDob) {
+      const dob = new Date(d.donorDob); const t = new Date();
+      let age = t.getFullYear() - dob.getFullYear();
+      const m = t.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && t.getDate() < dob.getDate())) age--;
+      underage = age < 18;
+    }
     document.getElementById('booking').innerHTML = `
       <div class="success-banner">
         ${icon('check', 20)}
@@ -1190,6 +1198,10 @@
         <div class="bk-cal-card">
           <div class="bk-arrange">
             <h2>Arrange the visit</h2>
+            <div class="dev-fill-bar">
+              <span>Prototype helper</span>
+              <button type="button" class="btn small ghost" id="dev-fill-req">Fill with sample data</button>
+            </div>
             <div class="req-field">
               <p class="req-label">Collection address</p>
               ${!isPrivate ? `<p class="req-hint" style="margin-top:0; margin-bottom: var(--space-2);">We have prefilled your organisation address — change it if the collection happens somewhere else.</p>` : ''}
@@ -1201,6 +1213,12 @@
               </div>
               <input type="text" class="req-input" id="req-access" placeholder="Access note — optional, e.g. ask for reception" value="${d.onsiteVenueNotes || ''}" autocomplete="off">
               <p class="req-hint">Professional environments only — a private collection room must be made available.</p>
+            </div>
+            <div class="req-field">
+              <p class="req-label">On-site contact</p>
+              <p class="req-hint" style="margin-top:0; margin-bottom: var(--space-2);">The person who meets our collector and confirms the collection room.</p>
+              <input type="text" class="req-input" id="req-contact-name" placeholder="Contact name" value="${d.onsiteContactName ?? d.contactName ?? ''}" autocomplete="off">
+              <input type="tel" class="req-input" id="req-contact-phone" placeholder="Mobile number" value="${d.onsiteContactPhone ?? d.contactPhone ?? ''}" autocomplete="off">
             </div>
             <div class="req-field">
               <p class="req-label">Preferred date</p>
@@ -1224,6 +1242,29 @@
               <input type="text" class="req-input" id="req-po" placeholder="e.g. PO-2026-0147" value="${d.caseref || ''}" autocomplete="off">
               <p class="req-hint">Not needed to send the request — we ask for a purchase order once the test and collection fee are confirmed. The report is released on receipt of payment of the fee note.</p>
             </div>` : ''}
+            <div class="req-field">
+              <p class="req-label">Safeguarding</p>
+              <div class="req-checks">
+                <label class="check-row"><input type="checkbox" id="sg-venue"><span>This is a professional environment, not a private residence.</span></label>
+                <label class="check-row"><input type="checkbox" id="sg-room"><span>A private collection room will be made available, with a toilet nearby.</span></label>
+                <label class="check-row"><input type="checkbox" id="sg-witness"><span>I understand a witness may be required to be present.</span></label>
+                <label class="check-row"><input type="checkbox" id="sg-consent"><span>The donor is aware of this visit and has agreed to provide a sample.</span></label>
+                ${underage ? `<label class="check-row"><input type="checkbox" id="sg-guardian"><span>The donor is under 18 — a parent or guardian has consented and will be present at the collection.</span></label>` : ''}
+              </div>
+            </div>
+            <div class="req-field">
+              <p class="req-label">Anything our collector should know before attending?</p>
+              <div class="req-opts" id="req-risk">
+                <button type="button" class="req-opt" data-risk="no">No</button>
+                <button type="button" class="req-opt" data-risk="yes">Yes</button>
+              </div>
+              <textarea class="req-input req-textarea" id="req-risk-detail" rows="2" placeholder="For example a history of aggression, or anything that affects safe access" hidden></textarea>
+              <p class="req-hint">This covers safety and access. A yes does not stop the request — we review it before confirming the visit.</p>
+            </div>
+            <div class="req-field">
+              <p class="req-label">Support needs <span class="req-optional">optional</span></p>
+              <input type="text" class="req-input" id="req-support" placeholder="e.g. an interpreter or an appropriate adult" value="${d.onsiteSupport || ''}" autocomplete="off">
+            </div>
             <div class="req-fee">
               ${icon('info', 17)}
               <span>Collection fee — from <strong>${gbp(ONSITE_COLLECTION_FROM)} + VAT</strong>. The final fee depends on location and is confirmed with you before the visit.</span>
@@ -1244,15 +1285,51 @@
       address: document.getElementById('req-address'),
       town: document.getElementById('req-town'),
       postcode: document.getElementById('req-postcode'),
-      notes: document.getElementById('req-access')
+      notes: document.getElementById('req-access'),
+      contactName: document.getElementById('req-contact-name'),
+      contactPhone: document.getElementById('req-contact-phone'),
+      support: document.getElementById('req-support')
     };
-    const venueKeys = { name: 'onsiteVenueName', address: 'onsiteVenueAddress', town: 'onsiteVenueTown', postcode: 'onsiteVenuePostcode', notes: 'onsiteVenueNotes' };
+    const venueKeys = {
+      name: 'onsiteVenueName', address: 'onsiteVenueAddress', town: 'onsiteVenueTown',
+      postcode: 'onsiteVenuePostcode', notes: 'onsiteVenueNotes',
+      contactName: 'onsiteContactName', contactPhone: 'onsiteContactPhone', support: 'onsiteSupport'
+    };
+    const sgIds = ['sg-venue', 'sg-room', 'sg-witness', 'sg-consent'].concat(underage ? ['sg-guardian'] : []);
+    const riskDetail = document.getElementById('req-risk-detail');
     const refresh = () => {
-      const venueOk = ['name', 'address', 'town', 'postcode'].every(k => venueEls[k].value.trim());
-      submitBtn.disabled = (req.when === 'date' && !req.date) || !venueOk;
+      const venueOk = ['name', 'address', 'town', 'postcode', 'contactName', 'contactPhone'].every(k => venueEls[k].value.trim());
+      const sgOk = sgIds.every(id => document.getElementById(id).checked);
+      const riskOk = req.risk === 'no' || (req.risk === 'yes' && riskDetail.value.trim());
+      submitBtn.disabled = (req.when === 'date' && !req.date) || !venueOk || !sgOk || !riskOk;
     };
     Object.entries(venueEls).forEach(([k, el]) =>
       el.addEventListener('input', () => { state.details[venueKeys[k]] = el.value; refresh(); }));
+    sgIds.forEach(id => document.getElementById(id).addEventListener('change', refresh));
+    document.getElementById('req-risk').addEventListener('click', e => {
+      const b = e.target.closest('[data-risk]'); if (!b) return;
+      req.risk = b.dataset.risk;
+      document.querySelectorAll('#req-risk .req-opt').forEach(x => x.classList.toggle('selected', x === b));
+      riskDetail.hidden = req.risk !== 'yes';
+      refresh();
+    });
+    riskDetail.addEventListener('input', refresh);
+    document.getElementById('dev-fill-req').addEventListener('click', () => {
+      const sample = {
+        name: 'Example Workplace Ltd', address: '10 Example Road', town: 'Belfast',
+        postcode: 'BT2 2BB', notes: 'Ask for reception',
+        contactName: 'Test Contact', contactPhone: '07700 900123'
+      };
+      Object.entries(sample).forEach(([k, v]) => {
+        if (!venueEls[k].value.trim()) { venueEls[k].value = v; state.details[venueKeys[k]] = v; }
+      });
+      sgIds.forEach(id => { document.getElementById(id).checked = true; });
+      const noBtn = document.querySelector('#req-risk [data-risk=no]');
+      req.risk = 'no';
+      document.querySelectorAll('#req-risk .req-opt').forEach(x => x.classList.toggle('selected', x === noBtn));
+      riskDetail.hidden = true;
+      refresh();
+    });
     document.getElementById('req-when').addEventListener('click', e => {
       const b = e.target.closest('[data-when]'); if (!b) return;
       req.when = b.dataset.when;
@@ -1277,6 +1354,12 @@
           name: venueEls.name.value.trim(), address: venueEls.address.value.trim(),
           town: venueEls.town.value.trim(), postcode: venueEls.postcode.value.trim(),
           notes: venueEls.notes.value.trim()
+        },
+        contact: { name: venueEls.contactName.value.trim(), phone: venueEls.contactPhone.value.trim() },
+        safeguarding: {
+          declarations: true, donorConsent: true, guardian: underage,
+          risk: req.risk, riskDetail: req.risk === 'yes' ? riskDetail.value.trim() : '',
+          support: venueEls.support.value.trim()
         }
       };
       state.bookingSkipped = false;
@@ -1294,7 +1377,7 @@
       + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
     const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
-      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings photo ID.`]
+      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings photo ID.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];

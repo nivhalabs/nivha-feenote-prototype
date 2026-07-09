@@ -752,3 +752,12 @@ a, button, input, [role='button'] {
 }
 .req-fee svg { color: var(--color-primary); flex-shrink: 0; margin-top: 1px; }
 .req-fee strong { color: var(--color-text); }
+
+/* ---------- safeguarding (round 8) ---------- */
+.req-checks { display: grid; gap: var(--space-3); max-width: 560px; }
+.req-textarea {
+  max-width: 400px; min-height: 64px; resize: vertical;
+  font-family: inherit; font-size: var(--text-sm); line-height: 1.5;
+  margin-top: var(--space-2);
+}
+.req-opts + .req-textarea { margin-top: var(--space-3); }
