@@ -1,0 +1,12 @@
+{
+  "name": "nivha-feenote-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NIVHA medico-legal fee note — guided wizard prototype (design simulation)",
+  "scripts": {
+    "start": "serve . -l tcp://0.0.0.0:${PORT:-3000}"
+  },
+  "dependencies": {
+    "serve": "^14.2.3"
+  }
+}
