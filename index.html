@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 <body>
@@ -48,12 +48,14 @@
 
     <ol class="process-strip" aria-label="How it works">
       <li><span class="ps-num">1</span><div><strong>Build your fee note</strong><span>Priced as you go, in about three minutes.</span></div></li>
-      <li><span class="ps-num">2</span><div><strong>Book online</strong><span>We email you a link to our scheduling calendar.</span></div></li>
+      <li><span class="ps-num">2</span><div><strong>Book online</strong><span>Pick a time as soon as you submit — no phone calls.</span></div></li>
       <li><span class="ps-num">3</span><div><strong>Attend the appointment</strong><span>The donor brings photo ID.</span></div></li>
       <li><span class="ps-num">4</span><div><strong>Court-ready report</strong><span>Prepared by our reporting scientists.</span></div></li>
     </ol>
 
     <div class="route-grid" id="route-grid"></div>
+
+    <div id="private-advice" hidden></div>
 
     <div class="location-block" id="location-block" hidden>
       <h2>Where will the sample be collected?</h2>
@@ -85,6 +87,7 @@
         <h1>Build your fee note</h1>
         <p class="lede">Based on your answers we have pre-selected the panels below. A panel is a set of related drugs analysed together on one sample — each card shows exactly what it covers. Add or remove anything; the total updates as you go.</p>
       </div>
+      <div id="sample-strip"></div>
       <div id="notices"></div>
       <div id="catalogue"></div>
     </div>
@@ -124,6 +127,16 @@
     </div>
   </section>
 
+  <!-- PAYMENT (private clients) -->
+  <section class="panel" id="step-pay" hidden>
+    <div id="checkout"></div>
+  </section>
+
+  <!-- BOOKING -->
+  <section class="panel" id="step-book" hidden>
+    <div id="booking"></div>
+  </section>
+
   <!-- CONFIRMATION -->
   <section class="panel" id="step-done" hidden>
     <div id="confirmation"></div>
@@ -143,7 +156,7 @@
   </div>
 </footer>
 
-<script src="js/catalogue.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/catalogue.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

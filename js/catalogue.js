@@ -5,6 +5,7 @@
 const VAT_RATE = 0.20;
 const FAST_TRACK_FEE = 80;            /* per panel, + VAT */
 const DERRY_COLLECTION_FEE = 75;      /* Derry~Londonderry office collection, + VAT */
+const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — priced on request, + VAT */
 
 /* Combined panel rates from the form — applied automatically when both panels are chosen */
 const COMBINED_RATES = [
@@ -264,12 +265,20 @@ const INCLUSION_RULES = [
 ];
 
 const GROUP_META = {
-  hair:  { label: 'Hair',  note: 'Around 3 months of history. Collected at either office. Additional segments priced on application.',
+  hair:  { label: 'Hair', icon: 'calendar', windowShort: 'Around 3 months',
+           note: 'Around 3 months of history. Collected at either office. Additional segments priced on application.',
+           typical: 'The default evidence for most court instructions — a month-by-month picture of drug or alcohol use. Collected at both offices.',
            compare: '<strong>Standard or extended?</strong> The standard panel covers the drugs most often raised in proceedings. The extended panel is everything in the standard panel plus ketamine, methadone, buprenorphine and prescription sleep medicines — choose it only when those drugs are relevant to the case. It includes the standard panel in full, so you never need both.' },
-  nail:  { label: 'Nail',  note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.',
+  nail:  { label: 'Nail', icon: 'history', windowShort: '6 to 12 months',
+           note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.',
+           typical: 'For when hair is too short, treated or unavailable — or when the court needs a longer pattern of sustained use. Belfast office only.',
            compare: '<strong>Standard or extended?</strong> Exactly as with hair — the extended nail panel is the standard panel plus ketamine, methadone, buprenorphine and sleep medicines. It includes the standard panel in full, so you never need both.' },
-  urine: { label: 'Urine', note: 'Recent use — the last few days. Alcohol checked by breath test. Unannounced series of two or three collections available.' },
-  blood: { label: 'Blood', note: 'Alcohol markers covering roughly the last month.' }
+  urine: { label: 'Urine', icon: 'clock', windowShort: 'The last few days',
+           note: 'Recent use — the last few days. Alcohol checked by breath test. Unannounced series of two or three collections available.',
+           typical: 'Shows very recent use that hair cannot yet — often ordered alongside hair, or as an unannounced series to monitor ongoing abstention.' },
+  blood: { label: 'Blood', icon: 'wave', windowShort: 'Around the last month',
+           note: 'Alcohol markers covering roughly the last month.',
+           typical: 'PEth is the recent alcohol marker — it bridges the gap between a breath test on the day and months of hair history.' }
 };
 
 /* Step 2 — concern-to-panel mapping */

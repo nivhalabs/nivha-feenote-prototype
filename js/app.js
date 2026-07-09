@@ -7,13 +7,20 @@
     step: 1,
     maxVisited: 1,
     route: null,                 // 'solicitor' | 'trust' | 'private'
+    privateAck: false,           // private clients acknowledge the legal-representation note
     concerns: new Set(),
-    basket: new Map(),           // code -> { fastTrack: bool, variant: int, qty: int }
+    basket: new Map(),           // code -> { variant: int, qty: int }
     opts: new Map(),             // code -> { variant, qty } chosen before adding
+    expanded: new Set(),         // panel cards opened for detail on step 3
+    fastTrack: false,            // fast track applies to the whole instruction
     notices: [],
-    collection: null,        // 'belfast' | 'derry'
+    collection: null,            // 'belfast' | 'derry' | 'onsite'
     details: {},
-    refNumber: null
+    refNumber: null,
+    payment: null,               // { receipt, amount } once the simulated payment clears
+    booking: null,               // { typeLabel, dateLabel, time, location, notes } once booked
+    bookingSkipped: false,
+    onsiteArranged: false        // on-site visits are scheduled by the team, not the calendar
   };
 
   const byCode = Object.fromEntries(CATALOGUE.map(p => [p.code, p]));
@@ -36,19 +43,19 @@
       id: 'solicitor',
       title: 'Solicitor or legal representative',
       sub: 'Instructing on behalf of a client in family or criminal proceedings.',
-      points: ['Fee note addressed to your practice', 'Results released on payment or 30-day guarantee', 'Court-ready expert reports']
+      points: ['Fee note addressed to your practice', 'Invoiced — results released on payment', 'Court-ready expert reports']
     },
     {
       id: 'trust',
       title: 'Trust or social services',
       sub: 'Health and social care trusts, family support and safeguarding teams.',
-      points: ['Fee note raised against your team or purchase order', 'Invoiced to the trust', 'Court-ready expert reports']
+      points: ['Fee note raised against your team or purchase order', 'Invoiced — results released on payment', 'Court-ready expert reports']
     },
     {
       id: 'private',
       title: 'Private individual',
       sub: 'Arranging and paying for your own testing.',
-      points: ['Plain-English guidance throughout', 'Secure payment in advance', 'Your results stay confidential to you']
+      points: ['Plain-English guidance throughout', 'Secure card payment in advance', 'Your results stay confidential to you']
     }
   ];
 
@@ -64,11 +71,21 @@
       title: 'NIVHA office — Derry~Londonderry',
       sub: gbp(DERRY_COLLECTION_FEE) + ' + VAT collection fee, added to your fee note.',
       flag: 'Limited panel range — nail testing is not available at this location.'
+    },
+    {
+      id: 'onsite',
+      title: 'At your location — we come to you',
+      sub: 'From ' + gbp(ONSITE_COLLECTION_FROM) + ' + VAT, priced on request — we confirm the fee before the visit.',
+      flag: 'Professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. Nail testing is Belfast office only.'
     }
   ];
 
+  const nailUnavailable = () => state.collection === 'derry' || state.collection === 'onsite';
+  const nailWhere = () => state.collection === 'onsite' ? 'for on-site collections' : 'at our Derry~Londonderry office';
+
   const locLabel = () =>
-    state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : 'NIVHA office — Belfast';
+    state.collection === 'onsite' ? 'Your location — on-site collection'
+      : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : 'NIVHA office — Belfast';
 
   /* ---------------- icons ---------------- */
   const ICONS = {
@@ -82,25 +99,32 @@
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1 1-1.1 1.8"/><circle cx="12" cy="17" r=".5" fill="currentColor"/>',
     alert: '<path d="M12 4 2.8 19.5h18.4L12 4z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".5" fill="currentColor"/>',
     check: '<path d="m5 13 4.5 4.5L19 7"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".5" fill="currentColor"/>'
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".5" fill="currentColor"/>',
+    lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+    scale: '<path d="M12 3v18M5 21h14"/><path d="M12 5 5.5 7.5 12 5l6.5 2.5"/><path d="M5.5 7.5 3 13a3 3 0 0 0 5 0L5.5 7.5zM18.5 7.5 16 13a3 3 0 0 0 5 0l-2.5-5.5z"/>',
+    pin: '<path d="M12 21s-6.5-5.5-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.5 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/>',
+    user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-3.5 3.8-5 7-5s6 1.5 7 5"/>',
+    card: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>'
   };
   const icon = (name, size = 22) =>
     `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 
   /* ---------------- navigation ---------------- */
-  const sections = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5', 'step-done'];
+  const sections = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5', 'step-pay', 'step-book', 'step-done'];
 
   function goTo(step) {
     state.step = step;
-    state.maxVisited = Math.max(state.maxVisited, step);
+    if (step <= 5) state.maxVisited = Math.max(state.maxVisited, step);
     sections.forEach((id, i) => {
-      document.getElementById(id).hidden = (i + 1 !== step) && !(step === 6 && id === 'step-done');
+      document.getElementById(id).hidden = (i + 1 !== step);
     });
-    if (step === 6) sections.slice(0, 5).forEach(id => document.getElementById(id).hidden = true);
     renderStepper();
-    if (step === 3) { renderCatalogue(); renderNotices(); renderSummary(); }
+    if (step === 3) { renderSampleStrip(); renderCatalogue(); renderNotices(); renderSummary(); }
     if (step === 4) { renderDetailsForm(); renderSummary(); }
     if (step === 5) renderFeeNote();
+    if (step === 6) renderCheckout();
+    if (step === 7) renderBooking(true);
+    if (step === 8) renderConfirmation();
     updateMobileBar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -110,9 +134,9 @@
       const s = +el.dataset.step;
       el.classList.toggle('active', s === state.step);
       el.classList.toggle('done', s < state.step && state.step <= 5);
-      el.disabled = s > state.maxVisited || state.step === 6;
+      el.disabled = s > state.maxVisited || state.step > 5;
     });
-    document.querySelector('.stepper').style.display = state.step === 6 ? 'none' : '';
+    document.querySelector('.stepper').style.display = state.step > 5 ? 'none' : '';
   }
 
   document.querySelectorAll('#stepper .step').forEach(el =>
@@ -134,17 +158,50 @@
       card.addEventListener('click', () => {
         state.route = card.dataset.route;
         state.refNumber = (state.route === 'private' ? 'PCN-' : 'CCN-') + (state.route === 'private' ? '0214' : '9281');
+        if (state.route !== 'private') state.privateAck = false;
         renderRoutes();
+        renderPrivateAdvice();
         renderLocations();
-        setTimeout(() =>
-          document.getElementById('location-block').scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+        setTimeout(() => {
+          const target = state.route === 'private' && !state.privateAck
+            ? document.getElementById('private-advice')
+            : document.getElementById('location-block');
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
       }));
+  }
+
+  /* Private clients see a note on legal representation before they proceed */
+  function renderPrivateAdvice() {
+    const block = document.getElementById('private-advice');
+    block.hidden = state.route !== 'private';
+    if (block.hidden) { block.innerHTML = ''; return; }
+    block.innerHTML = `
+      <div class="advice-block">
+        <div class="advice-head">${icon('scale', 24)}<h2>Before you proceed — a note on legal representation</h2></div>
+        <p><strong>If these results may be relied on in court — for example in family proceedings — we strongly advise instructing the testing through a solicitor.</strong>
+          A legal representative can agree the scope of testing with the other parties in advance, make sure the report addresses exactly what the court needs, and manage how the results are disclosed. Testing instructed that way is far less likely to be challenged or repeated.</p>
+        <p>That said, many people choose to test privately first — often to confirm a negative result before seeking legal advice — and we are happy to help.
+          Your results are released to you and to no one else. If matters do go to court, be aware that the court may direct that testing is repeated under formal instruction.</p>
+        <div class="advice-ack">
+          <label class="check-row">
+            <input type="checkbox" id="private-ack" ${state.privateAck ? 'checked' : ''}>
+            <span>I have read this and would like to continue as a private individual</span>
+          </label>
+        </div>
+      </div>`;
+    block.querySelector('#private-ack').addEventListener('change', e => {
+      state.privateAck = e.target.checked;
+      renderLocations();
+      if (state.privateAck) setTimeout(() =>
+        document.getElementById('location-block').scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    });
   }
 
   function renderLocations() {
     const block = document.getElementById('location-block');
-    block.hidden = !state.route;
-    if (!state.route) return;
+    block.hidden = !state.route || (state.route === 'private' && !state.privateAck);
+    if (block.hidden) return;
     const grid = document.getElementById('location-grid');
     grid.innerHTML = LOCATIONS.map(l => `
       <button class="route-card location-card ${state.collection === l.id ? 'selected' : ''}" data-location="${l.id}">
@@ -156,7 +213,7 @@
     grid.querySelectorAll('[data-location]').forEach(card =>
       card.addEventListener('click', () => {
         state.collection = card.dataset.location;
-        if (state.collection === 'derry') removeNailPanels();
+        if (nailUnavailable()) removeNailPanels();
         renderLocations();
         setTimeout(() => goTo(2), 220);
       }));
@@ -167,10 +224,10 @@
     [...state.basket.keys()].forEach(code => {
       if (byCode[code].group === 'nail') { state.basket.delete(code); removed.push(code); }
     });
-    if (removed.length && !state.notices.some(n => n.key === 'derry-nail')) {
+    if (removed.length && !state.notices.some(n => n.key === 'no-nail')) {
       state.notices.push({
-        key: 'derry-nail', type: 'warn',
-        html: `<strong>Nail testing is not available at our Derry~Londonderry office.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office for a 6 to 12 month nail history.`
+        key: 'no-nail', type: 'warn',
+        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office for a 6 to 12 month nail history.`
       });
     }
   }
@@ -218,16 +275,16 @@
       c.recommends.forEach(code => recommended.add(code));
     });
     recommended.forEach(code => {
-      if (state.collection === 'derry' && byCode[code].group === 'nail') {
-        if (!state.notices.some(n => n.key === 'derry-nail')) {
+      if (nailUnavailable() && byCode[code].group === 'nail') {
+        if (!state.notices.some(n => n.key === 'no-nail')) {
           state.notices.push({
-            key: 'derry-nail', type: 'warn',
-            html: `<strong>Nail testing is not available at our Derry~Londonderry office.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office for a 6 to 12 month nail history.`
+            key: 'no-nail', type: 'warn',
+            html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office for a 6 to 12 month nail history.`
           });
         }
         return;
       }
-      if (!state.basket.has(code)) state.basket.set(code, { fastTrack: false, ...getOpts(code) });
+      if (!state.basket.has(code)) state.basket.set(code, { ...getOpts(code) });
     });
     resolveConflicts(true);
   }
@@ -272,6 +329,32 @@
       b.addEventListener('click', () => { state.notices.splice(+b.dataset.dismiss, 1); renderNotices(); }));
   }
 
+  /* ---------------- step 3 — sample type explainer ---------------- */
+  function renderSampleStrip() {
+    const el = document.getElementById('sample-strip');
+    const groups = ['hair', 'nail', 'urine', 'blood'];
+    el.innerHTML = `
+      <div class="sample-strip">
+        <p class="chips-label">The four sample types at a glance</p>
+        <div class="sample-grid">
+          ${groups.map(g => {
+            const m = GROUP_META[g];
+            return `
+            <div class="sample-card">
+              <div class="sample-card-head">${icon(m.icon, 18)}<strong>${m.label}</strong><span class="sample-window">${m.windowShort}</span></div>
+              <p>${m.typical}</p>
+              <button class="sample-jump" data-jump="${g}">See ${m.label.toLowerCase()} panels</button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    el.querySelectorAll('[data-jump]').forEach(b =>
+      b.addEventListener('click', () => {
+        const t = document.getElementById('group-' + b.dataset.jump);
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }));
+  }
+
   /* ---------------- step 3 — catalogue ---------------- */
   function renderCatalogue() {
     const wrap = document.getElementById('catalogue');
@@ -280,20 +363,29 @@
       const meta = GROUP_META[g];
       const items = CATALOGUE.filter(p => p.group === g);
       return `
-        <div class="cat-group">
+        <div class="cat-group" id="group-${g}">
           <div class="cat-group-head"><h2>${meta.label}</h2><p>${meta.note}</p></div>
           ${meta.compare ? `<div class="compare-note">${icon('info', 18)}<div>${meta.compare}</div></div>` : ''}
           <div class="cat-list">${items.map(renderPanelCard).join('')}</div>
         </div>`;
     }).join('');
 
+    wrap.querySelectorAll('[data-expand]').forEach(b => b.addEventListener('click', () => {
+      state.expanded.add(b.dataset.expand);
+      renderCatalogue();
+    }));
+    wrap.querySelectorAll('[data-collapse]').forEach(b => b.addEventListener('click', () => {
+      state.expanded.delete(b.dataset.collapse);
+      renderCatalogue();
+    }));
     wrap.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
-      state.basket.set(b.dataset.add, { fastTrack: false, ...getOpts(b.dataset.add) });
+      state.basket.set(b.dataset.add, { ...getOpts(b.dataset.add) });
       resolveConflicts(true);
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
     wrap.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => {
       state.basket.delete(b.dataset.remove);
+      state.expanded.add(b.dataset.remove); /* keep the card open after removing */
       resolveConflicts(true);
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
@@ -311,15 +403,28 @@
     }));
     wrap.querySelectorAll('[data-ft]').forEach(t => t.addEventListener('change', () => {
       const code = t.dataset.ft;
-      if (state.basket.has(code)) {
-        state.basket.get(code).fastTrack = t.checked;
-      } else if (t.checked) {
-        state.basket.set(code, { fastTrack: true });
+      state.fastTrack = t.checked;
+      if (t.checked && !state.basket.has(code)) {
+        state.basket.set(code, { ...getOpts(code) });
         resolveConflicts(true);
-        renderCatalogue(); renderNotices();
       }
-      renderSummary(); updateMobileBar();
+      updateFtNotice();
+      renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
+  }
+
+  /* Fast track is all-or-nothing across the instruction */
+  function updateFtNotice() {
+    const idx = state.notices.findIndex(n => n.key === 'ft-all');
+    if (state.fastTrack) {
+      const inelig = [...state.basket.keys()].filter(c => !byCode[c].fastTrack);
+      const html = `<strong>Fast track applies to your whole instruction.</strong> Every eligible panel on your fee note is fast tracked at ${gbp(FAST_TRACK_FEE)} + VAT each — panels cannot be fast tracked individually.`
+        + (inelig.length ? ` ${inelig.map(disp).join(', ')} ${inelig.length === 1 ? 'is' : 'are'} not eligible and ${inelig.length === 1 ? 'keeps' : 'keep'} the standard turnaround.` : '');
+      if (idx > -1) state.notices[idx].html = html;
+      else state.notices.push({ key: 'ft-all', type: 'saving', html });
+    } else if (idx > -1) {
+      state.notices.splice(idx, 1);
+    }
   }
 
   function renderDrugChips(p) {
@@ -332,17 +437,52 @@
     return `<p class="chips-label">This panel tests for</p><div class="drug-chips">${base}${main}${adds}</div>`;
   }
 
+  function briefLine(p) {
+    if (p.base) return `Everything in ${disp(p.base)} plus ${p.adds.length} addition${p.adds.length === 1 ? '' : 's'}`;
+    const names = (p.drugs || []).map(d => d.split(' — ')[0]);
+    if (names.length > 3) return `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
+    return names.join(', ');
+  }
+
   function renderPanelCard(p) {
     const inBasket = state.basket.has(p.code);
     const item = state.basket.get(p.code) || getOpts(p.code);
-    const unavailable = state.collection === 'derry' && p.group === 'nail';
+    const unavailable = nailUnavailable() && p.group === 'nail';
+    const expanded = (inBasket || state.expanded.has(p.code)) && !unavailable;
+
+    /* collapsed row — basic info with expand / add */
+    if (!expanded) {
+      return `
+      <article class="panel-card collapsed ${unavailable ? 'unavailable' : ''}">
+        <div class="pc-row">
+          <div class="pc-main">
+            <div class="panel-card-id">
+              <span class="code-chip">${disp(p.code)}</span>
+              ${p.popular ? '<span class="popular-chip">Most requested</span>' : ''}
+            </div>
+            <h3>${p.name}</h3>
+            <p class="pc-brief">${GROUP_META[p.group].windowShort} · ${briefLine(p)}</p>
+          </div>
+          <div class="pc-side">
+            <span class="panel-price">${gbp(unitPrice(p, item))} <small>+ VAT</small></span>
+            ${unavailable ? '' : `
+            <div class="pc-actions">
+              <button class="btn small ghost" data-expand="${p.code}">Details</button>
+              <button class="btn small outline" data-add="${p.code}">Add</button>
+            </div>`}
+          </div>
+        </div>
+        ${unavailable ? `<p class="ft-na">Collected at our Belfast office only — go back to step 1 and choose the Belfast office if you need this panel.</p>` : ''}
+      </article>`;
+    }
+
     const ftToggle = p.fastTrack
       ? `<label class="ft-toggle">
-           <input type="checkbox" data-ft="${p.code}" ${inBasket && item.fastTrack ? 'checked' : ''}>
-           <span>Fast track <small>+ ${gbp(FAST_TRACK_FEE)} + VAT</small></span>
+           <input type="checkbox" data-ft="${p.code}" ${state.fastTrack ? 'checked' : ''}>
+           <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel</small></span>
          </label>`
-      : '<span class="ft-na">Fast track not available</span>';
-    const options = (p.variants || p.series) && !unavailable ? `
+      : '<span class="ft-na">Fast track not available for this panel</span>';
+    const options = (p.variants || p.series) ? `
       <div class="panel-options">
         ${p.variants ? `
           <label class="opt-field"><span>Analysis</span>
@@ -360,7 +500,7 @@
           </label>` : ''}
       </div>` : '';
     return `
-      <article class="panel-card ${inBasket ? 'in-basket' : ''} ${unavailable ? 'unavailable' : ''}">
+      <article class="panel-card ${inBasket ? 'in-basket' : ''}">
         <div class="panel-card-top">
           <div class="panel-card-id">
             <span class="code-chip">${disp(p.code)}</span>
@@ -375,37 +515,38 @@
           <div><dt>Covers</dt><dd>${p.window}</dd></div>
           <div><dt>Standard</dt><dd>${p.turnaround}</dd></div>
           <div><dt>Fast track</dt><dd>${p.fastTrack
-            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel.`
+            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel, applied to the whole instruction.`
             : 'Not available for this panel.'}</dd></div>
         </dl>
         <details class="panel-help"><summary>When to choose this</summary><p>${p.help}</p></details>
         <div class="panel-card-actions">
-          ${unavailable
-            ? `<span class="ft-na">Not collected at Derry~Londonderry — go back to step 1 and choose the Belfast office if you need this panel.</span>`
-            : inBasket
-              ? `<button class="btn small ghost" data-remove="${p.code}">Remove</button>
-                 ${ftToggle}
-                 <span class="added-flag">${icon('check', 15)} On your fee note</span>`
-              : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>
-                 ${ftToggle}`}
+          ${inBasket
+            ? `<button class="btn small ghost" data-remove="${p.code}">Remove</button>
+               ${ftToggle}
+               <span class="added-flag">${icon('check', 15)} On your fee note</span>`
+            : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>
+               ${ftToggle}
+               <button class="btn small ghost" data-collapse="${p.code}">Hide details</button>`}
         </div>
       </article>`;
   }
 
   /* ---------------- totals & summary ---------------- */
   function computeTotals() {
-    let panels = 0, fastTrack = 0, saving = 0;
+    let panels = 0, ftCount = 0, saving = 0;
     state.basket.forEach((item, code) => {
       panels += lineTotal(byCode[code], item);
-      if (item.fastTrack && byCode[code].fastTrack) fastTrack += FAST_TRACK_FEE;
+      if (byCode[code].fastTrack) ftCount++;
     });
     COMBINED_RATES.forEach(rule => {
       if (rule.codes.every(c => state.basket.has(c))) saving += rule.saving;
     });
+    const fastTrack = state.fastTrack ? ftCount * FAST_TRACK_FEE : 0;
     const collection = state.collection === 'derry' ? DERRY_COLLECTION_FEE : 0;
+    const onsite = state.collection === 'onsite';
     const net = panels - saving + fastTrack + collection;
     const vat = Math.round(net * VAT_RATE * 100) / 100;
-    return { panels, saving, fastTrack, collection, net, vat, total: net + vat };
+    return { panels, saving, fastTrack, collection, onsite, net, vat, total: net + vat };
   }
 
   function renderSummary() {
@@ -413,7 +554,7 @@
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
       return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
-        ${item.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
+        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
     }).join('');
 
     const empty = state.basket.size === 0;
@@ -426,15 +567,17 @@
           : `<div class="sum-rows">${rows}
               ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
               ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
+              ${t.onsite ? `<div class="sum-row"><span>On-site collection — from ${gbp(ONSITE_COLLECTION_FROM)}</span><span>On request</span></div>` : ''}
              </div>
              <div class="sum-totals">
                <div class="sum-row"><span>Subtotal</span><span>${gbp(t.net)}</span></div>
                <div class="sum-row"><span>VAT at 20%</span><span>${gbp(t.vat)}</span></div>
                <div class="sum-row grand"><span>Total</span><span>${gbp(t.total)}</span></div>
+               ${t.onsite ? `<p class="sum-poa">The on-site collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) is priced on request and confirmed before the visit — it is not included in this total.</p>` : ''}
              </div>
              <p class="sum-note">${state.route === 'private'
-                ? 'Payment is taken securely in advance. Results are released to you on completion.'
-                : 'Results are released on payment or under our 30-day payment guarantee.'}</p>`}
+                ? 'Payment is taken securely in advance by card. Booking opens as soon as payment clears.'
+                : 'We invoice your organisation — results are released on payment of the fee note.'}</p>`}
         ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty ? 'disabled' : ''}>Continue to your details</button>` : ''}
         ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review fee note</button>` : ''}
       </div>`;
@@ -480,7 +623,8 @@
     const form = document.getElementById('details-form');
     const isPrivate = state.route === 'private';
     const hasDSD = state.basket.has('H-DSD') || state.basket.has('N-DSD');
-    const bookingPlace = `an appointment at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
+    const office = state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast';
+    const onsite = state.collection === 'onsite';
 
     form.innerHTML = `
       ${!isPrivate ? `
@@ -530,8 +674,16 @@
         <div class="booking-callout">
           ${icon('calendar', 20)}
           <div>
+            ${onsite ? `
+            <p><strong>We arrange the on-site visit with you directly.</strong></p>
+            <p>${isPrivate
+              ? `As soon as your payment clears, our team contacts you within one working day to agree the date, the collection room and the final collection fee.`
+              : `As soon as your fee note is submitted, our team contacts you within one working day to agree the date, the collection room and the final collection fee.`} A private room must be made available and a witness may be required to be present.</p>`
+            : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
-            <p>After you submit, we email you a secure link to our online scheduling calendar. Use it to book ${bookingPlace} at a time that suits ${isPrivate ? 'you' : 'the donor'}. Cancellation is free up to 24 hours before.</p>
+            <p>${isPrivate
+              ? `As soon as your payment clears, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits you. We also email the link, so you can book later if you prefer.`
+              : `As soon as your fee note is submitted, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits the donor. We also email the link, so it can be booked later.`} Cancellation is free up to 24 hours before.</p>`}
           </div>
         </div>
       </fieldset>
@@ -646,6 +798,8 @@
     const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const donorName = (isPrivate && d.selfDonor) ? d.contactName : d.donorName;
 
+    document.getElementById('submit-btn').textContent = isPrivate ? 'Submit and continue to payment' : 'Submit fee note';
+
     const lines = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
       return `
@@ -654,7 +808,7 @@
           <td>${lineLabel(p, item)} <span class="doc-detects">${p.detects}</span></td>
           <td class="num">${gbp(lineTotal(p, item))}</td>
         </tr>
-        ${item.fastTrack && p.fastTrack ? `
+        ${state.fastTrack && p.fastTrack ? `
         <tr class="doc-subline">
           <td></td><td>Fast track analysis</td><td class="num">${gbp(FAST_TRACK_FEE)}</td>
         </tr>` : ''}`;
@@ -698,6 +852,7 @@
             ${lines}
             ${t.saving ? `<tr><td></td><td>Combined rate — H-DP1 + H-DP3</td><td class="num">−${gbp(t.saving)}</td></tr>` : ''}
             ${t.collection ? `<tr><td></td><td>Collection — NIVHA office, Derry~Londonderry</td><td class="num">${gbp(t.collection)}</td></tr>` : ''}
+            ${t.onsite ? `<tr><td></td><td>On-site collection — at your premises, priced on request and confirmed before the visit (not included in the totals below)</td><td class="num">from ${gbp(ONSITE_COLLECTION_FROM)}</td></tr>` : ''}
           </tbody>
           <tfoot>
             <tr><td colspan="2">Subtotal</td><td class="num">${gbp(t.net)}</td></tr>
@@ -711,11 +866,13 @@
             <p class="doc-label">Payment</p>
             <p>${isPrivate
               ? 'Payment is taken securely in advance by card. Results are released to you on completion of analysis.'
-              : 'Results are released on payment, or under our 30-day payment guarantee for instructing practices and trusts.'}</p>
+              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.'}</p>
           </div>
           <div>
             <p class="doc-label">Appointments</p>
-            <p>Booked online via the scheduling link we email after submission — please do not send the donor to attend without prior arrangement. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.</p>
+            <p>${state.collection === 'onsite'
+              ? 'On-site visits are arranged directly with our team. Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.'
+              : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
           </div>
           <div>
             <p class="doc-label">Reports</p>
@@ -725,37 +882,332 @@
       </div>`;
   }
 
-  /* ---------------- submit & confirmation ---------------- */
+  /* ---------------- submit ---------------- */
   document.getElementById('declaration-check').addEventListener('change', e => {
     document.getElementById('submit-btn').disabled = !e.target.checked;
   });
 
   document.getElementById('submit-btn').addEventListener('click', () => {
-    const isPrivate = state.route === 'private';
+    goTo(state.route === 'private' ? 6 : 7);
+  });
+
+  /* ---------------- step 6 — simulated checkout (private) ---------------- */
+  function renderCheckout() {
     const t = computeTotals();
-    const bookingPlace = `a time at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
+    const d = state.details;
+    const rows = [...state.basket.keys()].map(code => {
+      const p = byCode[code], item = state.basket.get(code);
+      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
+        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
+    }).join('');
+
+    document.getElementById('checkout').innerHTML = `
+      <div class="success-banner">
+        ${icon('check', 20)}
+        <div><strong>Fee note ${state.refNumber} submitted</strong>
+        <span>One step left — private instructions are paid in advance. Booking opens as soon as payment is confirmed.</span></div>
+      </div>
+      <div class="panel-head">
+        <p class="marker">Payment</p>
+        <h1>Secure payment</h1>
+        <p class="lede">Pay by card to confirm your instruction. Your appointment calendar opens straight after.</p>
+      </div>
+      <div class="pay-grid">
+        <div class="pay-summary">
+          <h2>Paying NIVHA Laboratory Services Ltd</h2>
+          <p class="sum-loc">Fee note ${state.refNumber} · Collection: ${locLabel()}</p>
+          <div class="sum-rows">${rows}
+            ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
+            ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
+            ${t.onsite ? `<div class="sum-row"><span>On-site collection — from ${gbp(ONSITE_COLLECTION_FROM)}</span><span>On request</span></div>` : ''}
+          </div>
+          <div class="sum-totals">
+            <div class="sum-row"><span>Subtotal</span><span>${gbp(t.net)}</span></div>
+            <div class="sum-row"><span>VAT at 20%</span><span>${gbp(t.vat)}</span></div>
+            <div class="sum-row grand"><span>Total to pay today</span><span>${gbp(t.total)}</span></div>
+            ${t.onsite ? `<p class="sum-poa">The on-site collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) is priced on request — we confirm it with you and invoice it separately before the visit.</p>` : ''}
+          </div>
+        </div>
+        <form class="pay-card" id="pay-form" novalidate>
+          <div class="pay-brand">${icon('lock', 18)}<span class="pay-secure">Payments by Stripe · encrypted end to end</span></div>
+          <div class="form-field"><label for="pay-email">Email</label>
+            <input type="email" id="pay-email" value="${d.contactEmail || ''}" autocomplete="off"></div>
+          <div class="form-field"><label for="pay-cardno">Card number</label>
+            <input type="text" id="pay-cardno" inputmode="numeric" value="4242 4242 4242 4242" autocomplete="off"></div>
+          <div class="form-2col">
+            <div class="form-field"><label for="pay-exp">Expiry</label>
+              <input type="text" id="pay-exp" value="12/28" autocomplete="off"></div>
+            <div class="form-field"><label for="pay-cvc">CVC</label>
+              <input type="text" id="pay-cvc" inputmode="numeric" value="123" autocomplete="off"></div>
+          </div>
+          <div class="form-field"><label for="pay-name">Name on card</label>
+            <input type="text" id="pay-name" value="${d.contactName || ''}" autocomplete="off"></div>
+          <button type="submit" class="btn primary full" id="pay-btn">Pay ${gbp(t.total)} securely</button>
+          <p class="pay-note">${icon('info', 14)}<span>This is a simulation — no payment is taken and card details are pre-filled with test values. The live service uses Stripe; NIVHA never stores card details.</span></p>
+        </form>
+      </div>
+      <div class="panel-actions">
+        <button class="btn ghost" id="pay-back">Back to review</button>
+      </div>`;
+
+    document.getElementById('pay-back').addEventListener('click', () => goTo(5));
+    document.getElementById('pay-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const btn = document.getElementById('pay-btn');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Processing payment';
+      setTimeout(() => {
+        state.payment = { receipt: 'NV-8362', amount: t.total };
+        goTo(7);
+      }, 1400);
+    });
+  }
+
+  /* ---------------- step 7 — simulated booking (Acuity embedded) ---------------- */
+  /* Appointment types mirror the live NIVHA Acuity calendar (nivha.as.me) */
+  function bookingTypeFromBasket() {
+    const gs = new Set([...state.basket.keys()].map(c => byCode[c].group));
+    let label;
+    if (gs.has('hair') && gs.has('urine')) label = 'Dual collection — hair and urine';
+    else if (gs.has('nail') && gs.has('urine')) label = 'Dual collection — nail and urine';
+    else if (gs.has('hair')) label = 'Hair collection';
+    else if (gs.has('nail')) label = 'Nail collection';
+    else if (gs.has('urine')) label = 'Urine collection';
+    else label = 'Blood collection';
+    const notes = [];
+    if (gs.has('nail') && gs.has('hair')) notes.push('Nail samples are collected at the same appointment.');
+    if (gs.has('nail')) notes.push('Nail polish and false nails must be removed before the appointment.');
+    if (gs.has('blood') && label !== 'Blood collection') notes.push('Blood samples (PEth, LFT or CDT) are taken at the same visit by our clinician.');
+    return { label, notes };
+  }
+
+  const SLOT_TIMES = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+  const hashStr = s => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; };
+  const dayKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  function bookingWindow() {
+    const today = startOfDay(new Date());
+    const min = new Date(today); min.setDate(min.getDate() + 2);
+    const max = new Date(today); max.setDate(max.getDate() + 30);
+    return { min, max };
+  }
+
+  function slotsFor(d) {
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) return [];
+    const { min, max } = bookingWindow();
+    if (d < min || d > max) return [];
+    const key = dayKey(d);
+    const times = SLOT_TIMES.filter(t => hashStr(key + t) % 3 !== 0);
+    return times;
+  }
+
+  const bk = { view: 0, date: null, time: null };
+
+  function bookingMonths() {
+    const { min, max } = bookingWindow();
+    const months = [{ y: min.getFullYear(), m: min.getMonth() }];
+    if (max.getFullYear() !== min.getFullYear() || max.getMonth() !== min.getMonth()) {
+      months.push({ y: max.getFullYear(), m: max.getMonth() });
+    }
+    return months;
+  }
+
+  function renderBooking(reset) {
+    if (reset) { bk.view = 0; bk.date = null; bk.time = null; }
+    const isPrivate = state.route === 'private';
+    const type = bookingTypeFromBasket();
+    const d = state.details;
+    const donorName = (isPrivate && d.selfDonor) ? d.contactName : d.donorName;
+    if (state.collection === 'onsite') { renderOnsiteArrange(isPrivate, type, d, donorName); return; }
+    const months = bookingMonths();
+    const { y, m } = months[Math.min(bk.view, months.length - 1)];
+    const first = new Date(y, m, 1);
+    const lead = (first.getDay() + 6) % 7;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const monthLabel = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+    let cells = '';
+    for (let i = 0; i < lead; i++) cells += '<span></span>';
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(y, m, day);
+      const key = dayKey(date);
+      const avail = slotsFor(date).length > 0;
+      cells += `<button class="bk-day ${avail ? 'avail' : ''} ${bk.date === key ? 'selected' : ''}"
+        ${avail ? `data-day="${key}"` : 'disabled'}>${day}</button>`;
+    }
+
+    const selDate = bk.date ? new Date(bk.date + 'T00:00:00') : null;
+    const slots = selDate ? slotsFor(selDate) : [];
+
+    document.getElementById('booking').innerHTML = `
+      <div class="success-banner">
+        ${icon('check', 20)}
+        <div>
+          <strong>${isPrivate && state.payment
+            ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
+            : `Fee note ${state.refNumber} submitted`}</strong>
+          <span>${isPrivate && state.payment
+            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
+            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'} — now choose the appointment.`}</span>
+        </div>
+      </div>
+      <div class="panel-head">
+        <p class="marker">Booking</p>
+        <h1>Book the collection appointment</h1>
+        <p class="lede">Choose a time that suits ${isPrivate ? 'you' : 'the donor'}. The appointment takes about 30 minutes.</p>
+      </div>
+      <div class="bk-shell">
+        <div class="bk-meta">
+          <p class="doc-label">Appointment</p>
+          <p class="bk-type">${type.label}</p>
+          <p class="bk-meta-line">${icon('clock', 16)}<span>30 minutes</span></p>
+          <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
+        </div>
+        <div class="bk-cal-card">
+          <div class="bk-cal-head">
+            <strong>${monthLabel}</strong>
+            <div class="bk-nav">
+              <button id="bk-prev" aria-label="Previous month" ${bk.view === 0 ? 'disabled' : ''}>‹</button>
+              <button id="bk-next" aria-label="Next month" ${bk.view >= months.length - 1 ? 'disabled' : ''}>›</button>
+            </div>
+          </div>
+          <div class="bk-grid">
+            ${['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(d2 => `<span class="bk-dow">${d2}</span>`).join('')}
+            ${cells}
+          </div>
+          <div class="bk-slots">
+            ${bk.date ? `
+              <p class="bk-slots-label">Available times — ${selDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+              <div class="bk-slot-grid">
+                ${slots.map(t2 => `<button class="bk-slot ${bk.time === t2 ? 'selected' : ''}" data-slot="${t2}">${t2}</button>`).join('')}
+              </div>`
+            : `<p class="bk-empty">Select a highlighted day to see available times.</p>`}
+          </div>
+          <div class="bk-actions">
+            <button class="btn primary" id="bk-confirm" ${bk.date && bk.time ? '' : 'disabled'}>Confirm appointment</button>
+            <button class="btn ghost" id="bk-skip">Book later using the emailed link</button>
+          </div>
+          <p class="bk-caption">In the live service this is our Acuity scheduling calendar, embedded here — this prototype simulates it.</p>
+        </div>
+      </div>`;
+
+    const wrap = document.getElementById('booking');
+    wrap.querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', () => {
+      bk.date = b.dataset.day; bk.time = null; renderBooking(false);
+    }));
+    wrap.querySelectorAll('[data-slot]').forEach(b => b.addEventListener('click', () => {
+      bk.time = b.dataset.slot; renderBooking(false);
+    }));
+    const prev = wrap.querySelector('#bk-prev'), next = wrap.querySelector('#bk-next');
+    if (prev) prev.addEventListener('click', () => { if (bk.view > 0) { bk.view--; renderBooking(false); } });
+    if (next) next.addEventListener('click', () => { if (bk.view < months.length - 1) { bk.view++; renderBooking(false); } });
+    wrap.querySelector('#bk-confirm').addEventListener('click', () => {
+      if (!bk.date || !bk.time) return;
+      const dd = new Date(bk.date + 'T00:00:00');
+      state.booking = {
+        typeLabel: type.label,
+        dateLabel: dd.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+        time: bk.time,
+        location: locLabel()
+      };
+      state.bookingSkipped = false;
+      goTo(8);
+    });
+    wrap.querySelector('#bk-skip').addEventListener('click', () => {
+      state.booking = null;
+      state.bookingSkipped = true;
+      goTo(8);
+    });
+  }
+
+  /* ---------------- step 7 (on-site) — visit arranged by the team ---------------- */
+  function renderOnsiteArrange(isPrivate, type, d, donorName) {
+    document.getElementById('booking').innerHTML = `
+      <div class="success-banner">
+        ${icon('check', 20)}
+        <div>
+          <strong>${isPrivate && state.payment
+            ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
+            : `Fee note ${state.refNumber} submitted`}</strong>
+          <span>${isPrivate && state.payment
+            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
+            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'}.`}</span>
+        </div>
+      </div>
+      <div class="panel-head">
+        <p class="marker">Booking</p>
+        <h1>We arrange the on-site visit with you</h1>
+        <p class="lede">On-site collections are scheduled directly with our team rather than through the online calendar.</p>
+      </div>
+      <div class="bk-shell">
+        <div class="bk-meta">
+          <p class="doc-label">Visit</p>
+          <p class="bk-type">${type.label}</p>
+          <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
+        </div>
+        <div class="bk-cal-card">
+          <div class="bk-arrange">
+            <h2>What happens next</h2>
+            <ul class="arrange-list">
+              <li>${icon('clock', 17)}<span>We contact you within one working day to agree the date and time of the visit.</span></li>
+              <li>${icon('pin', 17)}<span>Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes.</span></li>
+              <li>${icon('user', 17)}<span>A witness may be required to be present during collection.</span></li>
+              <li>${icon('info', 17)}<span>The collection fee starts at ${gbp(ONSITE_COLLECTION_FROM)} + VAT and is confirmed with you before the visit.</span></li>
+            </ul>
+            <div class="bk-actions">
+              <button class="btn primary" id="bk-onsite">That works — finish my instruction</button>
+            </div>
+            <p class="bk-caption">In the live service our team calls or emails to arrange this — this prototype simulates that step.</p>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('bk-onsite').addEventListener('click', () => {
+      state.booking = null;
+      state.bookingSkipped = false;
+      state.onsiteArranged = true;
+      goTo(8);
+    });
+  }
+
+  /* ---------------- confirmation ---------------- */
+  function renderConfirmation() {
+    const isPrivate = state.route === 'private';
+    const booked = state.booking;
     const analysisCopy = 'Samples travel to the laboratory under chain of custody. Urine reports take about 10 working days; hair, nail and PEth about 15.'
-      + ([...state.basket.values()].some(i => i.fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
+      + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
+    const bookingStep = state.collection === 'onsite'
+      ? ['We arrange the visit', `Our team contacts you within one working day to schedule the on-site collection — agreeing the date, the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT). A witness may be required to be present, and the donor brings photo ID.`]
+      : booked
+      ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
+      : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
+
     const steps = isPrivate
       ? [
-        ['Pay securely', 'A payment link for ' + gbp(t.total) + ' arrives by email within a few minutes. Your booking opens once payment clears.'],
-        ['Book online', 'An automated email follows with a secure link to our online scheduling calendar — choose ' + bookingPlace + ' that suits you. Bring photo ID.'],
+        ['Payment received', gbp(state.payment ? state.payment.amount : computeTotals().total) + ' paid by card — receipt ' + (state.payment ? state.payment.receipt : 'NV-8362') + '. A VAT receipt is on its way to ' + (state.details.contactEmail || 'your inbox') + '.'],
+        bookingStep,
         ['Analysis', analysisCopy],
         ['Your results', 'Your report is released to you, and to no one else, as soon as analysis is complete.']
       ]
       : [
         ['Your fee note', 'A PDF of fee note ' + state.refNumber + ' is on its way to ' + (state.details.contactEmail || 'your inbox') + ' — ready to file or present.'],
-        ['Book online', 'An automated email follows with a secure link to our online scheduling calendar — choose ' + bookingPlace + ' that suits the donor. The donor brings photo ID.'],
+        bookingStep,
         ['Analysis', analysisCopy],
-        ['The report', 'A court-ready expert report is released on payment, or under our 30-day payment guarantee.']
+        ['The report', 'A court-ready expert report is released on payment of the fee note.']
       ];
 
     document.getElementById('confirmation').innerHTML = `
       <div class="confirm">
         <div class="confirm-badge">${icon('check', 30)}</div>
         <p class="marker">Fee note ${state.refNumber}</p>
-        <h1>Thank you — your instruction is in</h1>
-        <p class="lede">Here is what happens next.</p>
+        <h1>${booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
+        <p class="lede">Here is ${booked ? 'everything in one place' : 'what happens next'}.</p>
         <ol class="timeline">
           ${steps.map(([h, b], i) => `
             <li><span class="timeline-num">${String(i + 1).padStart(2, '0')}</span>
@@ -766,11 +1218,11 @@
         </div>
       </div>`;
     document.getElementById('restart').addEventListener('click', () => location.reload());
-    goTo(6);
-  });
+  }
 
   /* ---------------- init ---------------- */
   renderRoutes();
+  renderPrivateAdvice();
   renderLocations();
   renderConcerns();
   goTo(1);
