@@ -627,6 +627,10 @@
     const onsite = state.collection === 'onsite';
 
     form.innerHTML = `
+      <div class="dev-fill-bar">
+        <span>Prototype helper</span>
+        <button type="button" class="btn small ghost" id="dev-fill">Fill with sample data</button>
+      </div>
       ${!isPrivate ? `
       <fieldset>
         <legend>Instructing organisation</legend>
@@ -699,6 +703,26 @@
         const f = inp.closest('.form-field');
         if (f) { f.classList.remove('invalid'); const e = f.querySelector('.field-error'); if (e) e.hidden = true; }
       });
+    });
+
+    form.querySelector('#dev-fill').addEventListener('click', () => {
+      const sample = {
+        contactName: 'Test Contact',
+        contactEmail: 'test@example.com',
+        contactPhone: '07700 900123',
+        donorName: 'Test Donor',
+        donorDob: '1990-01-01'
+      };
+      if (!isPrivate) {
+        sample.org = state.route === 'trust' ? 'Example HSC Trust — Family Support Team' : 'Example & Partners Solicitors';
+        sample.orgAddress = '1 Example Street';
+        sample.orgTown = 'Belfast';
+        sample.orgPostcode = 'BT1 1AA';
+        sample.caseref = 'TEST-001';
+      }
+      if (hasDSD) sample.dsdDrug = 'Codeine';
+      Object.assign(state.details, sample);
+      renderDetailsForm();
     });
 
     const orgInput = form.querySelector('#org');

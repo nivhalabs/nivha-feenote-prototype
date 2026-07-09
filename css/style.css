@@ -713,3 +713,16 @@ a, button, input, [role='button'] {
   padding: var(--space-2) var(--space-3);
 }
 #req-date:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+/* ---------- prototype helper (round 5) ---------- */
+.dev-fill-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3); margin-bottom: var(--space-5);
+  padding: var(--space-2) var(--space-4);
+  border: 1px dashed var(--color-border); border-radius: 8px;
+  background: var(--color-bg);
+}
+.dev-fill-bar span {
+  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--color-text-muted);
+}
