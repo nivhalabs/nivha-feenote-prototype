@@ -43,7 +43,7 @@
       id: 'solicitor',
       title: 'Solicitor or legal representative',
       sub: 'Instructing on behalf of a client in family or criminal proceedings.',
-      points: ['Fee note addressed to your practice', 'Invoiced — results released on payment', 'Court-ready expert reports']
+      points: ['Fee note addressed to your practice', 'Can be submitted to the Legal Aid Authority for approval', 'Invoiced — results released on payment', 'Court-ready expert reports']
     },
     {
       id: 'trust',
@@ -76,12 +76,12 @@
       id: 'onsite',
       title: 'At your location — we come to you',
       sub: 'From ' + gbp(ONSITE_COLLECTION_FROM) + ' + VAT, priced on request — we confirm the fee before the visit.',
-      flag: 'Professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. Nail testing is Belfast office only.'
+      flag: 'Professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present.'
     }
   ];
 
-  const nailUnavailable = () => state.collection === 'derry' || state.collection === 'onsite';
-  const nailWhere = () => state.collection === 'onsite' ? 'for on-site collections' : 'at our Derry~Londonderry office';
+  const nailUnavailable = () => state.collection === 'derry';
+  const nailWhere = () => 'at our Derry~Londonderry office';
 
   const locLabel = () =>
     state.collection === 'onsite' ? 'Your location — on-site collection'
@@ -227,7 +227,7 @@
     if (removed.length && !state.notices.some(n => n.key === 'no-nail')) {
       state.notices.push({
         key: 'no-nail', type: 'warn',
-        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office for a 6 to 12 month nail history.`
+        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
       });
     }
   }
@@ -279,7 +279,7 @@
         if (!state.notices.some(n => n.key === 'no-nail')) {
           state.notices.push({
             key: 'no-nail', type: 'warn',
-            html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office for a 6 to 12 month nail history.`
+            html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
           });
         }
         return;
@@ -472,7 +472,7 @@
             </div>`}
           </div>
         </div>
-        ${unavailable ? `<p class="ft-na">Collected at our Belfast office only — go back to step 1 and choose the Belfast office if you need this panel.</p>` : ''}
+        ${unavailable ? `<p class="ft-na">Not collected at our Derry~Londonderry office — go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>` : ''}
       </article>`;
     }
 
@@ -675,10 +675,10 @@
           ${icon('calendar', 20)}
           <div>
             ${onsite ? `
-            <p><strong>We arrange the on-site visit with you directly.</strong></p>
+            <p><strong>You request the visit — we confirm availability.</strong></p>
             <p>${isPrivate
-              ? `As soon as your payment clears, our team contacts you within one working day to agree the date, the collection room and the final collection fee.`
-              : `As soon as your fee note is submitted, our team contacts you within one working day to agree the date, the collection room and the final collection fee.`} A private room must be made available and a witness may be required to be present.</p>`
+              ? `As soon as your payment clears, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`
+              : `As soon as your fee note is submitted, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`} A private room must be made available and a witness may be required to be present.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
@@ -866,12 +866,12 @@
             <p class="doc-label">Payment</p>
             <p>${isPrivate
               ? 'Payment is taken securely in advance by card. Results are released to you on completion of analysis.'
-              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.'}</p>
+              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.'}${state.route === 'solicitor' ? ' This fee note can be submitted to the Legal Aid Authority for approval.' : ''}</p>
           </div>
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
-              ? 'On-site visits are arranged directly with our team. Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.'
+              ? 'On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability. Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.'
               : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
           </div>
           <div>
@@ -1125,8 +1125,10 @@
     });
   }
 
-  /* ---------------- step 7 (on-site) — visit arranged by the team ---------------- */
+  /* ---------------- step 7 (on-site) — visit requested, team confirms availability ---------------- */
   function renderOnsiteArrange(isPrivate, type, d, donorName) {
+    const req = { when: 'asap', date: '', window: 'Morning' };
+    const { min, max } = bookingWindow();
     document.getElementById('booking').innerHTML = `
       <div class="success-banner">
         ${icon('check', 20)}
@@ -1141,8 +1143,8 @@
       </div>
       <div class="panel-head">
         <p class="marker">Booking</p>
-        <h1>We arrange the on-site visit with you</h1>
-        <p class="lede">On-site collections are scheduled directly with our team rather than through the online calendar.</p>
+        <h1>Request your on-site visit</h1>
+        <p class="lede">On-site collections are arranged as a request — tell us what suits and we confirm availability with you.</p>
       </div>
       <div class="bk-shell">
         <div class="bk-meta">
@@ -1151,29 +1153,64 @@
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
           ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
+          <p class="bk-note">Collections take place in professional environments only, where a private collection room is made available. A witness may be required to be present.</p>
+          <p class="bk-note">The collection fee starts at ${gbp(ONSITE_COLLECTION_FROM)} + VAT and is confirmed before the visit.</p>
         </div>
         <div class="bk-cal-card">
           <div class="bk-arrange">
-            <h2>What happens next</h2>
-            <ul class="arrange-list">
-              <li>${icon('clock', 17)}<span>We contact you within one working day to agree the date and time of the visit.</span></li>
-              <li>${icon('pin', 17)}<span>Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes.</span></li>
-              <li>${icon('user', 17)}<span>A witness may be required to be present during collection.</span></li>
-              <li>${icon('info', 17)}<span>The collection fee starts at ${gbp(ONSITE_COLLECTION_FROM)} + VAT and is confirmed with you before the visit.</span></li>
-            </ul>
-            <div class="bk-actions">
-              <button class="btn primary" id="bk-onsite">That works — finish my instruction</button>
+            <h2>When would suit?</h2>
+            <div class="req-field">
+              <p class="req-label">Preferred date</p>
+              <div class="req-opts" id="req-when">
+                <button type="button" class="req-opt selected" data-when="asap">As soon as possible</button>
+                <button type="button" class="req-opt" data-when="date">A specific date</button>
+              </div>
+              <input type="date" id="req-date" min="${dayKey(min)}" max="${dayKey(max)}" hidden>
             </div>
-            <p class="bk-caption">In the live service our team calls or emails to arrange this — this prototype simulates that step.</p>
+            <div class="req-field">
+              <p class="req-label">Preferred time of day</p>
+              <div class="req-opts" id="req-window">
+                <button type="button" class="req-opt selected" data-win="Morning">Morning</button>
+                <button type="button" class="req-opt" data-win="Afternoon">Afternoon</button>
+                <button type="button" class="req-opt" data-win="Evening">Evening</button>
+              </div>
+            </div>
+            <div class="bk-actions">
+              <button class="btn primary" id="bk-onsite">Request the visit</button>
+            </div>
+            <p class="bk-caption">This is a request, not a confirmed booking — our team confirms availability within one working day.</p>
           </div>
         </div>
       </div>`;
-    document.getElementById('bk-onsite').addEventListener('click', () => {
-      state.booking = null;
+
+    const dateInput = document.getElementById('req-date');
+    const submitBtn = document.getElementById('bk-onsite');
+    const refresh = () => {
+      submitBtn.disabled = req.when === 'date' && !req.date;
+    };
+    document.getElementById('req-when').addEventListener('click', e => {
+      const b = e.target.closest('[data-when]'); if (!b) return;
+      req.when = b.dataset.when;
+      document.querySelectorAll('#req-when .req-opt').forEach(x => x.classList.toggle('selected', x === b));
+      dateInput.hidden = req.when !== 'date';
+      refresh();
+    });
+    dateInput.addEventListener('change', () => { req.date = dateInput.value; refresh(); });
+    document.getElementById('req-window').addEventListener('click', e => {
+      const b = e.target.closest('[data-win]'); if (!b) return;
+      req.window = b.dataset.win;
+      document.querySelectorAll('#req-window .req-opt').forEach(x => x.classList.toggle('selected', x === b));
+    });
+    submitBtn.addEventListener('click', () => {
+      const dateLabel = req.when === 'asap'
+        ? 'As soon as possible'
+        : new Date(req.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      state.booking = { request: true, typeLabel: type.label, dateLabel, window: req.window, location: locLabel() };
       state.bookingSkipped = false;
       state.onsiteArranged = true;
       goTo(8);
     });
+    refresh();
   }
 
   /* ---------------- confirmation ---------------- */
@@ -1182,8 +1219,9 @@
     const booked = state.booking;
     const analysisCopy = 'Samples travel to the laboratory under chain of custody. Urine reports take about 10 working days; hair, nail and PEth about 15.'
       + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
+    const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
-      ? ['We arrange the visit', `Our team contacts you within one working day to schedule the on-site collection — agreeing the date, the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT). A witness may be required to be present, and the donor brings photo ID.`]
+      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you. A witness may be required to be present, and the donor brings photo ID.`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
@@ -1206,8 +1244,8 @@
       <div class="confirm">
         <div class="confirm-badge">${icon('check', 30)}</div>
         <p class="marker">Fee note ${state.refNumber}</p>
-        <h1>${booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
-        <p class="lede">Here is ${booked ? 'everything in one place' : 'what happens next'}.</p>
+        <h1>${isRequest ? 'Thank you — your visit is requested' : booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
+        <p class="lede">Here is ${booked && !isRequest ? 'everything in one place' : 'what happens next'}.</p>
         <ol class="timeline">
           ${steps.map(([h, b], i) => `
             <li><span class="timeline-num">${String(i + 1).padStart(2, '0')}</span>
