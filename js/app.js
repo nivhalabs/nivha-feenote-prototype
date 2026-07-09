@@ -1491,7 +1491,7 @@
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
         <h1>Court-ready drug and alcohol testing, with an itemised fee note in about three minutes</h1>
-        <p class="lede">Hair, nail and urine testing for care proceedings, workplace matters and personal reassurance — collected at our Belfast and Derry~Londonderry offices, or on site for organisations.</p>
+        <p class="lede">Hair, nail and urine testing for care proceedings and personal reassurance — collected at our Belfast and Derry~Londonderry offices, or on site for organisations.</p>
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Instant itemised pricing</strong><p>See exactly what each panel costs before you commit — unlocked with a secure link sent to your inbox.</p></div>
