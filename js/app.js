@@ -682,7 +682,7 @@
             <p><strong>You request the visit — we confirm availability.</strong></p>
             <p>${isPrivate
               ? `As soon as your payment clears, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`
-              : `As soon as your fee note is submitted, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`} A private room must be made available and a witness may be required to be present.</p>`
+              : `As soon as your fee note is submitted, you tell us your preferred date and time of day along with a purchase order number — that is all we need to confirm the collection. Our team confirms availability within one working day, along with the collection room and the final collection fee. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
@@ -895,7 +895,7 @@
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
-              ? 'On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability. Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.'
+              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' A purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.`
               : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
           </div>
           <div>
@@ -1199,6 +1199,12 @@
                 <button type="button" class="req-opt" data-win="Evening">Evening</button>
               </div>
             </div>
+            ${!isPrivate ? `
+            <div class="req-field">
+              <p class="req-label">Purchase order number</p>
+              <input type="text" class="req-input" id="req-po" placeholder="e.g. PO-2026-0147" value="${d.caseref || ''}" autocomplete="off">
+              <p class="req-hint">A purchase order number is needed to confirm the collection. The report is released on receipt of payment of the fee note.</p>
+            </div>` : ''}
             <div class="bk-actions">
               <button class="btn primary" id="bk-onsite">Request the visit</button>
             </div>
@@ -1208,10 +1214,12 @@
       </div>`;
 
     const dateInput = document.getElementById('req-date');
+    const poInput = document.getElementById('req-po');
     const submitBtn = document.getElementById('bk-onsite');
     const refresh = () => {
-      submitBtn.disabled = req.when === 'date' && !req.date;
+      submitBtn.disabled = (req.when === 'date' && !req.date) || (poInput && !poInput.value.trim());
     };
+    if (poInput) poInput.addEventListener('input', refresh);
     document.getElementById('req-when').addEventListener('click', e => {
       const b = e.target.closest('[data-when]'); if (!b) return;
       req.when = b.dataset.when;
@@ -1229,7 +1237,7 @@
       const dateLabel = req.when === 'asap'
         ? 'As soon as possible'
         : new Date(req.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      state.booking = { request: true, typeLabel: type.label, dateLabel, window: req.window, location: locLabel() };
+      state.booking = { request: true, typeLabel: type.label, dateLabel, window: req.window, location: locLabel(), po: poInput ? poInput.value.trim() : null };
       state.bookingSkipped = false;
       state.onsiteArranged = true;
       goTo(8);
@@ -1245,7 +1253,7 @@
       + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
     const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
-      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you. A witness may be required to be present, and the donor brings photo ID.`]
+      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ''} A witness may be required to be present, and the donor brings photo ID.`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
