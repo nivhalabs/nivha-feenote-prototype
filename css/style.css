@@ -202,6 +202,7 @@ a, button, input, [role='button'] {
   display: flex; gap: var(--space-4); align-items: flex-start;
   background: var(--color-surface); border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); padding: var(--space-5);
+  padding-right: var(--space-12); /* keep titles clear of the tick */
 }
 .concern-card:hover { border-color: var(--color-primary); }
 .concern-card.selected { border-color: var(--color-primary); background: var(--color-callout); box-shadow: 0 0 0 1px var(--color-primary); }
