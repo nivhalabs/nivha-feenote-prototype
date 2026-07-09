@@ -10,7 +10,7 @@
     concerns: new Set(),
     basket: new Map(),           // code -> { fastTrack: bool }
     notices: [],
-    collection: 'belfast',
+    collection: null,        // 'belfast' | 'derry' | 'mobile'
     details: {},
     refNumber: null
   };
@@ -40,6 +40,31 @@
       points: ['Plain-English guidance throughout', 'Secure payment in advance', 'Your results stay confidential to you']
     }
   ];
+
+  /* ---------------- locations (step 1) ---------------- */
+  const LOCATIONS = [
+    {
+      id: 'belfast',
+      title: 'NIVHA office — Belfast',
+      sub: 'Collection is included in your fee. Every sample type — hair, nail, urine and blood — is collected here.'
+    },
+    {
+      id: 'derry',
+      title: 'NIVHA office — Derry~Londonderry',
+      sub: 'Collection is included in your fee.',
+      flag: 'Limited panel range — nail testing is not available at this location.'
+    },
+    {
+      id: 'mobile',
+      title: 'Our collector comes to you',
+      sub: gbp(MOBILE_COLLECTION_FEE) + ' + VAT, up to 40 miles. Added to your fee note.'
+    }
+  ];
+
+  const locLabel = () =>
+    state.collection === 'belfast' ? 'NIVHA office — Belfast'
+    : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry'
+    : 'mobile collection at your offices';
 
   /* ---------------- icons ---------------- */
   const ICONS = {
@@ -105,8 +130,44 @@
         state.route = card.dataset.route;
         state.refNumber = (state.route === 'private' ? 'PCN-' : 'CCN-') + (state.route === 'private' ? '0214' : '9281');
         renderRoutes();
+        renderLocations();
+        setTimeout(() =>
+          document.getElementById('location-block').scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+      }));
+  }
+
+  function renderLocations() {
+    const block = document.getElementById('location-block');
+    block.hidden = !state.route;
+    if (!state.route) return;
+    const grid = document.getElementById('location-grid');
+    grid.innerHTML = LOCATIONS.map(l => `
+      <button class="route-card location-card ${state.collection === l.id ? 'selected' : ''}" data-location="${l.id}">
+        <span class="route-title">${l.title}</span>
+        <span class="route-sub">${l.sub}</span>
+        ${l.flag ? `<span class="location-flag">${icon('info', 15)}<span>${l.flag}</span></span>` : ''}
+        <span class="route-cta">${state.collection === l.id ? 'Selected' : 'Choose this location'}</span>
+      </button>`).join('');
+    grid.querySelectorAll('[data-location]').forEach(card =>
+      card.addEventListener('click', () => {
+        state.collection = card.dataset.location;
+        if (state.collection === 'derry') removeNailPanels();
+        renderLocations();
         setTimeout(() => goTo(2), 220);
       }));
+  }
+
+  function removeNailPanels() {
+    const removed = [];
+    [...state.basket.keys()].forEach(code => {
+      if (byCode[code].group === 'nail') { state.basket.delete(code); removed.push(code); }
+    });
+    if (removed.length && !state.notices.some(n => n.key === 'derry-nail')) {
+      state.notices.push({
+        key: 'derry-nail', type: 'warn',
+        html: `<strong>Nail testing is not available at our Derry~Londonderry office.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office for a 6 to 12 month nail history.`
+      });
+    }
   }
 
   /* ---------------- step 2 ---------------- */
@@ -151,7 +212,18 @@
       const c = CONCERNS.find(x => x.id === id);
       c.recommends.forEach(code => recommended.add(code));
     });
-    recommended.forEach(code => { if (!state.basket.has(code)) state.basket.set(code, { fastTrack: false }); });
+    recommended.forEach(code => {
+      if (state.collection === 'derry' && byCode[code].group === 'nail') {
+        if (!state.notices.some(n => n.key === 'derry-nail')) {
+          state.notices.push({
+            key: 'derry-nail', type: 'warn',
+            html: `<strong>Nail testing is not available at our Derry~Londonderry office.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office for a 6 to 12 month nail history.`
+          });
+        }
+        return;
+      }
+      if (!state.basket.has(code)) state.basket.set(code, { fastTrack: false });
+    });
     resolveConflicts(true);
   }
 
@@ -206,8 +278,14 @@
       renderCatalogue(); renderSummary(); updateMobileBar();
     }));
     wrap.querySelectorAll('[data-ft]').forEach(t => t.addEventListener('change', () => {
-      const item = state.basket.get(t.dataset.ft);
-      if (item) item.fastTrack = t.checked;
+      const code = t.dataset.ft;
+      if (state.basket.has(code)) {
+        state.basket.get(code).fastTrack = t.checked;
+      } else if (t.checked) {
+        state.basket.set(code, { fastTrack: true });
+        resolveConflicts(true);
+        renderCatalogue(); renderNotices();
+      }
       renderSummary(); updateMobileBar();
     }));
   }
@@ -215,11 +293,18 @@
   function renderPanelCard(p) {
     const inBasket = state.basket.has(p.code);
     const item = state.basket.get(p.code);
+    const unavailable = state.collection === 'derry' && p.group === 'nail';
+    const ftToggle = p.fastTrack
+      ? `<label class="ft-toggle">
+           <input type="checkbox" data-ft="${p.code}" ${item && item.fastTrack ? 'checked' : ''}>
+           <span>Fast track <small>+ ${gbp(FAST_TRACK_FEE)} + VAT</small></span>
+         </label>`
+      : '<span class="ft-na">Fast track not available</span>';
     return `
-      <article class="panel-card ${inBasket ? 'in-basket' : ''}">
+      <article class="panel-card ${inBasket ? 'in-basket' : ''} ${unavailable ? 'unavailable' : ''}">
         <div class="panel-card-top">
           <div class="panel-card-id">
-            <span class="code-chip">${p.code.replace('H-EtG-FAEE', 'H-EtG/FAEE')}</span>
+            <span class="code-chip">${disp(p.code)}</span>
             ${p.popular ? '<span class="popular-chip">Most requested</span>' : ''}
           </div>
           <span class="panel-price">${gbp(p.price)} <small>+ VAT</small></span>
@@ -228,19 +313,21 @@
         <p class="panel-detects">${p.detects}</p>
         <dl class="panel-facts">
           <div><dt>Covers</dt><dd>${p.window}</dd></div>
-          <div><dt>Turnaround</dt><dd>${p.turnaround}</dd></div>
+          <div><dt>Standard</dt><dd>${p.turnaround}</dd></div>
+          <div><dt>Fast track</dt><dd>${p.fastTrack
+            ? `Prioritised by the laboratory — ${gbp(FAST_TRACK_FEE)} + VAT per panel.`
+            : 'Not available for this panel.'}</dd></div>
         </dl>
         <details class="panel-help"><summary>When to choose this</summary><p>${p.help}</p></details>
         <div class="panel-card-actions">
-          ${inBasket
-            ? `<button class="btn small ghost" data-remove="${p.code}">Remove</button>
-               ${p.fastTrack ? `
-               <label class="ft-toggle">
-                 <input type="checkbox" data-ft="${p.code}" ${item && item.fastTrack ? 'checked' : ''}>
-                 <span>Fast track <small>+ ${gbp(FAST_TRACK_FEE)} + VAT</small></span>
-               </label>` : '<span class="ft-na">Fast track not available</span>'}
-               <span class="added-flag">${icon('check', 15)} On your fee note</span>`
-            : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>`}
+          ${unavailable
+            ? `<span class="ft-na">Not collected at Derry~Londonderry — go back to step 1 and choose the Belfast office if you need this panel.</span>`
+            : inBasket
+              ? `<button class="btn small ghost" data-remove="${p.code}">Remove</button>
+                 ${ftToggle}
+                 <span class="added-flag">${icon('check', 15)} On your fee note</span>`
+              : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>
+                 ${ftToggle}`}
         </div>
       </article>`;
   }
@@ -270,6 +357,7 @@
     const html = `
       <div class="summary-card">
         <h2>Your fee note</h2>
+        <p class="sum-loc">Collection: ${locLabel()}</p>
         ${empty
           ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — if you are unsure, the standard drug panel and alcohol abstinence assessment cover most instructions.</p>`
           : `<div class="sum-rows">${rows}
@@ -282,7 +370,7 @@
              </div>
              <p class="sum-note">${state.route === 'private'
                 ? 'Payment is taken securely in advance. Results are released to you on completion.'
-                : 'Collection at our Belfast or Derry~Londonderry clinics is included. Results are released on payment or under our 30-day payment guarantee.'}</p>`}
+                : 'Results are released on payment or under our 30-day payment guarantee.'}</p>`}
         ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty ? 'disabled' : ''}>Continue to your details</button>` : ''}
         ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review fee note</button>` : ''}
       </div>`;
@@ -327,8 +415,10 @@
   function renderDetailsForm() {
     const form = document.getElementById('details-form');
     const isPrivate = state.route === 'private';
-    const hasNail = [...state.basket.keys()].some(c => byCode[c].group === 'nail');
     const hasDSD = state.basket.has('H-DSD');
+    const bookingPlace = state.collection === 'mobile'
+      ? 'a time for our collector to visit'
+      : `an appointment at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
 
     form.innerHTML = `
       ${!isPrivate ? `
@@ -361,29 +451,14 @@
       </fieldset>
 
       <fieldset>
-        <legend>Sample collection</legend>
-        <div class="radio-cards" id="collection-cards">
-          <label class="radio-card ${state.collection === 'belfast' ? 'selected' : ''}">
-            <input type="radio" name="collection" value="belfast" ${state.collection === 'belfast' ? 'checked' : ''}>
-            <span class="radio-title">NIVHA clinic — Holywood, Belfast</span>
-            <span class="radio-sub">Included in your fee. All sample types collected here.</span>
-          </label>
-          <label class="radio-card ${state.collection === 'derry' ? 'selected' : ''}">
-            <input type="radio" name="collection" value="derry" ${state.collection === 'derry' ? 'checked' : ''}>
-            <span class="radio-title">NIVHA clinic — Derry~Londonderry</span>
-            <span class="radio-sub">Included in your fee. Nail samples cannot be collected here.</span>
-          </label>
-          <label class="radio-card ${state.collection === 'mobile' ? 'selected' : ''}">
-            <input type="radio" name="collection" value="mobile" ${state.collection === 'mobile' ? 'checked' : ''}>
-            <span class="radio-title">Our collector comes to you</span>
-            <span class="radio-sub">${gbp(MOBILE_COLLECTION_FEE)} + VAT, up to 40 miles. Added to your fee note.</span>
-          </label>
+        <legend>Booking the appointment</legend>
+        <div class="booking-callout">
+          ${icon('calendar', 20)}
+          <div>
+            <p><strong>You choose the time — no phone calls needed.</strong></p>
+            <p>After you submit, we email you a secure link to our online scheduling calendar. Use it to book ${bookingPlace} at a time that suits ${isPrivate ? 'you' : 'the donor'}. Cancellation is free up to 24 hours before.</p>
+          </div>
         </div>
-        <div class="notice notice-warn" id="derry-nail-warning" ${state.collection === 'derry' && hasNail ? '' : 'hidden'}>
-          ${icon('info', 18)}
-          <div><strong>Nail samples cannot be collected in Derry~Londonderry.</strong> Your fee note includes a nail panel. Choose the Belfast clinic, or remove the nail panel on the previous step.</div>
-        </div>
-        ${field('preferredDate', 'Preferred appointment date', { type: 'date', hint: 'We will confirm the exact time by phone. Cancellation is free up to 24 hours before.' })}
       </fieldset>
 
       <div class="panel-actions">
@@ -404,14 +479,6 @@
       state.details.selfDonor = self.checked;
       renderDetailsForm();
     });
-
-    form.querySelectorAll('input[name="collection"]').forEach(radio =>
-      radio.addEventListener('change', () => {
-        state.collection = radio.value;
-        form.querySelectorAll('.radio-card').forEach(rc => rc.classList.toggle('selected', rc.querySelector('input').checked));
-        document.getElementById('derry-nail-warning').hidden = !(state.collection === 'derry' && hasNail);
-        renderSummary(); updateMobileBar();
-      }));
 
     form.querySelector('[data-back-4]').addEventListener('click', () => goTo(3));
     form.addEventListener('submit', e => {
@@ -435,13 +502,6 @@
         if (!first) first = f || inp;
       }
     });
-    const hasNail = [...state.basket.keys()].some(c => byCode[c].group === 'nail');
-    if (state.collection === 'derry' && hasNail) {
-      ok = false;
-      const w = document.getElementById('derry-nail-warning');
-      w.hidden = false;
-      if (!first) first = w;
-    }
     if (!ok && first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return ok;
   }
@@ -472,10 +532,7 @@
       <div class="doc">
         <div class="doc-head">
           <div class="doc-brand">
-            <svg viewBox="0 0 32 32" width="40" height="40" fill="none" aria-hidden="true">
-              <rect x="1.6" y="1.6" width="28.8" height="28.8" rx="7.5" stroke="currentColor" stroke-width="2.4"/>
-              <path d="M8 21.5h3.2l2.3-8 2.8 11.5 2.4-6.5 1.3 3h4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img class="doc-logo" src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96">
             <div>
               <p class="doc-brand-name">NIVHA Laboratory Services Ltd</p>
               <p class="doc-brand-sub">Chain-of-custody drug and alcohol testing</p>
@@ -498,8 +555,8 @@
             <p class="doc-label">Donor</p>
             <p><strong>${donorName || '—'}</strong></p>
             ${d.donorDob && !(isPrivate && d.selfDonor) ? `<p>Date of birth: ${new Date(d.donorDob).toLocaleDateString('en-GB')}</p>` : ''}
-            <p>Collection: ${state.collection === 'belfast' ? 'NIVHA clinic, Holywood, Belfast'
-              : state.collection === 'derry' ? 'NIVHA clinic, Derry~Londonderry'
+            <p>Collection: ${state.collection === 'belfast' ? 'NIVHA office — Belfast'
+              : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry'
               : 'Mobile collection at your offices'}</p>
           </div>
         </div>
@@ -526,7 +583,7 @@
           </div>
           <div>
             <p class="doc-label">Appointments</p>
-            <p>The donor must bring photo ID. Cancellation is free up to 24 hours before the appointment; missed appointments incur a £50 + VAT fee.</p>
+            <p>Booked online via the scheduling link we email after submission. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.</p>
           </div>
           <div>
             <p class="doc-label">Reports</p>
@@ -544,17 +601,23 @@
   document.getElementById('submit-btn').addEventListener('click', () => {
     const isPrivate = state.route === 'private';
     const t = computeTotals();
+    const anyFT = [...state.basket.values()].some(i => i.fastTrack);
+    const bookingPlace = state.collection === 'mobile'
+      ? 'a time for our collector to visit'
+      : `a time at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
+    const analysisCopy = 'Samples travel to the laboratory under chain of custody. Urine takes about 10 working days, hair about 15.'
+      + (anyFT ? ' Your fast-tracked panels are prioritised by the laboratory.' : '');
     const steps = isPrivate
       ? [
-        ['Pay securely', 'A payment link for ' + gbp(t.total) + ' arrives by email within a few minutes. Your booking is confirmed once payment clears.'],
-        ['Your appointment', 'We phone you to arrange collection' + (state.details.preferredDate ? ' around your preferred date' : '') + '. Bring photo ID.'],
-        ['Analysis', 'Samples travel to the laboratory under chain of custody. Urine takes about 10 working days, hair about 15.'],
+        ['Pay securely', 'A payment link for ' + gbp(t.total) + ' arrives by email within a few minutes. Your booking opens once payment clears.'],
+        ['Book online', 'An automated email follows with a secure link to our online scheduling calendar — choose ' + bookingPlace + ' that suits you. Bring photo ID.'],
+        ['Analysis', analysisCopy],
         ['Your results', 'Your report is released to you, and to no one else, as soon as analysis is complete.']
       ]
       : [
         ['Your fee note', 'A PDF of fee note ' + state.refNumber + ' is on its way to ' + (state.details.contactEmail || 'your inbox') + ' — ready to file or present.'],
-        ['The appointment', 'We contact you to arrange the donor\u2019s appointment' + (state.details.preferredDate ? ' around your preferred date' : '') + '. The donor brings photo ID.'],
-        ['Analysis', 'Samples travel to the laboratory under chain of custody. Urine takes about 10 working days, hair about 15.'],
+        ['Book online', 'An automated email follows with a secure link to our online scheduling calendar — choose ' + bookingPlace + ' that suits the donor. The donor brings photo ID.'],
+        ['Analysis', analysisCopy],
         ['The report', 'A court-ready expert report is released on payment, or under our 30-day payment guarantee.']
       ];
 
@@ -579,6 +642,7 @@
 
   /* ---------------- init ---------------- */
   renderRoutes();
+  renderLocations();
   renderConcerns();
   goTo(1);
 })();

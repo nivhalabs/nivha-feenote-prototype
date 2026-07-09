@@ -36,8 +36,8 @@ const CATALOGUE = [
     name: 'Street benzodiazepines panel',
     detects: 'The street benzodiazepines most prevalent in Northern Ireland.',
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample. Fast track is not available for this panel.',
-    help: 'Targets non-prescribed benzodiazepines circulating locally.'
+    turnaround: 'About 15 working days from the lab receiving the sample.',
+    help: 'Targets non-prescribed benzodiazepines circulating locally. Fast track is not available for this panel.'
   },
   {
     code: 'H-DNPS', group: 'hair', price: 450, fastTrack: true,
@@ -183,8 +183,8 @@ const INCLUSION_RULES = [
 ];
 
 const GROUP_META = {
-  hair:  { label: 'Hair',  note: 'Around 3 months of history. Collected at either clinic.' },
-  nail:  { label: 'Nail',  note: '6 to 12 months of history. Belfast clinic only — polish and false nails must be removed.' },
+  hair:  { label: 'Hair',  note: 'Around 3 months of history. Collected at either office.' },
+  nail:  { label: 'Nail',  note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.' },
   urine: { label: 'Urine', note: 'Recent use — the last few days. Alcohol checked by breath test.' },
   blood: { label: 'Blood', note: 'Alcohol markers covering roughly the last month.' }
 };

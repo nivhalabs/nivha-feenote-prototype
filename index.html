@@ -9,18 +9,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" rx="7" fill="%232a8ba3"/><path d="M8 21.5h3.2l2.3-8 2.8 11.5 2.4-6.5 1.3 3h4" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" href="#" aria-label="NIVHA home">
-      <svg class="brand-mark" viewBox="0 0 32 32" width="34" height="34" fill="none" aria-label="NIVHA logo" role="img">
-        <rect x="1.6" y="1.6" width="28.8" height="28.8" rx="7.5" stroke="currentColor" stroke-width="2.4"/>
-        <path d="M8 21.5h3.2l2.3-8 2.8 11.5 2.4-6.5 1.3 3h4.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="brand-name">NIVHA</span>
+      <img src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96">
     </a>
     <span class="header-context">Medico-legal fee note</span>
     <div class="header-help">
@@ -32,7 +28,7 @@
 
 <nav class="stepper" aria-label="Progress">
   <div class="stepper-inner" id="stepper">
-    <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Who is instructing</span></button>
+    <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Who and where</span></button>
     <button class="step" data-step="2"><span class="step-num">02</span><span class="step-label">What the court needs</span></button>
     <button class="step" data-step="3"><span class="step-num">03</span><span class="step-label">Build your fee note</span></button>
     <button class="step" data-step="4"><span class="step-num">04</span><span class="step-label">Your details</span></button>
@@ -42,14 +38,28 @@
 
 <main class="wizard" id="wizard">
 
-  <!-- STEP 1 — instructing party -->
+  <!-- STEP 1 — instructing party and location -->
   <section class="panel" id="step-1" hidden>
     <div class="panel-head">
       <p class="marker">01</p>
       <h1>Who is instructing this testing?</h1>
       <p class="lede">This shapes your fee note, how it is worded for court, and how payment works. It takes about three minutes from here.</p>
     </div>
+
+    <ol class="process-strip" aria-label="How it works">
+      <li><span class="ps-num">1</span><div><strong>Build your fee note</strong><span>Priced as you go, in about three minutes.</span></div></li>
+      <li><span class="ps-num">2</span><div><strong>Book online</strong><span>We email you a link to our scheduling calendar.</span></div></li>
+      <li><span class="ps-num">3</span><div><strong>Attend the appointment</strong><span>The donor brings photo ID.</span></div></li>
+      <li><span class="ps-num">4</span><div><strong>Court-ready report</strong><span>Prepared by our reporting scientists.</span></div></li>
+    </ol>
+
     <div class="route-grid" id="route-grid"></div>
+
+    <div class="location-block" id="location-block" hidden>
+      <h2>Where will the sample be collected?</h2>
+      <p class="location-hint">Panel availability varies by location — nail testing is collected in Belfast only.</p>
+      <div class="location-grid" id="location-grid"></div>
+    </div>
   </section>
 
   <!-- STEP 2 — concerns -->
@@ -87,7 +97,7 @@
       <div class="panel-head">
         <p class="marker">04</p>
         <h1>Your details</h1>
-        <p class="lede">Everything we need to raise the fee note and arrange the appointment.</p>
+        <p class="lede">Everything we need to raise the fee note and send your booking link.</p>
       </div>
       <form id="details-form" novalidate></form>
     </div>
@@ -128,7 +138,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p>NIVHA Laboratory Services Ltd · Holywood, Belfast and Derry~Londonderry</p>
+    <p>NIVHA Laboratory Services Ltd · Belfast · Derry~Londonderry</p>
     <p>This is a design simulation. No data is stored or sent.</p>
   </div>
 </footer>
