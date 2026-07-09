@@ -8,9 +8,10 @@
     maxVisited: 1,
     route: null,                 // 'solicitor' | 'trust' | 'private'
     concerns: new Set(),
-    basket: new Map(),           // code -> { fastTrack: bool }
+    basket: new Map(),           // code -> { fastTrack: bool, variant: int, qty: int }
+    opts: new Map(),             // code -> { variant, qty } chosen before adding
     notices: [],
-    collection: null,        // 'belfast' | 'derry' | 'mobile'
+    collection: null,        // 'belfast' | 'derry'
     details: {},
     refNumber: null
   };
@@ -18,6 +19,16 @@
   const byCode = Object.fromEntries(CATALOGUE.map(p => [p.code, p]));
   const gbp = n => '£' + n.toLocaleString('en-GB');
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
+
+  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1 };
+  const unitPrice = (p, o) => p.variants ? p.variants[o.variant].price : p.price;
+  const lineTotal = (p, o) => unitPrice(p, o) * (o.qty || 1);
+  const lineLabel = (p, o) => {
+    let s = p.name;
+    if (p.variants && o.variant > 0) s += ' — ' + p.variants[o.variant].short.toLowerCase();
+    if (p.series && o.qty > 1) s += ' — series of ' + (o.qty === 2 ? 'two' : 'three');
+    return s;
+  };
 
   /* ---------------- routes (step 1) ---------------- */
   const ROUTES = [
@@ -51,20 +62,13 @@
     {
       id: 'derry',
       title: 'NIVHA office — Derry~Londonderry',
-      sub: 'Collection is included in your fee.',
+      sub: gbp(DERRY_COLLECTION_FEE) + ' + VAT collection fee, added to your fee note.',
       flag: 'Limited panel range — nail testing is not available at this location.'
-    },
-    {
-      id: 'mobile',
-      title: 'Our collector comes to you',
-      sub: gbp(MOBILE_COLLECTION_FEE) + ' + VAT, up to 40 miles. Added to your fee note.'
     }
   ];
 
   const locLabel = () =>
-    state.collection === 'belfast' ? 'NIVHA office — Belfast'
-    : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry'
-    : 'mobile collection at your offices';
+    state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : 'NIVHA office — Belfast';
 
   /* ---------------- icons ---------------- */
   const ICONS = {
@@ -76,6 +80,7 @@
     wave: '<path d="M3 15c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/>',
     history: '<path d="M4 12a8 8 0 1 1 2.3 5.7"/><path d="M4 12H1.5M4 12l-1.8 2.5"/><path d="M12 8v4l3 2"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1 1-1.1 1.8"/><circle cx="12" cy="17" r=".5" fill="currentColor"/>',
+    alert: '<path d="M12 4 2.8 19.5h18.4L12 4z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".5" fill="currentColor"/>',
     check: '<path d="m5 13 4.5 4.5L19 7"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".5" fill="currentColor"/>'
   };
@@ -222,7 +227,7 @@
         }
         return;
       }
-      if (!state.basket.has(code)) state.basket.set(code, { fastTrack: false });
+      if (!state.basket.has(code)) state.basket.set(code, { fastTrack: false, ...getOpts(code) });
     });
     resolveConflicts(true);
   }
@@ -237,6 +242,19 @@
           type: 'saving',
           html: `<strong>${disp(sup.code)} already includes everything in ${disp(sub.code)}.</strong> We have removed ${disp(sub.code)} from your fee note and saved you ${gbp(sub.price)} + VAT.`
         });
+      }
+    });
+    COMBINED_RATES.forEach(rule => {
+      const key = 'combo-' + rule.codes.join('-');
+      const active = rule.codes.every(c => state.basket.has(c));
+      const idx = state.notices.findIndex(n => n.key === key);
+      if (active && idx === -1) {
+        state.notices.push({
+          key, type: 'saving',
+          html: `<strong>Combined rate applied.</strong> ${rule.codes.map(disp).join(' and ')} together are ${gbp(rule.price)} + VAT — a saving of ${gbp(rule.saving)}.`
+        });
+      } else if (!active && idx > -1) {
+        state.notices.splice(idx, 1);
       }
     });
     if (!silent) { renderNotices(); }
@@ -269,12 +287,25 @@
     }).join('');
 
     wrap.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
-      state.basket.set(b.dataset.add, { fastTrack: false });
+      state.basket.set(b.dataset.add, { fastTrack: false, ...getOpts(b.dataset.add) });
       resolveConflicts(true);
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
     wrap.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => {
       state.basket.delete(b.dataset.remove);
+      resolveConflicts(true);
+      renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
+    }));
+    wrap.querySelectorAll('[data-variant]').forEach(sel => sel.addEventListener('change', () => {
+      const code = sel.dataset.variant, v = +sel.value;
+      state.opts.set(code, { ...getOpts(code), variant: v });
+      if (state.basket.has(code)) state.basket.get(code).variant = v;
+      renderCatalogue(); renderSummary(); updateMobileBar();
+    }));
+    wrap.querySelectorAll('[data-qty]').forEach(sel => sel.addEventListener('change', () => {
+      const code = sel.dataset.qty, q = +sel.value;
+      state.opts.set(code, { ...getOpts(code), qty: q });
+      if (state.basket.has(code)) state.basket.get(code).qty = q;
       renderCatalogue(); renderSummary(); updateMobileBar();
     }));
     wrap.querySelectorAll('[data-ft]').forEach(t => t.addEventListener('change', () => {
@@ -292,14 +323,31 @@
 
   function renderPanelCard(p) {
     const inBasket = state.basket.has(p.code);
-    const item = state.basket.get(p.code);
+    const item = state.basket.get(p.code) || getOpts(p.code);
     const unavailable = state.collection === 'derry' && p.group === 'nail';
     const ftToggle = p.fastTrack
       ? `<label class="ft-toggle">
-           <input type="checkbox" data-ft="${p.code}" ${item && item.fastTrack ? 'checked' : ''}>
+           <input type="checkbox" data-ft="${p.code}" ${inBasket && item.fastTrack ? 'checked' : ''}>
            <span>Fast track <small>+ ${gbp(FAST_TRACK_FEE)} + VAT</small></span>
          </label>`
       : '<span class="ft-na">Fast track not available</span>';
+    const options = (p.variants || p.series) && !unavailable ? `
+      <div class="panel-options">
+        ${p.variants ? `
+          <label class="opt-field"><span>Analysis</span>
+            <select data-variant="${p.code}">
+              ${p.variants.map((v, i) => `<option value="${i}" ${item.variant === i ? 'selected' : ''}>${v.label} — ${gbp(v.price)} + VAT</option>`).join('')}
+            </select>
+          </label>` : ''}
+        ${p.series ? `
+          <label class="opt-field"><span>Collections</span>
+            <select data-qty="${p.code}">
+              <option value="1" ${(item.qty || 1) === 1 ? 'selected' : ''}>One collection — ${gbp(p.price)} + VAT</option>
+              <option value="2" ${item.qty === 2 ? 'selected' : ''}>Unannounced series of two — ${gbp(p.price * 2)} + VAT</option>
+              <option value="3" ${item.qty === 3 ? 'selected' : ''}>Unannounced series of three — ${gbp(p.price * 3)} + VAT</option>
+            </select>
+          </label>` : ''}
+      </div>` : '';
     return `
       <article class="panel-card ${inBasket ? 'in-basket' : ''} ${unavailable ? 'unavailable' : ''}">
         <div class="panel-card-top">
@@ -307,15 +355,16 @@
             <span class="code-chip">${disp(p.code)}</span>
             ${p.popular ? '<span class="popular-chip">Most requested</span>' : ''}
           </div>
-          <span class="panel-price">${gbp(p.price)} <small>+ VAT</small></span>
+          <span class="panel-price">${gbp(lineTotal(p, item))} <small>+ VAT</small></span>
         </div>
         <h3>${p.name}</h3>
         <p class="panel-detects">${p.detects}</p>
+        ${options}
         <dl class="panel-facts">
           <div><dt>Covers</dt><dd>${p.window}</dd></div>
           <div><dt>Standard</dt><dd>${p.turnaround}</dd></div>
           <div><dt>Fast track</dt><dd>${p.fastTrack
-            ? `Prioritised by the laboratory — ${gbp(FAST_TRACK_FEE)} + VAT per panel.`
+            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel.`
             : 'Not available for this panel.'}</dd></div>
         </dl>
         <details class="panel-help"><summary>When to choose this</summary><p>${p.help}</p></details>
@@ -334,22 +383,25 @@
 
   /* ---------------- totals & summary ---------------- */
   function computeTotals() {
-    let panels = 0, fastTrack = 0;
+    let panels = 0, fastTrack = 0, saving = 0;
     state.basket.forEach((item, code) => {
-      panels += byCode[code].price;
+      panels += lineTotal(byCode[code], item);
       if (item.fastTrack && byCode[code].fastTrack) fastTrack += FAST_TRACK_FEE;
     });
-    const collection = state.collection === 'mobile' ? MOBILE_COLLECTION_FEE : 0;
-    const net = panels + fastTrack + collection;
+    COMBINED_RATES.forEach(rule => {
+      if (rule.codes.every(c => state.basket.has(c))) saving += rule.saving;
+    });
+    const collection = state.collection === 'derry' ? DERRY_COLLECTION_FEE : 0;
+    const net = panels - saving + fastTrack + collection;
     const vat = Math.round(net * VAT_RATE * 100) / 100;
-    return { panels, fastTrack, collection, net, vat, total: net + vat };
+    return { panels, saving, fastTrack, collection, net, vat, total: net + vat };
   }
 
   function renderSummary() {
     const t = computeTotals();
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
-      return `<div class="sum-row"><span>${p.code.replace('H-EtG-FAEE', 'H-EtG/FAEE')} · ${p.name}</span><span>${gbp(p.price)}</span></div>
+      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
         ${item.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
     }).join('');
 
@@ -361,7 +413,8 @@
         ${empty
           ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — if you are unsure, the standard drug panel and alcohol abstinence assessment cover most instructions.</p>`
           : `<div class="sum-rows">${rows}
-              ${t.collection ? `<div class="sum-row"><span>Mobile collection at your offices</span><span>${gbp(t.collection)}</span></div>` : ''}
+              ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
+              ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
              </div>
              <div class="sum-totals">
                <div class="sum-row"><span>Subtotal</span><span>${gbp(t.net)}</span></div>
@@ -415,10 +468,8 @@
   function renderDetailsForm() {
     const form = document.getElementById('details-form');
     const isPrivate = state.route === 'private';
-    const hasDSD = state.basket.has('H-DSD');
-    const bookingPlace = state.collection === 'mobile'
-      ? 'a time for our collector to visit'
-      : `an appointment at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
+    const hasDSD = state.basket.has('H-DSD') || state.basket.has('N-DSD');
+    const bookingPlace = `an appointment at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
 
     form.innerHTML = `
       ${!isPrivate ? `
@@ -447,7 +498,7 @@
           ${field('donorName', 'Donor full name', { required: !(isPrivate && state.details.selfDonor) })}
           ${field('donorDob', 'Donor date of birth', { type: 'date' })}
         </div>
-        ${hasDSD ? field('dsdDrug', 'Which single drug should we test for?', { required: true, hint: 'You have chosen the single specified drug panel (H-DSD).' }) : ''}
+        ${hasDSD ? field('dsdDrug', 'Which single drug should we test for?', { required: true, hint: 'You have chosen a single specified drug panel.' }) : ''}
       </fieldset>
 
       <fieldset>
@@ -518,9 +569,9 @@
       const p = byCode[code], item = state.basket.get(code);
       return `
         <tr>
-          <td><span class="code-chip small">${p.code.replace('H-EtG-FAEE', 'H-EtG/FAEE')}</span></td>
-          <td>${p.name} <span class="doc-detects">${p.detects}</span></td>
-          <td class="num">${gbp(p.price)}</td>
+          <td><span class="code-chip small">${disp(p.code)}</span></td>
+          <td>${lineLabel(p, item)} <span class="doc-detects">${p.detects}</span></td>
+          <td class="num">${gbp(lineTotal(p, item))}</td>
         </tr>
         ${item.fastTrack && p.fastTrack ? `
         <tr class="doc-subline">
@@ -555,9 +606,7 @@
             <p class="doc-label">Donor</p>
             <p><strong>${donorName || '—'}</strong></p>
             ${d.donorDob && !(isPrivate && d.selfDonor) ? `<p>Date of birth: ${new Date(d.donorDob).toLocaleDateString('en-GB')}</p>` : ''}
-            <p>Collection: ${state.collection === 'belfast' ? 'NIVHA office — Belfast'
-              : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry'
-              : 'Mobile collection at your offices'}</p>
+            <p>Collection: ${locLabel()}</p>
           </div>
         </div>
 
@@ -565,7 +614,8 @@
           <thead><tr><th>Code</th><th>Analysis</th><th class="num">Fee</th></tr></thead>
           <tbody>
             ${lines}
-            ${t.collection ? `<tr><td></td><td>Mobile collection at your offices (up to 40 miles)</td><td class="num">${gbp(t.collection)}</td></tr>` : ''}
+            ${t.saving ? `<tr><td></td><td>Combined rate — H-DP1 + H-DP3</td><td class="num">−${gbp(t.saving)}</td></tr>` : ''}
+            ${t.collection ? `<tr><td></td><td>Collection — NIVHA office, Derry~Londonderry</td><td class="num">${gbp(t.collection)}</td></tr>` : ''}
           </tbody>
           <tfoot>
             <tr><td colspan="2">Subtotal</td><td class="num">${gbp(t.net)}</td></tr>
@@ -583,11 +633,11 @@
           </div>
           <div>
             <p class="doc-label">Appointments</p>
-            <p>Booked online via the scheduling link we email after submission. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.</p>
+            <p>Booked online via the scheduling link we email after submission — please do not send the donor to attend without prior arrangement. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.</p>
           </div>
           <div>
             <p class="doc-label">Reports</p>
-            <p>Expert reports are prepared for court. Additional expert time, if required, is charged at £75 + VAT per hour.</p>
+            <p>A written report with expert interpretation is issued where applicable. Interim reports are not normally issued without part-payment.</p>
           </div>
         </div>
       </div>`;
@@ -601,12 +651,9 @@
   document.getElementById('submit-btn').addEventListener('click', () => {
     const isPrivate = state.route === 'private';
     const t = computeTotals();
-    const anyFT = [...state.basket.values()].some(i => i.fastTrack);
-    const bookingPlace = state.collection === 'mobile'
-      ? 'a time for our collector to visit'
-      : `a time at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
-    const analysisCopy = 'Samples travel to the laboratory under chain of custody. Urine takes about 10 working days, hair about 15.'
-      + (anyFT ? ' Your fast-tracked panels are prioritised by the laboratory.' : '');
+    const bookingPlace = `a time at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office`;
+    const analysisCopy = 'Samples travel to the laboratory under chain of custody. Urine reports take about 10 working days; hair, nail and PEth about 15.'
+      + ([...state.basket.values()].some(i => i.fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
     const steps = isPrivate
       ? [
         ['Pay securely', 'A payment link for ' + gbp(t.total) + ' arrives by email within a few minutes. Your booking opens once payment clears.'],
