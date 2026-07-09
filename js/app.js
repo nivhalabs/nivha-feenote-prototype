@@ -282,6 +282,7 @@
       return `
         <div class="cat-group">
           <div class="cat-group-head"><h2>${meta.label}</h2><p>${meta.note}</p></div>
+          ${meta.compare ? `<div class="compare-note">${icon('info', 18)}<div>${meta.compare}</div></div>` : ''}
           <div class="cat-list">${items.map(renderPanelCard).join('')}</div>
         </div>`;
     }).join('');
@@ -321,6 +322,16 @@
     }));
   }
 
+  function renderDrugChips(p) {
+    if (!p.drugs && !p.adds) return `<p class="panel-detects">${p.detects}</p>`;
+    const base = p.base
+      ? `<span class="drug-chip base">${icon('check', 13)} Everything in ${disp(p.base)} — the ${byCode[p.base].name.toLowerCase().replace('alcohol — ', '')}</span>`
+      : '';
+    const main = (p.drugs || []).map(d => `<span class="drug-chip">${d}</span>`).join('');
+    const adds = (p.adds || []).map(d => `<span class="drug-chip add">+ ${d}</span>`).join('');
+    return `<p class="chips-label">This panel tests for</p><div class="drug-chips">${base}${main}${adds}</div>`;
+  }
+
   function renderPanelCard(p) {
     const inBasket = state.basket.has(p.code);
     const item = state.basket.get(p.code) || getOpts(p.code);
@@ -358,7 +369,7 @@
           <span class="panel-price">${gbp(lineTotal(p, item))} <small>+ VAT</small></span>
         </div>
         <h3>${p.name}</h3>
-        <p class="panel-detects">${p.detects}</p>
+        ${renderDrugChips(p)}
         ${options}
         <dl class="panel-facts">
           <div><dt>Covers</dt><dd>${p.window}</dd></div>
@@ -475,8 +486,21 @@
       ${!isPrivate ? `
       <fieldset>
         <legend>Instructing organisation</legend>
-        ${field('org', state.route === 'trust' ? 'Trust or team' : 'Practice name', { required: true, list: 'org-list', hint: 'Start typing — we will match you to organisations we already work with, so your fee note is addressed consistently.', placeholder: 'e.g. Belfast Health and Social Care Trust' })}
-        <datalist id="org-list">${KNOWN_ORGS.map(o => `<option value="${o}">`).join('')}</datalist>
+        <div class="form-field" data-field="org">
+          <label for="org">${state.route === 'trust' ? 'Trust or team' : 'Practice name'}</label>
+          <p class="field-hint">Type to search the public register — choose your organisation and we fill in the address, or enter it yourself below.</p>
+          <div class="combo">
+            <input type="text" id="org" name="org" role="combobox" aria-expanded="false" aria-autocomplete="list"
+              placeholder="Search by organisation name" value="${state.details.org || ''}" required autocomplete="off">
+            <div class="combo-results" id="org-results" hidden></div>
+          </div>
+          <p class="field-error" hidden>This is needed to raise the fee note.</p>
+        </div>
+        ${field('orgAddress', 'Address', { required: true, placeholder: 'Building and street' })}
+        <div class="form-2col">
+          ${field('orgTown', 'Town or city', { required: true })}
+          ${field('orgPostcode', 'Postcode', { required: true })}
+        </div>
         ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the fee note so your accounts team can match it.' })}
       </fieldset>` : ''}
 
@@ -525,6 +549,9 @@
       });
     });
 
+    const orgInput = form.querySelector('#org');
+    if (orgInput) setupOrgSearch(form, orgInput);
+
     const self = form.querySelector('#self-donor');
     if (self) self.addEventListener('change', () => {
       state.details.selfDonor = self.checked;
@@ -535,6 +562,60 @@
     form.addEventListener('submit', e => {
       e.preventDefault();
       if (validateDetails()) goTo(5);
+    });
+  }
+
+  /* Organisation lookup — searches the public register (simulated),
+     never a list of NIVHA clients. Selecting a result fills the address. */
+  function setupOrgSearch(form, input) {
+    const box = form.querySelector('#org-results');
+    let timer;
+
+    const close = () => { box.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+
+    const open = matches => {
+      box.innerHTML = matches.map((m, i) => `
+          <button type="button" class="combo-item" data-pick="${i}">
+            <strong>${m.name}</strong><span>${m.address}, ${m.town}, ${m.postcode}</span>
+          </button>`).join('')
+        + `<p class="combo-note">${matches.length ? 'Not the right one?' : 'No match in the register.'} Just keep the name as typed and enter the address below.</p>`;
+      box.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      box.querySelectorAll('[data-pick]').forEach(btn =>
+        btn.addEventListener('click', () => {
+          const m = matches[+btn.dataset.pick];
+          state.details.org = m.name;
+          state.details.orgAddress = m.address;
+          state.details.orgTown = m.town;
+          state.details.orgPostcode = m.postcode;
+          input.value = m.name;
+          ['orgAddress', 'orgTown', 'orgPostcode'].forEach(id => {
+            const el = form.querySelector('#' + id);
+            if (el) {
+              el.value = state.details[id];
+              const f = el.closest('.form-field');
+              if (f) { f.classList.remove('invalid'); const e = f.querySelector('.field-error'); if (e) e.hidden = true; }
+            }
+          });
+          close();
+        }));
+    };
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = input.value.trim().toLowerCase();
+        if (q.length < 2) { close(); return; }
+        const matches = REGISTER.filter(m =>
+          m.name.toLowerCase().includes(q) || m.town.toLowerCase().includes(q) || m.postcode.toLowerCase().includes(q)
+        ).slice(0, 6);
+        open(matches);
+      }, 120);
+    });
+
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    document.addEventListener('click', e => {
+      if (!box.hidden && !e.target.closest('.combo') && !e.target.closest('#org-results')) close();
     });
   }
 
@@ -599,6 +680,7 @@
           <div>
             <p class="doc-label">Prepared for</p>
             <p><strong>${isPrivate ? (d.contactName || '—') : (d.org || '—')}</strong></p>
+            ${!isPrivate ? `<p>${[d.orgAddress, d.orgTown, d.orgPostcode].filter(Boolean).join(', ') || '—'}</p>` : ''}
             ${!isPrivate && d.caseref ? `<p>Ref: ${d.caseref}</p>` : ''}
             ${!isPrivate ? `<p>Attn: ${d.contactName || '—'}</p>` : ''}
           </div>

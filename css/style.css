@@ -466,3 +466,60 @@ a, button, input, [role='button'] {
   .panel-actions { flex-direction: column-reverse; }
   .panel-actions .btn { width: 100%; }
 }
+
+/* ---------- drug chips (what each panel tests for) ---------- */
+.chips-label {
+  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--color-text-faint); margin-bottom: var(--space-2);
+}
+.drug-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-3); }
+.drug-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--text-xs); line-height: 1.35;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--color-surface-offset); color: var(--color-text-muted);
+  border: 1px solid transparent;
+}
+.drug-chip.add { background: var(--color-callout); color: #1f6a7d; }
+.drug-chip.base {
+  background: var(--color-surface); border: 1px dashed var(--color-border);
+  color: var(--color-text-muted); font-weight: 600;
+}
+.drug-chip.base svg { color: var(--color-primary); flex-shrink: 0; }
+.panel-card.unavailable .drug-chip { opacity: 0.55; }
+
+/* ---------- standard vs extended compare note ---------- */
+.compare-note {
+  display: flex; gap: var(--space-3); align-items: flex-start;
+  background: var(--color-callout); border-radius: 10px;
+  padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);
+  font-size: var(--text-sm); color: var(--color-text-muted);
+}
+.compare-note svg { color: var(--color-primary); flex-shrink: 0; margin-top: 2px; }
+.compare-note strong { color: var(--color-text); }
+
+/* ---------- organisation register search ---------- */
+.combo { position: relative; }
+.combo-results {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 10px; box-shadow: 0 12px 32px rgba(44, 45, 47, 0.14);
+  max-height: 300px; overflow-y: auto;
+}
+.combo-item {
+  display: block; width: 100%; text-align: left;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface); border: 0; cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+}
+.combo-item:hover, .combo-item:focus-visible { background: var(--color-callout); }
+.combo-item strong { display: block; font-size: var(--text-sm); color: var(--color-text); }
+.combo-item span { display: block; font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px; }
+.combo-note {
+  padding: var(--space-3) var(--space-4); margin: 0;
+  font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-bg);
+}
+
+/* ---------- two-column field row ---------- */
+.form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--space-4); }
+@media (max-width: 560px) { .form-2col { grid-template-columns: 1fr; } }
