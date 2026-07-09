@@ -682,7 +682,7 @@
             <p><strong>You request the visit — we confirm availability.</strong></p>
             <p>${isPrivate
               ? `As soon as your payment clears, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`
-              : `As soon as your fee note is submitted, you tell us your preferred date and time of day along with a purchase order number — that is all we need to confirm the collection. Our team confirms availability within one working day, along with the collection room and the final collection fee. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
+              : `As soon as your fee note is submitted, you tell us where to come and your preferred date and time of day. We confirm availability within one working day, along with the collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) — once confirmed, a purchase order number confirms the collection. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
@@ -721,6 +721,13 @@
         sample.caseref = 'TEST-001';
       }
       if (hasDSD) sample.dsdDrug = 'Codeine';
+      if (isPrivate && state.collection === 'onsite') {
+        sample.onsiteVenueName = 'Example Workplace Ltd';
+        sample.onsiteVenueAddress = '10 Example Road';
+        sample.onsiteVenueTown = 'Belfast';
+        sample.onsiteVenuePostcode = 'BT2 2BB';
+        sample.onsiteVenueNotes = 'Ask for reception';
+      }
       Object.assign(state.details, sample);
       renderDetailsForm();
     });
@@ -895,7 +902,7 @@
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
-              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' A purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.`
+              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. The donor must bring photo ID.`
               : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
           </div>
           <div>
@@ -1182,7 +1189,19 @@
         </div>
         <div class="bk-cal-card">
           <div class="bk-arrange">
-            <h2>When would suit?</h2>
+            <h2>Arrange the visit</h2>
+            <div class="req-field">
+              <p class="req-label">Collection address</p>
+              ${!isPrivate ? `<p class="req-hint" style="margin-top:0; margin-bottom: var(--space-2);">We have prefilled your organisation address — change it if the collection happens somewhere else.</p>` : ''}
+              <input type="text" class="req-input" id="req-venue" placeholder="Organisation or venue name" value="${d.onsiteVenueName ?? (!isPrivate ? d.org || '' : '')}" autocomplete="off">
+              <input type="text" class="req-input" id="req-address" placeholder="Building and street" value="${d.onsiteVenueAddress ?? (!isPrivate ? d.orgAddress || '' : '')}" autocomplete="off">
+              <div class="req-2col">
+                <input type="text" class="req-input" id="req-town" placeholder="Town or city" value="${d.onsiteVenueTown ?? (!isPrivate ? d.orgTown || '' : '')}" autocomplete="off">
+                <input type="text" class="req-input" id="req-postcode" placeholder="Postcode" value="${d.onsiteVenuePostcode ?? (!isPrivate ? d.orgPostcode || '' : '')}" autocomplete="off">
+              </div>
+              <input type="text" class="req-input" id="req-access" placeholder="Access note — optional, e.g. ask for reception" value="${d.onsiteVenueNotes || ''}" autocomplete="off">
+              <p class="req-hint">Professional environments only — a private collection room must be made available.</p>
+            </div>
             <div class="req-field">
               <p class="req-label">Preferred date</p>
               <div class="req-opts" id="req-when">
@@ -1201,10 +1220,14 @@
             </div>
             ${!isPrivate ? `
             <div class="req-field">
-              <p class="req-label">Purchase order number</p>
+              <p class="req-label">Purchase order number <span class="req-optional">optional at this stage</span></p>
               <input type="text" class="req-input" id="req-po" placeholder="e.g. PO-2026-0147" value="${d.caseref || ''}" autocomplete="off">
-              <p class="req-hint">A purchase order number is needed to confirm the collection. The report is released on receipt of payment of the fee note.</p>
+              <p class="req-hint">Not needed to send the request — we ask for a purchase order once the test and collection fee are confirmed. The report is released on receipt of payment of the fee note.</p>
             </div>` : ''}
+            <div class="req-fee">
+              ${icon('info', 17)}
+              <span>Collection fee — from <strong>${gbp(ONSITE_COLLECTION_FROM)} + VAT</strong>. The final fee depends on location and is confirmed with you before the visit.</span>
+            </div>
             <div class="bk-actions">
               <button class="btn primary" id="bk-onsite">Request the visit</button>
             </div>
@@ -1216,10 +1239,20 @@
     const dateInput = document.getElementById('req-date');
     const poInput = document.getElementById('req-po');
     const submitBtn = document.getElementById('bk-onsite');
-    const refresh = () => {
-      submitBtn.disabled = (req.when === 'date' && !req.date) || (poInput && !poInput.value.trim());
+    const venueEls = {
+      name: document.getElementById('req-venue'),
+      address: document.getElementById('req-address'),
+      town: document.getElementById('req-town'),
+      postcode: document.getElementById('req-postcode'),
+      notes: document.getElementById('req-access')
     };
-    if (poInput) poInput.addEventListener('input', refresh);
+    const venueKeys = { name: 'onsiteVenueName', address: 'onsiteVenueAddress', town: 'onsiteVenueTown', postcode: 'onsiteVenuePostcode', notes: 'onsiteVenueNotes' };
+    const refresh = () => {
+      const venueOk = ['name', 'address', 'town', 'postcode'].every(k => venueEls[k].value.trim());
+      submitBtn.disabled = (req.when === 'date' && !req.date) || !venueOk;
+    };
+    Object.entries(venueEls).forEach(([k, el]) =>
+      el.addEventListener('input', () => { state.details[venueKeys[k]] = el.value; refresh(); }));
     document.getElementById('req-when').addEventListener('click', e => {
       const b = e.target.closest('[data-when]'); if (!b) return;
       req.when = b.dataset.when;
@@ -1237,7 +1270,15 @@
       const dateLabel = req.when === 'asap'
         ? 'As soon as possible'
         : new Date(req.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      state.booking = { request: true, typeLabel: type.label, dateLabel, window: req.window, location: locLabel(), po: poInput ? poInput.value.trim() : null };
+      state.booking = {
+        request: true, typeLabel: type.label, dateLabel, window: req.window, location: locLabel(),
+        po: poInput && poInput.value.trim() ? poInput.value.trim() : null,
+        venue: {
+          name: venueEls.name.value.trim(), address: venueEls.address.value.trim(),
+          town: venueEls.town.value.trim(), postcode: venueEls.postcode.value.trim(),
+          notes: venueEls.notes.value.trim()
+        }
+      };
       state.bookingSkipped = false;
       state.onsiteArranged = true;
       goTo(8);
@@ -1253,7 +1294,7 @@
       + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
     const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
-      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ''} A witness may be required to be present, and the donor brings photo ID.`]
+      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings photo ID.`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
