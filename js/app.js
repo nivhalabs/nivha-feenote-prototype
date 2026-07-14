@@ -1,6 +1,27 @@
-/* NIVHA Fee Note wizard — simulation, no data leaves the page */
+/* NIVHA Fee Note wizard — payment and booking are simulated; submissions are
+   recorded through the fee note API when the service is available. */
 (function () {
   'use strict';
+
+  /* ---------------- API (fee note service) ---------------- */
+  async function apiCall(method, path, body) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    try {
+      const res = await fetch(path, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl.signal
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+  const API = {
+    post: (path, body) => apiCall('POST', path, body),
+    patch: (path, body) => apiCall('PATCH', path, body)
+  };
 
   /* ---------------- state ---------------- */
   const state = {
@@ -157,7 +178,7 @@
     grid.querySelectorAll('.route-card').forEach(card =>
       card.addEventListener('click', () => {
         state.route = card.dataset.route;
-        state.refNumber = (state.route === 'private' ? 'PCN-' : 'CCN-') + (state.route === 'private' ? '0214' : '9281');
+        state.refNumber = null; // assigned by the fee note service on submission
         if (state.route !== 'private') state.privateAck = false;
         if (state.route === 'private' && state.collection === 'onsite') state.collection = null;
         renderRoutes();
@@ -878,7 +899,7 @@
             </div>
           </div>
           <div class="doc-meta">
-            <p><span>Fee note</span><strong>${state.refNumber}</strong></p>
+            <p><span>Fee note</span><strong>${state.refNumber || 'Assigned on submission'}</strong></p>
             <p><span>Date</span><strong>${today}</strong></p>
           </div>
         </div>
@@ -942,8 +963,58 @@
     document.getElementById('submit-btn').disabled = !e.target.checked;
   });
 
-  document.getElementById('submit-btn').addEventListener('click', () => {
+  function buildFeeNotePayload() {
+    const t = computeTotals();
+    const d = state.details;
+    const lines = [...state.basket.keys()].map(code => {
+      const p = byCode[code], item = state.basket.get(code);
+      return { code: disp(p.code), label: lineLabel(p, item), amount: lineTotal(p, item) };
+    });
+    const summary = lines.map(l => `${l.code} · ${l.label} — £${l.amount.toFixed(2)}`);
+    if (t.saving) summary.push(`Combined rate — H-DP1 + H-DP3 — −£${t.saving.toFixed(2)}`);
+    if (t.fastTrack) summary.push(`Fast track — £${t.fastTrack.toFixed(2)}`);
+    if (t.collection) summary.push(`Collection — Derry~Londonderry office — £${t.collection.toFixed(2)}`);
+    if (t.onsite) summary.push('On-site collection — priced on request');
+    let gateEmail = '';
+    try { gateEmail = localStorage.getItem(GATE_KEY) || ''; } catch (e) {}
+    return {
+      route: state.route,
+      location: state.collection,
+      fastTrack: !!state.fastTrack,
+      details: {
+        org: d.org || '', orgAddress: d.orgAddress || '', orgTown: d.orgTown || '', orgPostcode: d.orgPostcode || '',
+        caseref: d.caseref || '', costCentre: d.costCentre || '',
+        approverName: d.approverName || '', authoriserName: d.authoriserName || '',
+        contactName: d.contactName || '', contactEmail: d.contactEmail || '', contactPhone: d.contactPhone || '',
+        donorName: d.donorName || '', donorDob: d.donorDob || '', dsdDrug: d.dsdDrug || ''
+      },
+      panels: lines,
+      panelSummary: summary.join('\n') + `\n—\nSubtotal £${t.net.toFixed(2)} · VAT £${t.vat.toFixed(2)} · Total £${t.total.toFixed(2)}`
+        + (d.dsdDrug ? `\nSingle specified drug: ${d.dsdDrug}` : ''),
+      totals: { net: t.net, vat: t.vat, total: t.total },
+      needsPriceReview: !!d.dsdDrug,
+      leadEmail: gateEmail
+    };
+  }
+
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-btn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.innerHTML = '<span class="spinner"></span> Submitting';
     saveClientRecord();
+    try {
+      const res = await API.post('/api/fee-notes', buildFeeNotePayload());
+      state.refNumber = res.reference;
+      state.recordId = res.recordId || null;
+    } catch (e) {
+      /* Service unreachable — continue the walkthrough with a placeholder reference */
+      state.refNumber = 'FN-9' + String(Date.now()).slice(-3);
+      state.recordId = null;
+    }
+    btn.disabled = false;
+    btn.textContent = original;
     goTo(state.route === 'private' ? 6 : 7);
   });
 
@@ -1015,6 +1086,7 @@
       btn.innerHTML = '<span class="spinner"></span> Processing payment';
       setTimeout(() => {
         state.payment = { receipt: 'NV-8362', amount: t.total };
+        if (state.recordId) API.patch('/api/fee-notes/' + state.recordId, { event: 'paid', amount: t.total }).catch(() => {});
         goTo(7);
       }, 1400);
     });
@@ -1183,6 +1255,10 @@
         location: locLabel()
       };
       state.bookingSkipped = false;
+      if (state.recordId) {
+        const appointmentAt = /^\d{2}:\d{2}$/.test(bk.time) ? bk.date + 'T' + bk.time + ':00' : null;
+        API.patch('/api/fee-notes/' + state.recordId, { event: 'booked', appointmentAt, label: type.label }).catch(() => {});
+      }
       goTo(8);
     });
     wrap.querySelector('#bk-skip').addEventListener('click', () => {
@@ -1400,6 +1476,20 @@
       };
       state.bookingSkipped = false;
       state.onsiteArranged = true;
+      if (state.recordId) {
+        const b = state.booking;
+        const detail = [
+          `When: ${b.dateLabel} · ${b.window}`,
+          `Venue: ${b.venue.name}, ${b.venue.address}, ${b.venue.town} ${b.venue.postcode}`,
+          b.venue.notes ? `Access notes: ${b.venue.notes}` : '',
+          `On-site contact: ${b.contact.name} · ${b.contact.phone}`,
+          b.po ? `PO: ${b.po}` : 'PO: to follow once the collection fee is confirmed',
+          `Risk flag: ${b.safeguarding.risk === 'yes' ? 'YES — ' + b.safeguarding.riskDetail : 'no'}`,
+          b.safeguarding.support ? `Support needs: ${b.safeguarding.support}` : '',
+          b.safeguarding.guardian ? 'Donor under 18 — guardian consent confirmed' : ''
+        ].filter(Boolean).join('\n');
+        API.patch('/api/fee-notes/' + state.recordId, { event: 'onsite-request', detail }).catch(() => {});
+      }
       goTo(8);
     });
     refresh();
@@ -1547,6 +1637,7 @@
 
   function unlock(email) {
     try { localStorage.setItem(GATE_KEY, email.trim().toLowerCase()); } catch (e) {}
+    API.post('/api/leads', { email: email.trim().toLowerCase(), source: 'fee-note gate' }).catch(() => {});
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(clientKey(email)) || 'null'); } catch (e) {}
     if (saved && saved.details) {

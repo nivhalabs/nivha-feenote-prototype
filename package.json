@@ -2,11 +2,11 @@
   "name": "nivha-feenote-prototype",
   "version": "1.0.0",
   "private": true,
-  "description": "NIVHA medico-legal fee note — guided wizard prototype (design simulation)",
+  "description": "NIVHA fee note platform v2 — guided wizard + Airtable API",
   "scripts": {
-    "start": "serve . -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "node server.js"
   },
   "dependencies": {
-    "serve": "^14.2.3"
+    "express": "^4.19.2"
   }
 }
