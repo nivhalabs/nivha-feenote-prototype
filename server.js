@@ -102,6 +102,20 @@ function feeNoteFields(p, reference) {
     'Submitted at': new Date().toISOString()
   };
   if (d.donorDob && /^\d{4}-\d{2}-\d{2}$/.test(d.donorDob)) fields['Donor DOB'] = d.donorDob;
+  if (p.acceptance && p.acceptance.declaration) {
+    const a = p.acceptance;
+    const bits = ['Declaration ticked — details correct, authorised to instruct.'];
+    if (a.dataSharingTermsVersion) {
+      bits.push(`Data Sharing Terms accepted (click-wrap) — ${a.dataSharingTermsVersion} — /data-sharing-terms`);
+    }
+    if (a.explicitConsent) {
+      bits.push('Explicit consent given to processing of personal information, including special category (health) data — UK/EU GDPR Art 9(2)(a). Withdrawal possible before analysis begins.');
+    }
+    bits.push(`Accepted by: ${d.contactName || 'unknown'} <${d.contactEmail || ''}>`);
+    if (a.acceptedAt) bits.push(`Accepted at (client): ${a.acceptedAt}`);
+    bits.push(`Recorded at (server): ${new Date().toISOString()}`);
+    fields['Acceptance record'] = bits.join('\n');
+  }
   return fields;
 }
 

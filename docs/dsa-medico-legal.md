@@ -29,6 +29,8 @@ together referred to as the "Parties" and each a "Party".
 
 **Route variant:** Complete Schedule 1 (Trust instructions) **or** Schedule 2 (Solicitor instructions) as applicable, and delete the schedule that does not apply. The general clauses of this Agreement apply to both routes.
 
+**When to use this executed version:** The default acceptance route is click-wrap acceptance of the published **NIVHA Data Sharing Terms — Medico-Legal Drug and Alcohol Testing** at fee note submission, recorded against the CCN with version, date, and time. This executed agreement is the countersigned equivalent, offered to instructing organisations whose information governance procedures require a signed document. The substantive terms are identical.
+
 ## 1. Background and Recitals
 
 (A) The Instructing Organisation instructs NIVHA to perform drug and/or alcohol testing in connection with family or care proceedings, other legal proceedings, or the Instructing Organisation's statutory duties towards children and families (the "Instructed Testing").

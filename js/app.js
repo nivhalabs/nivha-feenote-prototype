@@ -18,6 +18,10 @@
       return await res.json();
     } finally { clearTimeout(timer); }
   }
+  /* Published Data Sharing Terms version accepted by Trust/solicitor routes.
+     Keep in step with docs/data-sharing-terms.md and /data-sharing-terms. */
+  const DST_VERSION = 'v0.1 (draft, July 2026)';
+
   const API = {
     post: (path, body) => apiCall('POST', path, body),
     patch: (path, body) => apiCall('PATCH', path, body),
@@ -960,16 +964,52 @@
           <div>
             <p class="doc-label">Reports</p>
             <p>A written report with expert interpretation is issued where applicable. Interim reports are not normally issued without part-payment.</p>
-            <p class="doc-small">Court and reporting, where required: report preparation and additional reports £150 per hour; court attendance £600 for a half day (up to 4 hours) or £1,000 for a full day; cancellation within 48 hours of court attendance, 50% of the agreed fee. Where the instruction is legally aided, the applicable legal aid authority's rates are observed.</p>
+            ${isPrivate ? '' : `<p class="doc-small">Court and reporting rates, where required, are itemised on page 2 of the issued fee note. Where the instruction is legally aided, the applicable legal aid authority's rates are observed.</p>`}
           </div>
         </div>
       </div>`;
+
+    renderDeclaration();
   }
 
-  /* ---------------- submit ---------------- */
-  document.getElementById('declaration-check').addEventListener('change', e => {
-    document.getElementById('submit-btn').disabled = !e.target.checked;
-  });
+  /* ---------------- declaration & acceptance (route-aware) ---------------- */
+  function renderDeclaration() {
+    const box = document.getElementById('declaration-box');
+    const isPrivate = state.route === 'private';
+    const d = state.details;
+    if (!state.acceptance) state.acceptance = { declaration: false, consent: false };
+    const a = state.acceptance;
+
+    if (isPrivate) {
+      box.innerHTML = `
+        <label class="check-row">
+          <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
+          <span>I confirm the details above are correct and that I am authorised to instruct this testing.</span>
+        </label>
+        <label class="check-row">
+          <input type="checkbox" id="consent-check" ${a.consent ? 'checked' : ''}>
+          <span>I consent to NIVHA processing the personal information in this fee note — including sensitive test information — to provide the testing service, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
+        </label>
+        <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net — collection and cancellation fees already incurred remain payable. ${d.selfDonor ? '' : 'The person being tested confirms their own agreement at the collection appointment. '}Your consent is recorded against this fee note with the date and time.</p>`;
+    } else {
+      const org = d.org ? d.org : 'my organisation';
+      box.innerHTML = `
+        <label class="check-row">
+          <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
+          <span>I confirm the details above are correct, that I am authorised to instruct this testing on behalf of ${org}, and that I accept NIVHA's <a href="/data-sharing-terms" target="_blank" rel="noopener">Data Sharing Terms</a> for medico-legal instructions.</span>
+        </label>
+        <p class="data-note">The Data Sharing Terms set out how NIVHA and your organisation handle the information in this fee note as independent controllers — including the specialist providers we use, security, retention and breach notification. Your acceptance is recorded against this fee note with the version, date and time. A countersigned copy is available on request. Our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a> explains how we handle personal information, including donor details.</p>`;
+    }
+
+    const checks = [...box.querySelectorAll('input[type="checkbox"]')];
+    const sync = () => {
+      a.declaration = !!document.getElementById('declaration-check')?.checked;
+      a.consent = isPrivate ? !!document.getElementById('consent-check')?.checked : false;
+      document.getElementById('submit-btn').disabled = !checks.every(c => c.checked);
+    };
+    checks.forEach(c => c.addEventListener('change', sync));
+    sync();
+  }
 
   function buildFeeNotePayload() {
     const t = computeTotals();
@@ -1005,7 +1045,13 @@
         + (d.dsdDrug ? `\nSingle specified drug: ${d.dsdDrug}` : ''),
       totals: { net: t.net, vat: t.vat, total: t.total },
       needsPriceReview: !!d.dsdDrug,
-      leadEmail: gateEmail
+      leadEmail: gateEmail,
+      acceptance: {
+        declaration: true,
+        dataSharingTermsVersion: state.route !== 'private' ? DST_VERSION : null,
+        explicitConsent: state.route === 'private',
+        acceptedAt: new Date().toISOString()
+      }
     };
   }
 

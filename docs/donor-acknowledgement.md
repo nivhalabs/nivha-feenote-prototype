@@ -22,7 +22,8 @@ This document contains the GDPR wording to be added to the legal (medico-legal) 
 
 Rules for collectors:
 
-- The acknowledgement must be completed **before the sample is taken**, at every collection, with no exceptions.
+- Sections A–D must be read with the donor, and agreement to sampling confirmed, **before the sample is taken**, at every collection, with no exceptions.
+- The donor signs **once**, immediately after sealing, at the same moment as the chain of custody paperwork — one combined signature covers identity, agreement to sampling, the data notice, and the medication disclosures (Section E). Do not ask for a second, separate GDPR signature.
 - The donor must be offered the NIVHA medico-legal privacy notice (paper copy or the link/QR code) **before** signing. Record their choice — do not skip this step if they decline a copy; offering it is what matters.
 - Never tell a donor their processing is "based on consent" for Trust or solicitor instructions — it is not (see Section C). Their signature records **agreement to sampling** and confirmation of the information given, not a GDPR lawful basis.
 - If the donor refuses to sign or refuses sampling, do not collect. Record the refusal and notify the instructing party — see Section C wording, which tells the donor this will happen.
@@ -104,15 +105,13 @@ You do not have to disclose anything, but anything you do disclose will be recor
 | Anything else you wish to record | [ ] |
 | Nothing to disclose | ☐ |
 
-## Section E — Declarations and Signatures
+## Section E — Donor Declaration and Signature
 
-**Donor declaration.** Please read each statement and tick to confirm:
+**One signature, given with the chain of custody paperwork.** By signing below I confirm all of the following:
 
-- ☐ My identity has been verified and the details recorded about me on this form are correct.
-- ☐ The sample was taken from me today, was sealed in my presence with tamper-evident seals, and the seal numbers recorded match the seals used.
-- ☐ I agree to provide this sample for the testing described in Section A. I understand who will receive the results (Section B) and the legal basis for the testing (Section C / C-P).
-- ☐ I have been offered the NIVHA medico-legal privacy notice: ☐ paper copy taken · ☐ link/QR provided · ☐ declined a copy (offer recorded).
-- ☐ The medication and product-use information I have given in Section D is complete and accurate to the best of my knowledge.
+My identity has been verified and the details recorded about me on this form are correct. The sample was taken from me today, was sealed in my presence with tamper-evident seals, and the seal numbers recorded match the seals used. I agreed to provide this sample for the testing described in Section A before it was taken, and I understand who will receive the results (Section B) and the legal basis for the testing (Section C / C-P). I have been offered the NIVHA medico-legal privacy notice. The medication and product-use information I have given in Section D is complete and accurate to the best of my knowledge.
+
+Privacy notice offer (collector to record): ☐ paper copy taken · ☐ link/QR provided · ☐ declined a copy (offer recorded)
 
 | Donor | |
 |---|---|
@@ -149,6 +148,7 @@ You do not have to disclose anything, but anything you do disclose will be recor
 In particular, the following aspects require qualified legal review:
 
 - The framing of "agreement to sampling" as distinct from a GDPR lawful basis, and the consequences-of-refusal wording;
+- The adequacy of a single combined donor signature (identity, sampling agreement, data notice, medication disclosures) given alongside the chain of custody signature, rather than itemised tick-box confirmations;
 - The under-18 parent/guardian consent provisions, including Gillick competence considerations and the age threshold applicable in each jurisdiction;
 - The private-client explicit consent wording (Section C-P), including the withdrawal and chargeability terms and their interaction with consumer law;
 - The medication disclosure wording, ensuring disclosures remain genuinely voluntary;
