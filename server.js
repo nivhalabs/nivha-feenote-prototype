@@ -73,6 +73,7 @@ function feeNoteFields(p, reference) {
     'Org town': d.orgTown || '',
     'Org postcode': d.orgPostcode || '',
     'Case / PO reference': d.caseref || '',
+    'Legal Aid reference': d.legalAidRef || '',
     'Cost centre': d.costCentre || '',
     'Approver name': d.approverName || '',
     'Authoriser name': d.authoriserName || '',

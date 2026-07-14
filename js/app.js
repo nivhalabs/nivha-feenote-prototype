@@ -682,6 +682,7 @@
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
         ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the fee note so your accounts team can match it.' })}
+        ${state.route === 'solicitor' ? field('legalAidRef', 'Legal Aid reference', { hint: 'If this fee note will be submitted to the Legal Aid Authority, the reference prints on the fee note so it can go straight to the court or admin office.' }) : ''}
         ${state.route === 'trust' ? `
         ${field('costCentre', 'Cost centre', { required: true, hint: 'So your finance team can allocate the fee.' })}
         <div class="form-2col">
@@ -757,6 +758,7 @@
         sample.orgTown = 'Belfast';
         sample.orgPostcode = 'BT1 1AA';
         sample.caseref = 'TEST-001';
+        if (state.route === 'solicitor') sample.legalAidRef = 'LA-2026-00123';
         if (state.route === 'trust') {
           sample.costCentre = 'CC-4021';
           sample.approverName = 'Test Approver';
@@ -910,6 +912,7 @@
             <p><strong>${isPrivate ? (d.contactName || '—') : (d.org || '—')}</strong></p>
             ${!isPrivate ? `<p>${[d.orgAddress, d.orgTown, d.orgPostcode].filter(Boolean).join(', ') || '—'}</p>` : ''}
             ${!isPrivate && d.caseref ? `<p>Ref: ${d.caseref}</p>` : ''}
+            ${state.route === 'solicitor' && d.legalAidRef ? `<p>Legal Aid reference: ${d.legalAidRef}</p>` : ''}
             ${state.route === 'trust' && d.costCentre ? `<p>Cost centre: ${d.costCentre}</p>` : ''}
             ${state.route === 'trust' && (d.approverName || d.authoriserName) ? `<p>${[d.approverName ? 'Approver: ' + d.approverName : '', d.authoriserName ? 'Authoriser: ' + d.authoriserName : ''].filter(Boolean).join(' · ')}</p>` : ''}
             ${!isPrivate ? `<p>Attn: ${d.contactName || '—'}</p>` : ''}
@@ -953,6 +956,7 @@
           <div>
             <p class="doc-label">Reports</p>
             <p>A written report with expert interpretation is issued where applicable. Interim reports are not normally issued without part-payment.</p>
+            <p class="doc-small">Court and reporting, where required: report preparation and additional reports £150 per hour; court attendance £600 for a half day (up to 4 hours) or £1,000 for a full day; cancellation within 48 hours of court attendance, 50% of the agreed fee. Where the instruction is legally aided, the applicable legal aid authority's rates are observed.</p>
           </div>
         </div>
       </div>`;
@@ -975,6 +979,10 @@
     if (t.fastTrack) summary.push(`Fast track — £${t.fastTrack.toFixed(2)}`);
     if (t.collection) summary.push(`Collection — Derry~Londonderry office — £${t.collection.toFixed(2)}`);
     if (t.onsite) summary.push('On-site collection — priced on request');
+    if (t.saving) lines.push({ code: '', label: 'Combined rate — H-DP1 + H-DP3', amount: -t.saving });
+    if (t.fastTrack) lines.push({ code: '', label: 'Fast track', amount: t.fastTrack });
+    if (t.collection) lines.push({ code: '', label: 'Collection — Derry~Londonderry office', amount: t.collection });
+    if (t.onsite) lines.push({ code: '', label: 'On-site collection — priced on request', amount: 0 });
     let gateEmail = '';
     try { gateEmail = localStorage.getItem(GATE_KEY) || ''; } catch (e) {}
     return {
@@ -983,7 +991,7 @@
       fastTrack: !!state.fastTrack,
       details: {
         org: d.org || '', orgAddress: d.orgAddress || '', orgTown: d.orgTown || '', orgPostcode: d.orgPostcode || '',
-        caseref: d.caseref || '', costCentre: d.costCentre || '',
+        caseref: d.caseref || '', costCentre: d.costCentre || '', legalAidRef: d.legalAidRef || '',
         approverName: d.approverName || '', authoriserName: d.authoriserName || '',
         contactName: d.contactName || '', contactEmail: d.contactEmail || '', contactPhone: d.contactPhone || '',
         donorName: d.donorName || '', donorDob: d.donorDob || '', dsdDrug: d.dsdDrug || ''
@@ -1568,7 +1576,7 @@
   function saveClientRecord() {
     const email = (state.details.contactEmail || '').trim().toLowerCase();
     if (!email) return;
-    const keys = ['org', 'orgAddress', 'orgTown', 'orgPostcode', 'caseref', 'costCentre',
+    const keys = ['org', 'orgAddress', 'orgTown', 'orgPostcode', 'caseref', 'costCentre', 'legalAidRef',
       'approverName', 'authoriserName', 'contactName', 'contactEmail', 'contactPhone'];
     const details = {};
     keys.forEach(k => { if (state.details[k]) details[k] = state.details[k]; });

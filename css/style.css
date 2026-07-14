@@ -412,6 +412,7 @@ a, button, input, [role='button'] {
 .doc-total td { border-top: 2px solid var(--color-text); font-size: var(--text-base); font-weight: 700; color: var(--color-text) !important; padding-top: var(--space-3); }
 .doc-terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-5); background: var(--color-callout); border-radius: var(--radius-md); padding: var(--space-5); font-size: var(--text-xs); }
 .doc-terms p:not(.doc-label) { color: var(--color-text-muted); }
+.doc-small { font-size: var(--text-xs); color: var(--color-text-faint); margin-top: var(--space-2); }
 
 .declaration { max-width: 760px; margin-top: var(--space-6); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-5); }
 

@@ -360,3 +360,16 @@ const REGISTER = [
   { name: 'Wilson Nesbitt Solicitors', address: '33 Hamilton Road', town: 'Bangor', postcode: 'BT20 4LF' },
   { name: 'MKB Law', address: '9 Upper Crescent', town: 'Belfast', postcode: 'BT7 1NT' }
 ];
+
+/* Court and reporting — standing rates (updated July 2026).
+   Where the instruction is legally aided, the applicable legal aid
+   authority's rates are observed. */
+const COURT_RATES = {
+  lines: [
+    { label: 'Report preparation / additional reports (per hour)', price: 150 },
+    { label: 'Court attendance — half day (up to 4 hours)', price: 600 },
+    { label: 'Court attendance — full day', price: 1000 },
+    { label: 'Cancellation within 48 hours of court attendance', text: '50% of the agreed fee' }
+  ],
+  note: "Where the instruction is legally aided, the applicable legal aid authority's rates are observed."
+};
