@@ -20,7 +20,11 @@
   }
   const API = {
     post: (path, body) => apiCall('POST', path, body),
-    patch: (path, body) => apiCall('PATCH', path, body)
+    patch: (path, body) => apiCall('PATCH', path, body),
+    get: path => fetch(path).then(r => r.json().then(data => {
+      if (!r.ok) { const e = new Error(data.error || r.statusText); e.status = r.status; throw e; }
+      return data;
+    }))
   };
 
   /* ---------------- state ---------------- */
@@ -1604,7 +1608,7 @@
           <button class="btn primary" id="gate-send">Email my secure link</button>
         </div>
         <p class="gate-error" id="gate-error" hidden>Enter a valid email address to receive your link.</p>
-        <p class="gate-small">We use your email to send the link and may follow up about your fee note.</p>
+        <p class="gate-small">We use your email address to send your secure link and to follow up about your fee note. How we handle personal information for medico-legal testing — including donor details — is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
         <p class="gate-small">Used NIVHA before? Use the same email and we prefill your organisation and contact details — never donor information.</p>
       </div>
       <div class="dev-fill-bar gate-dev">
@@ -1613,13 +1617,23 @@
         <button type="button" class="btn small ghost" id="dev-gate-return">Enter as returning client</button>
       </div>`;
 
-    gate.querySelector('#gate-send').addEventListener('click', () => {
+    gate.querySelector('#gate-send').addEventListener('click', async () => {
       const email = gate.querySelector('#gate-email').value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         gate.querySelector('#gate-error').hidden = false;
         return;
       }
-      showGateInbox(email);
+      const btn = gate.querySelector('#gate-send');
+      btn.disabled = true; btn.textContent = 'Sending\u2026';
+      try {
+        const resp = await API.post('/api/gate/request', { email: email.toLowerCase() });
+        showGateCode(email.toLowerCase(), resp);
+      } catch (e) {
+        const err = gate.querySelector('#gate-error');
+        err.textContent = 'We could not send your link just now. Please try again.';
+        err.hidden = false;
+        btn.disabled = false; btn.textContent = 'Email my secure link';
+      }
     });
     gate.querySelector('#gate-email').addEventListener('keydown', e => {
       if (e.key === 'Enter') gate.querySelector('#gate-send').click();
@@ -1628,24 +1642,52 @@
     gate.querySelector('#dev-gate-return').addEventListener('click', () => unlock('returning@example.com'));
   }
 
-  function showGateInbox(email) {
-    document.getElementById('gate-card').innerHTML = `
+  function showGateCode(email, resp) {
+    const card = document.getElementById('gate-card');
+    card.innerHTML = `
       <h2>Check your inbox</h2>
-      <p>We have sent a secure link to <strong>${email}</strong>. It stays valid for 24 hours.</p>
-      <div class="gate-inbox">
-        <p class="gate-inbox-meta">From: NIVHA Laboratory Services · Subject: Your secure fee note link</p>
-        <p>Hello — your link to the NIVHA fee note tool is below. It opens your itemised pricing and online booking.</p>
-        <button class="btn primary" id="gate-open">Open your fee note tool</button>
+      <p>We have sent a secure link and a six-digit code to <strong>${email}</strong>. Open the link, or enter the code below. Both stay valid for 24 hours.</p>
+      <div class="gate-form gate-code-form">
+        <input type="text" id="gate-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Six-digit code">
+        <button class="btn primary" id="gate-verify">Continue</button>
       </div>
-      <p class="gate-small">Prototype note: no email is actually sent — this preview stands in for the real message.</p>
+      <p class="gate-error" id="gate-code-error" hidden></p>
+      ${resp && resp.emailDryRun ? `<p class="gate-small gate-dev-hint">Prototype helper — email sending is switched off in this environment. Your code is <strong>${resp.devCode}</strong>.</p>` : ''}
+      <p class="gate-small">Nothing arrived after a couple of minutes? Check your junk folder, or <button type="button" class="linklike" id="gate-resend">send a fresh code</button>.</p>
       <button class="btn ghost small" id="gate-back">Use a different email</button>`;
-    document.getElementById('gate-open').addEventListener('click', () => unlock(email));
-    document.getElementById('gate-back').addEventListener('click', renderGate);
+    const codeInput = card.querySelector('#gate-code');
+    const showErr = msg => { const el = card.querySelector('#gate-code-error'); el.textContent = msg; el.hidden = false; };
+    const verify = async () => {
+      const code = codeInput.value.replace(/\D/g, '');
+      if (code.length !== 6) { showErr('Enter the six-digit code from your email.'); return; }
+      const btn = card.querySelector('#gate-verify');
+      btn.disabled = true; btn.textContent = 'Checking\u2026';
+      try {
+        await API.post('/api/gate/verify', { email, code });
+        unlock(email, { viaGate: true });
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Continue';
+        if (e.status === 410) showErr('That code has expired. Send a fresh one below.');
+        else if (e.status === 429) showErr('Too many attempts. Send a fresh code below.');
+        else showErr('That code does not match. Check your email and try again.');
+      }
+    };
+    card.querySelector('#gate-verify').addEventListener('click', verify);
+    codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+    codeInput.focus();
+    card.querySelector('#gate-resend').addEventListener('click', async () => {
+      try {
+        const fresh = await API.post('/api/gate/request', { email });
+        showGateCode(email, fresh);
+      } catch (e) { showErr('We could not send a fresh code just now. Please try again.'); }
+    });
+    card.querySelector('#gate-back').addEventListener('click', renderGate);
   }
 
-  function unlock(email) {
+  function unlock(email, opts = {}) {
     try { localStorage.setItem(GATE_KEY, email.trim().toLowerCase()); } catch (e) {}
-    API.post('/api/leads', { email: email.trim().toLowerCase(), source: 'fee-note gate' }).catch(() => {});
+    // The gate request already recorded the lead server-side; only post from dev shortcuts.
+    if (!opts.viaGate) API.post('/api/leads', { email: email.trim().toLowerCase(), source: 'fee-note gate' }).catch(() => {});
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(clientKey(email)) || 'null'); } catch (e) {}
     if (saved && saved.details) {
@@ -1664,9 +1706,23 @@
     goTo(1);
   }
 
-  function initGate() {
+  async function initGate() {
     seedDemoClient();
     renderGate();
+    // Magic link: /?gate=TOKEN arrives from the sign-in email — verify and unlock.
+    const token = new URLSearchParams(location.search).get('gate');
+    if (!token) return;
+    history.replaceState(null, '', location.pathname);
+    try {
+      const sess = await API.get('/api/gate/session/' + encodeURIComponent(token));
+      unlock(sess.email, { viaGate: true });
+    } catch (e) {
+      const err = document.getElementById('gate-error');
+      if (err) {
+        err.textContent = 'That secure link has expired. Enter your email and we send a fresh one.';
+        err.hidden = false;
+      }
+    }
   }
 
   /* ---------------- init ---------------- */

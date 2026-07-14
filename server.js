@@ -19,6 +19,11 @@ const AT_URL = 'https://api.airtable.com/v0';
 const DRY_RUN = !PAT;
 const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 1000 per process
 
+const crypto = require('crypto');
+const { gateEmail, bookLaterEmail, EMAIL_DRY_RUN } = require('./lib/email');
+const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
+const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
+
 /* ---------------- airtable helper ---------------- */
 async function at(method, pathPart, body) {
   const res = await fetch(`${AT_URL}/${BASE_ID}/${pathPart}`, {
@@ -108,6 +113,37 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, mode: DRY_RUN ? 'dry-run' : 'live' });
 });
 
+/* Lead upsert by email -> LegalSocial_Leads */
+async function upsertLead(email, source) {
+  const now = new Date().toISOString();
+  if (DRY_RUN) return { dryRun: true };
+  const q = new URLSearchParams({
+    filterByFormula: `LOWER({Email})='${escapeFormula(email)}'`,
+    pageSize: '1'
+  });
+  const found = await at('GET', `${LEADS_TABLE}?${q}`);
+  if (found.records.length) {
+    const rec = found.records[0];
+    const count = (rec.fields['Links requested'] || 0) + 1;
+    await at('PATCH', LEADS_TABLE, {
+      records: [{ id: rec.id, fields: { 'Last link sent': now, 'Links requested': count } }]
+    });
+    return { recordId: rec.id, returning: true };
+  }
+  const created = await at('POST', LEADS_TABLE, {
+    records: [{
+      fields: {
+        'Email': email,
+        'First seen': now,
+        'Last link sent': now,
+        'Links requested': 1,
+        'Source': String(source || 'fee-note gate').slice(0, 100)
+      }
+    }]
+  });
+  return { recordId: created.records[0].id, returning: false };
+}
+
 /* Gate email capture -> LegalSocial_Leads (upsert by email) */
 app.post('/api/leads', async (req, res) => {
   try {
@@ -115,39 +151,113 @@ app.post('/api/leads', async (req, res) => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return res.status(400).json({ ok: false, error: 'A valid email is required' });
     }
-    const now = new Date().toISOString();
-    if (DRY_RUN) return res.json({ ok: true, dryRun: true });
-
-    const q = new URLSearchParams({
-      filterByFormula: `LOWER({Email})='${escapeFormula(email)}'`,
-      pageSize: '1'
-    });
-    const found = await at('GET', `${LEADS_TABLE}?${q}`);
-    if (found.records.length) {
-      const rec = found.records[0];
-      const count = (rec.fields['Links requested'] || 0) + 1;
-      await at('PATCH', LEADS_TABLE, {
-        records: [{ id: rec.id, fields: { 'Last link sent': now, 'Links requested': count } }]
-      });
-      return res.json({ ok: true, recordId: rec.id, returning: true });
-    }
-    const created = await at('POST', LEADS_TABLE, {
-      records: [{
-        fields: {
-          'Email': email,
-          'First seen': now,
-          'Last link sent': now,
-          'Links requested': 1,
-          'Source': String(req.body.source || 'fee-note gate').slice(0, 100)
-        }
-      }]
-    });
-    res.json({ ok: true, recordId: created.records[0].id, returning: false });
+    const out = await upsertLead(email, req.body.source);
+    res.json({ ok: true, ...out });
   } catch (err) {
     console.error('POST /api/leads failed:', err.message);
     res.status(502).json({ ok: false, error: 'Could not record the email' });
   }
 });
+
+/* ---------------- landing gate: sign-in codes and magic links ----------------
+   In-memory store, 24 h validity. Fine for the pilot on a single Railway
+   instance; codes are reissued on request so a restart is not disruptive. */
+const gateByEmail = new Map(); // email -> { code, token, expires, attempts }
+const gateByToken = new Map(); // token -> email
+
+function issueGate(email) {
+  const prev = gateByEmail.get(email);
+  if (prev) gateByToken.delete(prev.token);
+  const entry = {
+    code: String(crypto.randomInt(100000, 1000000)),
+    token: crypto.randomBytes(24).toString('base64url'),
+    expires: Date.now() + 24 * 60 * 60 * 1000,
+    attempts: 0
+  };
+  gateByEmail.set(email, entry);
+  gateByToken.set(entry.token, email);
+  return entry;
+}
+
+app.post('/api/gate/request', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ ok: false, error: 'A valid email is required' });
+    }
+    const entry = issueGate(email);
+    upsertLead(email, 'fee-note gate').catch(err => console.error('lead upsert failed:', err.message));
+    await gateEmail({
+      baseUrl: BASE_URL,
+      to: email,
+      code: entry.code,
+      link: `${BASE_URL}/?gate=${entry.token}`
+    });
+    /* devCode keeps the walkthrough usable until POSTMARK_TOKEN is set */
+    res.json({ ok: true, emailDryRun: EMAIL_DRY_RUN, devCode: EMAIL_DRY_RUN ? entry.code : undefined });
+  } catch (err) {
+    console.error('POST /api/gate/request failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not send the email' });
+  }
+});
+
+app.post('/api/gate/verify', (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const code = String(req.body.code || '').trim();
+  const entry = gateByEmail.get(email);
+  if (!entry || Date.now() > entry.expires) {
+    return res.status(410).json({ ok: false, error: 'Code expired — request a new one' });
+  }
+  entry.attempts += 1;
+  if (entry.attempts > 6) {
+    return res.status(429).json({ ok: false, error: 'Too many attempts — request a new code' });
+  }
+  if (code !== entry.code) {
+    return res.status(401).json({ ok: false, error: 'That code does not match' });
+  }
+  res.json({ ok: true, email });
+});
+
+app.get('/api/gate/session/:token', (req, res) => {
+  const email = gateByToken.get(req.params.token);
+  const entry = email && gateByEmail.get(email);
+  if (!entry || Date.now() > entry.expires) {
+    return res.status(410).json({ ok: false, error: 'Link expired — request a new one' });
+  }
+  res.json({ ok: true, email });
+});
+
+/* Book-later nudge: after a delay, if the fee note still has no booking,
+   email a secure link so the appointment can be made later. */
+function scheduleBookLater(recordId) {
+  if (DRY_RUN || !recordId) return;
+  setTimeout(async () => {
+    try {
+      const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
+      const f = rec.fields || {};
+      const status = f['Status'] || '';
+      if (['Booked', 'On-site requested'].includes(status)) return;
+      if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
+      const email = (f['Contact email'] || '').trim().toLowerCase();
+      if (!email) return;
+      const entry = issueGate(email);
+      await bookLaterEmail({
+        baseUrl: BASE_URL,
+        to: email,
+        reference: f['Reference'] || '',
+        isPrivate: f['Route'] === 'Private',
+        link: `${BASE_URL}/?gate=${entry.token}`
+      });
+      await at('PATCH', FEE_TABLE, {
+        records: [{ id: recordId, fields: { 'Chase emails sent': (f['Chase emails sent'] || 0) + 1 } }],
+        typecast: true
+      });
+      console.log(`book-later email sent for ${f['Reference']} (${recordId})`);
+    } catch (err) {
+      console.error('book-later check failed:', err.message);
+    }
+  }, BOOK_EMAIL_DELAY_MS);
+}
 
 /* Wizard submission -> LegalSocial_FeeNote_v2 */
 app.post('/api/fee-notes', async (req, res) => {
@@ -193,6 +303,10 @@ app.post('/api/fee-notes', async (req, res) => {
       }
     }
 
+    // Trust/solicitor routes can book straight away; nudge later if they don't.
+    // Private waits for payment — the nudge is scheduled on the 'paid' event instead.
+    if (p.route !== 'private') scheduleBookLater(recordId);
+
     res.json({ ok: true, reference, recordId });
   } catch (err) {
     console.error('POST /api/fee-notes failed:', err.message);
@@ -236,6 +350,7 @@ app.patch('/api/fee-notes/:id', async (req, res) => {
       return res.json({ ok: true, dryRun: true });
     }
     await at('PATCH', FEE_TABLE, { records: [{ id, fields }], typecast: true });
+    if (event === 'paid') scheduleBookLater(id); // private route: paid, not yet booked
     res.json({ ok: true });
   } catch (err) {
     console.error('PATCH /api/fee-notes failed:', err.message);
