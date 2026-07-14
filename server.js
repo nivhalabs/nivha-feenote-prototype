@@ -373,13 +373,24 @@ app.patch('/api/fee-notes/:id', async (req, res) => {
 });
 
 /* ---------------- static site ---------------- */
+/* Serve only the public web assets. Server code, libraries, internal
+   documents and tooling must never be reachable over HTTP. */
 app.use((req, res, next) => {
   if (/\.(html|js|css)$/.test(req.path) || req.path === '/') {
     res.set('Cache-Control', 'no-cache');
   }
   next();
 });
-app.use(express.static(path.join(__dirname), { extensions: ['html'] }));
+
+const PUBLIC_PAGES = new Set(['/', '/index', '/index.html',
+  '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html']);
+app.use((req, res, next) => {
+  const p = req.path;
+  if (PUBLIC_PAGES.has(p) || p.startsWith('/css/') || p.startsWith('/js/') || p.startsWith('/assets/') || p === '/favicon.ico') return next();
+  if (p.startsWith('/api/')) return next();
+  return res.status(404).send('Not found');
+});
+app.use(express.static(path.join(__dirname), { extensions: ['html'], index: 'index.html' }));
 
 const port = process.env.PORT || 3000;
 app.listen(port, '0.0.0.0', () => {

@@ -1114,7 +1114,7 @@
           </div>
         </div>
         <form class="pay-card" id="pay-form" novalidate>
-          <div class="pay-brand">${icon('lock', 18)}<span class="pay-secure">Payments by Stripe · encrypted end to end</span></div>
+          <div class="pay-brand">${icon('lock', 18)}<span class="pay-secure">Secure card payment · encrypted end to end</span></div>
           <div class="form-field"><label for="pay-email">Email</label>
             <input type="email" id="pay-email" value="${d.contactEmail || ''}" autocomplete="off"></div>
           <div class="form-field"><label for="pay-cardno">Card number</label>
@@ -1128,7 +1128,7 @@
           <div class="form-field"><label for="pay-name">Name on card</label>
             <input type="text" id="pay-name" value="${d.contactName || ''}" autocomplete="off"></div>
           <button type="submit" class="btn primary full" id="pay-btn">Pay ${gbp(t.total)} securely</button>
-          <p class="pay-note">${icon('info', 14)}<span>This is a simulation — no payment is taken and card details are pre-filled with test values. The live service uses Stripe; NIVHA never stores card details.</span></p>
+          <p class="pay-note">${icon('info', 14)}<span>This is a simulation — no payment is taken and card details are pre-filled with test values. Card payments are handled by our payment provider; NIVHA never stores card details.</span></p>
         </form>
       </div>
       <div class="panel-actions">
@@ -1150,8 +1150,8 @@
     });
   }
 
-  /* ---------------- step 7 — simulated booking (Acuity embedded) ---------------- */
-  /* Appointment types mirror the live NIVHA Acuity calendar (nivha.as.me) */
+  /* ---------------- step 7 — simulated booking (embedded scheduling calendar) ---------------- */
+  /* Appointment types mirror the live NIVHA booking calendar */
   function bookingTypeFromBasket() {
     const gs = new Set([...state.basket.keys()].map(c => byCode[c].group));
     let label;
@@ -1289,7 +1289,7 @@
             <button class="btn primary" id="bk-confirm" ${bk.date && bk.time ? '' : 'disabled'}>Confirm appointment</button>
             <button class="btn ghost" id="bk-skip">Book later using the emailed link</button>
           </div>
-          <p class="bk-caption">In the live service this is our Acuity scheduling calendar, embedded here — this prototype simulates it.</p>
+          <p class="bk-caption">In the live service this is our online booking calendar, embedded here — this prototype simulates it.</p>
         </div>
       </div>`;
 

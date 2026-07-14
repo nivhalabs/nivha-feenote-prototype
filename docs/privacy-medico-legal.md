@@ -95,31 +95,33 @@ We never sell personal data. We never disclose one client's identity or instruct
 | Analytical laboratories | Independent controller | Biological sample, chain of custody data | Partner laboratories perform accredited analysis |
 | Sample collectors | Processor (acting on NIVHA's behalf) | Collection event data, identity verification | Collectors engaged by NIVHA to perform sample collection |
 | Scientific team | Processor | Test results, chain of custody, analytical data | NIVHA's reporting scientists prepare expert reports |
-| Airtable (US) | Processor — case management | Instruction data, case references, donor identity data, test status | US transfer governed by UK IDTA / EU SCCs |
-| Railway (US) | Processor — application hosting | Data entered into the fee note tool while it is processed | US transfer governed by UK IDTA / EU SCCs |
-| Postmark (US) | Processor — email delivery | Email address, secure sign-in codes and links, booking reminders, case references | US transfer governed by UK IDTA / EU SCCs |
-| Stripe (US) | Processor — payments (private clients) | Payment and transaction data. Card details are held by Stripe, not NIVHA | US transfer governed by UK IDTA / EU SCCs |
-| Acuity Scheduling (US) | Processor — appointment booking | Donor or client name, contact details, appointment details | US transfer governed by UK IDTA / EU SCCs |
-| Dropbox (US) | Processor — document storage | Fee note documents | US transfer governed by UK IDTA / EU SCCs |
-| Make.com (EU) | Processor — workflow automation | Case reference data, status triggers | EU-resident data processor |
-| Jotform (EU) | Processor — form processing (legacy) | Instruction and donor data submitted through legacy forms | EU-resident data processor |
+| Case management platform (US) | Processor — case management | Instruction data, case references, donor identity data, test status | US transfer governed by UK IDTA / EU SCCs |
+| Application hosting provider (US) | Processor — application hosting | Data entered into the fee note tool while it is processed | US transfer governed by UK IDTA / EU SCCs |
+| Email delivery provider (US) | Processor — email delivery | Email address, secure sign-in codes and links, booking reminders, case references | US transfer governed by UK IDTA / EU SCCs |
+| Payment services provider (US) | Processor — payments (private clients) | Payment and transaction data. Card details are held by the payment provider, not NIVHA | US transfer governed by UK IDTA / EU SCCs |
+| Appointment scheduling provider (US) | Processor — appointment booking | Donor or client name, contact details, appointment details | US transfer governed by UK IDTA / EU SCCs |
+| Document storage provider (US) | Processor — document storage | Fee note documents | US transfer governed by UK IDTA / EU SCCs |
+| Workflow automation provider (EU) | Processor — workflow automation | Case reference data, status triggers | EU-resident data processor |
+| Online form provider (EU) | Processor — form processing (legacy) | Instruction and donor data submitted through legacy forms | EU-resident data processor |
+
+A named list of the providers we use, with the safeguards in place for each, is available on request from andy@nivha.net.
 
 ## 8. International Transfers
 
 Some of our processors are located outside the United Kingdom and the European Economic Area. Where personal data is transferred internationally, we rely on the following safeguards:
 
-| Processor | Location | UK GDPR safeguard | EU GDPR safeguard |
+| Processor category | Location | UK GDPR safeguard | EU GDPR safeguard |
 | --- | --- | --- | --- |
-| Airtable | United States | UK International Data Transfer Agreement (IDTA) | EU Standard Contractual Clauses (SCCs) |
-| Railway | United States | UK IDTA | EU SCCs |
-| Postmark | United States | UK IDTA | EU SCCs |
-| Stripe | United States | UK IDTA | EU SCCs |
-| Acuity Scheduling | United States | UK IDTA | EU SCCs |
-| Dropbox | United States | UK IDTA | EU SCCs |
-| Make.com | EU | UK adequacy recognition of EEA | No transfer — EU processor |
-| Jotform | EU | UK adequacy recognition of EEA | No transfer — EU processor |
+| Case management platform | United States | UK International Data Transfer Agreement (IDTA) | EU Standard Contractual Clauses (SCCs) |
+| Application hosting provider | United States | UK IDTA | EU SCCs |
+| Email delivery provider | United States | UK IDTA | EU SCCs |
+| Payment services provider | United States | UK IDTA | EU SCCs |
+| Appointment scheduling provider | United States | UK IDTA | EU SCCs |
+| Document storage provider | United States | UK IDTA | EU SCCs |
+| Workflow automation provider | EU | UK adequacy recognition of EEA | No transfer — EU processor |
+| Online form provider | EU | UK adequacy recognition of EEA | No transfer — EU processor |
 
-Transfer risk assessments are maintained for each processor. You may request a copy of the relevant transfer safeguard documentation by contacting us at andy@nivha.net.
+Transfer risk assessments are maintained for each processor. You may request a copy of the named processor list and the relevant transfer safeguard documentation by contacting us at andy@nivha.net.
 
 ## 9. Retention
 

@@ -16,7 +16,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 This document contains the GDPR wording to be added to the legal (medico-legal) collection form, as identified in the NIVHA GDPR Implementation Plan (item 5.3). It is designed for three uses:
 
-1. **The current Jotform legal collection form** — add Sections A–E below as form sections, with the declarations as required checkboxes and signature fields.
+1. **The current online legal collection form** — add Sections A–E below as form sections, with the declarations as required checkboxes and signature fields.
 2. **Paper collection forms** — print Sections A–E as the final page of the collection pack, signed at collection.
 3. **The new fee note tool collection module** — when donor-facing collection screens are built, reuse this wording verbatim.
 

@@ -121,18 +121,20 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 | Provider category | Role | Safeguards |
 |---|---|---|
-| Case management platform (currently Airtable) | Processor — case records, fee notes, bookings | Art 28 terms; US transfer under UK IDTA / EU SCCs; transfer risk assessment on file |
-| Application hosting (currently Railway) | Processor — hosting of NIVHA's fee note tool | Art 28 terms; US transfer under UK IDTA / EU SCCs |
-| Transactional email (currently Postmark) | Processor — secure sign-in links and case correspondence | Art 28 terms; US transfer under UK IDTA / EU SCCs |
-| Appointment scheduling (currently Acuity Scheduling) | Processor — collection appointment booking | Art 28 terms; US transfer under UK IDTA / EU SCCs |
-| Document storage (currently Dropbox) | Processor — fee note and report document storage | Art 28 terms; US transfer under UK IDTA / EU SCCs |
-| Workflow automation (currently Make.com) | Processor — internal workflow automation | Art 28 terms; EU hosting |
-| Document generation (currently PDF4me / Ynoox GmbH) | Processor — document conversion | Signed DPA on file; Swiss/EU |
+| Case management platform | Processor — case records, fee notes, bookings | Art 28 terms; US transfer under UK IDTA / EU SCCs; transfer risk assessment on file |
+| Application hosting | Processor — hosting of NIVHA's fee note tool | Art 28 terms; US transfer under UK IDTA / EU SCCs |
+| Transactional email | Processor — secure sign-in links and case correspondence | Art 28 terms; US transfer under UK IDTA / EU SCCs |
+| Appointment scheduling | Processor — collection appointment booking | Art 28 terms; US transfer under UK IDTA / EU SCCs |
+| Document storage | Processor — fee note and report document storage | Art 28 terms; US transfer under UK IDTA / EU SCCs |
+| Workflow automation | Processor — internal workflow automation | Art 28 terms; EU hosting |
+| Document generation | Processor — document conversion | Signed DPA on file; Swiss/EU |
 | Freelance sample collectors | Sub-processors — sample collection on NIVHA's behalf | NIVHA Collector DP Addendum (Article 28 terms) |
 | Freelance reporting scientists | Sub-processors — expert report preparation | NIVHA Scientist DP Addendum (Article 28 terms) |
 | Analytical laboratories | Independent controllers — accredited analysis under their own ISO 17025 SOPs | NIVHA Laboratory Data Sharing Agreement |
 
 8.2 NIVHA shall notify the Instructing Organisation of any material change to the categories of provider listed above where the change materially affects the protection of shared personal data. Changes are also reflected in the published version of these Terms.
+
+8.3 A confidential annex naming each provider, its location, and the transfer safeguard and risk assessment in place is available to the Instructing Organisation on request from andy@nivha.net. The named list is provided for the Instructing Organisation's due diligence and information governance purposes and is not for onward publication.
 
 8.3 NIVHA shall not transfer shared personal data outside the UK or EEA except under appropriate safeguards pursuant to Articles 44–49 of the Applicable Data Protection Law, as summarised above.
 
