@@ -1018,7 +1018,7 @@
       state.recordId = res.recordId || null;
     } catch (e) {
       /* Service unreachable — continue the walkthrough with a placeholder reference */
-      state.refNumber = 'FN-9' + String(Date.now()).slice(-3);
+      state.refNumber = (state.route === 'private' ? 'PCN-9' : 'CCN-9') + String(Date.now()).slice(-3);
       state.recordId = null;
     }
     btn.disabled = false;

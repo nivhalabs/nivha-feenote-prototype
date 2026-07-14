@@ -17,7 +17,7 @@ const FEE_TABLE = process.env.AIRTABLE_FEE_TABLE_ID || 'tblg5dALJogJxLL4j';   //
 const LEADS_TABLE = process.env.AIRTABLE_LEADS_TABLE_ID || 'tbl91O7LF3iezIKv2'; // LegalSocial_Leads
 const AT_URL = 'https://api.airtable.com/v0';
 const DRY_RUN = !PAT;
-let dryCounter = 1000; // dry-run references count up from FN-1001 per process
+const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 1000 per process
 
 /* ---------------- airtable helper ---------------- */
 async function at(method, pathPart, body) {
@@ -36,23 +36,28 @@ async function at(method, pathPart, body) {
   return res.json();
 }
 
-/* Next FN reference: scan existing references, take max + 1 (pilot volumes) */
-async function nextReference() {
-  if (DRY_RUN) return `FN-${++dryCounter}`;
-  let max = 1000;
+/* Next reference. Conventions: CCN (client case number) for trust and
+   solicitor instructions, PCN (private case number) for private clients,
+   both starting at 1000. DNA casework will use a DNA prefix when built.
+   Scan existing references for the prefix, take max + 1 (pilot volumes). */
+async function nextReference(route) {
+  const prefix = route === 'private' ? 'PCN' : 'CCN';
+  if (DRY_RUN) return `${prefix}-${++dryCounters[prefix]}`;
+  let max = 999;
   let offset;
+  const re = new RegExp(`^${prefix}-(\\d+)$`);
   do {
     const q = new URLSearchParams({ pageSize: '100' });
     q.append('fields[]', 'Reference');
     if (offset) q.set('offset', offset);
     const data = await at('GET', `${FEE_TABLE}?${q}`);
     for (const r of data.records) {
-      const m = /^FN-(\d+)$/.exec((r.fields && r.fields.Reference) || '');
+      const m = re.exec((r.fields && r.fields.Reference) || '');
       if (m) max = Math.max(max, Number(m[1]));
     }
     offset = data.offset;
   } while (offset);
-  return `FN-${max + 1}`;
+  return `${prefix}-${max + 1}`;
 }
 
 /* ---------------- mapping ---------------- */
@@ -157,7 +162,7 @@ app.post('/api/fee-notes', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'At least one panel is required' });
     }
 
-    const reference = await nextReference();
+    const reference = await nextReference(p.route);
     if (DRY_RUN) {
       console.log(`[dry-run] fee note ${reference}:`, JSON.stringify(feeNoteFields(p, reference)));
       return res.json({ ok: true, reference, recordId: null, dryRun: true });
