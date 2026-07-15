@@ -8,8 +8,6 @@ Contact: info@nivha.net · Data protection queries: andy@nivha.net
 Version 0.1 (draft) — July 2026 · CD number to be assigned · Classification: **CONFIDENTIAL**
 Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
-> **IMPORTANT — LEGAL REVIEW WARNING:** This donor acknowledgement is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, this wording must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
 ---
 
 ## How to Use This Document (Staff Guidance — Not Shown to the Donor)
@@ -138,21 +136,6 @@ Privacy notice offer (collector to record): ☐ paper copy taken · ☐ link/QR 
 | Signature | ______________________________ |
 | Full name (print) | ______________________________ |
 | Date and time | ______________________________ |
-
----
-
-## Legal Review Warning
-
-**IMPORTANT — LEGAL REVIEW WARNING:** This donor acknowledgement is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, it must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
-In particular, the following aspects require qualified legal review:
-
-- The framing of "agreement to sampling" as distinct from a GDPR lawful basis, and the consequences-of-refusal wording;
-- The adequacy of a single combined donor signature (identity, sampling agreement, data notice, medication disclosures) given alongside the chain of custody signature, rather than itemised tick-box confirmations;
-- The under-18 parent/guardian consent provisions, including Gillick competence considerations and the age threshold applicable in each jurisdiction;
-- The private-client explicit consent wording (Section C-P), including the withdrawal and chargeability terms and their interaction with consumer law;
-- The medication disclosure wording, ensuring disclosures remain genuinely voluntary;
-- Whether the refusal-notification wording is consistent with the instructing organisation's own procedures and court directions.
 
 ---
 

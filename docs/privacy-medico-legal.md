@@ -10,8 +10,6 @@ Version 0.1 — DRAFT, July 2026 · CD number: to be assigned by document contro
 Classification: CONFIDENTIAL
 Dual Jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
-> **IMPORTANT — LEGAL REVIEW WARNING:** This privacy notice is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, this document must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR (as applicable in the Republic of Ireland).
-
 ## 1. Who We Are
 
 NIVHA Laboratory Services Ltd ("NIVHA", "we", "our") is a specialist drug and alcohol testing laboratory providing collection, analysis, expert reporting, and court attendance services. Our registered address is Unit 1B, Concourse 1, Catalyst, Queen's Road, Belfast BT3 9DT.
@@ -179,13 +177,3 @@ If you are dissatisfied with how NIVHA has handled your personal data, you have 
 
 We would appreciate the opportunity to address your concerns before you approach a supervisory authority. Please contact us at andy@nivha.net in the first instance.
 
-## 14. Legal Review Warning
-
-**IMPORTANT — LEGAL REVIEW WARNING:** This privacy notice is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, this document must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR (as applicable in the Republic of Ireland).
-
-In particular, the following aspects require qualified legal review:
-
-- the characterisation of controller status between NIVHA, instructing Trusts, and instructing solicitors, and whether any joint controllership arises;
-- the identification and application of the specific lawful bases and Article 9 conditions for each route of instruction, including the safeguarding condition;
-- the retention periods proposed for medico-legal records;
-- the handling of donor rights where the donor is not the instructing party.

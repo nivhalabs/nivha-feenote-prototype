@@ -10,8 +10,6 @@ Contact: info@nivha.net · Data protection queries: andy@nivha.net
 Version 0.1 (draft) — July 2026 · CD number to be assigned · Classification: **CONFIDENTIAL**
 Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
-> **IMPORTANT — LEGAL REVIEW WARNING:** This annex is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, it must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
 ---
 
 ## 1. Purpose
@@ -146,19 +144,6 @@ Log **every** medico-legal donor contact — signposted calls as well as formal 
 ## 9. Escalation
 
 Escalate to Andy McDonald (andy@nivha.net) before any disclosure where: identity cannot be fully verified; the record was prepared for court proceedings; the donor is under 18; the caller alleges NIVHA disclosed something wrongly (possible breach — apply the Breach Response Card, CD29); or anything else feels off. It is always acceptable to pause and check — the one-month clock allows time to get it right.
-
----
-
-## Legal Review Warning
-
-**IMPORTANT — LEGAL REVIEW WARNING:** This annex is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before use, it must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
-In particular, the following aspects require qualified legal review:
-
-- The interaction between subject access rights and the rules restricting disclosure of documents in family proceedings in Northern Ireland (and the Republic of Ireland where applicable);
-- The handling of SARs concerning under-18 donors, including competence and parental responsibility;
-- The neutral-wording approach in the signposting letter where identity has not been verified;
-- Whether informing the instructing party of a SAR is consistent with the donor's rights and any court directions in the specific case.
 
 ---
 

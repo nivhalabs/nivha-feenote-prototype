@@ -13,8 +13,6 @@ Contact: andy@nivha.net
 Version 0.1 (draft) — July 2026 · CD number to be assigned · Classification: **CONFIDENTIAL**
 Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
-> **IMPORTANT — LEGAL REVIEW WARNING:** This data sharing agreement is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before execution, this document must be reviewed and approved by solicitors acting for both parties, competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR. This template should be adapted with the specific instructing organisation's details and the applicable route variant (Trust or solicitor) before execution.
-
 ---
 
 ## Parties
@@ -305,20 +303,6 @@ This Agreement has been executed by the duly authorised representatives of the P
 | Name: ______________________________ | Name: ______________________________ |
 | Title: ______________________________ | Title: ______________________________ |
 | Date: ______________________________ | Date: ______________________________ |
-
-## 16. Legal Review Warning
-
-**IMPORTANT — LEGAL REVIEW WARNING:** This data sharing agreement is a template document prepared by NIVHA Laboratory Services Ltd. It has not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before execution, this document must be reviewed and approved by solicitors acting for both parties, competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
-In particular, the following aspects require qualified legal review:
-
-- The characterisation of the controller relationship (independent vs. joint controllers), especially for Trust instructions in ongoing care proceedings;
-- The lawful bases and Article 9 conditions applicable to each data flow in each route variant;
-- The interaction between data subject rights and the rules governing disclosure of documents in family proceedings;
-- The retention position for records used in ongoing proceedings, including appeals;
-- Whether the Trust's own information governance requirements (including controller assurance frameworks) impose additional terms;
-- Legal professional privilege and confidentiality considerations for solicitor instructions;
-- The adequacy of the processor and sub-processor safeguards summarised in clause 7 for each instructing organisation's assurance requirements.
 
 ---
 

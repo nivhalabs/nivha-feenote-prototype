@@ -9,8 +9,6 @@ Contact: andy@nivha.net
 Version 0.1 (draft) — July 2026 · CD number to be assigned · Classification: **PUBLIC (published terms)**
 Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
-> **IMPORTANT — LEGAL REVIEW WARNING:** These data sharing terms are a template document prepared by NIVHA Laboratory Services Ltd. They have not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before publication, this document must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR, including the enforceability of click-wrap acceptance for these terms.
-
 ---
 
 ## 1. Acceptance and Scope
@@ -257,20 +255,6 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 15.5 **Severability:** If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions continue in full force and effect.
 
 15.6 **Entire terms:** These Terms, together with any services contract and each Instruction, constitute the entire agreement between the parties in relation to the data sharing arrangements described herein.
-
-## 16. Legal Review Warning
-
-**IMPORTANT — LEGAL REVIEW WARNING:** These data sharing terms are a template document prepared by NIVHA Laboratory Services Ltd. They have not been reviewed by a qualified legal professional and should not be relied upon as legal advice. Before publication, this document must be reviewed and approved by a solicitor competent in data protection law across both UK GDPR (as applied in Northern Ireland) and EU GDPR.
-
-In particular, the following aspects require qualified legal review:
-
-- The enforceability of acceptance by checkbox (click-wrap) for these terms, and the evidential record kept of each acceptance;
-- The characterisation of the controller relationship (independent vs. joint controllers), especially for Trust instructions in ongoing care proceedings;
-- The lawful bases and Article 9 conditions applicable to each data flow in each route;
-- The interaction between data subject rights and the rules governing disclosure of documents in family proceedings;
-- The retention position for records used in ongoing proceedings, including appeals;
-- Whether Trust information governance requirements (including controller assurance frameworks) impose additional terms beyond the countersigned version offered in section 1.5;
-- Legal professional privilege and confidentiality considerations for solicitor instructions.
 
 ---
 
