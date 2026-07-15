@@ -514,6 +514,21 @@ app.get('/api/booking/types', async (req, res) => {
   }
 });
 
+/* Setup helper — intake forms and their field IDs, used once to find the
+   fee note field for ACUITY_FIELD_FEENOTE. */
+app.get('/api/booking/forms', async (req, res) => {
+  if (acuity.SIMULATED) return res.json({ ok: true, simulated: true });
+  try {
+    const forms = await acuity.getForms();
+    res.json({ ok: true, configuredField: acuity.FIELD_FEENOTE || null,
+      forms: forms.map(fm => ({ id: fm.id, name: fm.name, appointmentTypeIDs: fm.appointmentTypeIDs || [],
+        fields: (fm.fields || []).map(fl => ({ id: fl.id, name: fl.name, type: fl.type })) })) });
+  } catch (err) {
+    console.error('GET /api/booking/forms failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not reach the booking calendar' });
+  }
+});
+
 app.get('/api/booking/dates', async (req, res) => {
   const month = String(req.query.month || '');
   if (!/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ ok: false, error: 'Bad month' });
