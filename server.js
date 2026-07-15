@@ -504,9 +504,10 @@ app.patch('/api/fee-notes/:id', async (req, res) => {
 app.get('/api/booking/types', async (req, res) => {
   if (acuity.SIMULATED) return res.json({ ok: true, simulated: true });
   try {
-    const types = await acuity.getTypes();
+    const [types, calendars] = await Promise.all([acuity.getTypes(), acuity.getCalendars()]);
     res.json({ ok: true, configuredType: acuity.TYPE_BELFAST || null,
-      types: types.map(t => ({ id: t.id, name: t.name, duration: t.duration, active: t.active, private: t.private })) });
+      calendars: calendars.map(c => ({ id: c.id, name: c.name, email: c.email || '', location: c.location || '' })),
+      types: types.map(t => ({ id: t.id, name: t.name, duration: t.duration, active: t.active, private: t.private, calendarIDs: t.calendarIDs || [] })) });
   } catch (err) {
     console.error('GET /api/booking/types failed:', err.message);
     res.status(502).json({ ok: false, error: 'Could not reach the booking calendar' });
