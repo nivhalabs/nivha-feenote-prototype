@@ -14,7 +14,7 @@
         body: JSON.stringify(body),
         signal: ctrl.signal
       });
-      if (!res.ok) throw new Error('API ' + res.status);
+      if (!res.ok) { const e = new Error('API ' + res.status); e.status = res.status; throw e; }
       return await res.json();
     } finally { clearTimeout(timer); }
   }
@@ -1320,7 +1320,7 @@
     return times;
   }
 
-  const bk = { view: 0, date: null, time: null };
+  const bk = { view: 0, date: null, time: null, live: undefined, availDates: null, timesCache: {}, error: null };
 
   function bookingMonths() {
     const { min, max } = bookingWindow();
@@ -1338,6 +1338,20 @@
     const d = state.details;
     const donorName = (isPrivate && d.selfDonor) ? d.contactName : d.donorName;
     if (state.collection === 'onsite') { renderOnsiteArrange(isPrivate, type, d, donorName); return; }
+    if (state.collection === 'derry') { renderDerryRequest(isPrivate, type, d, donorName); return; }
+
+    /* Belfast — check once whether live Acuity availability is configured */
+    if (bk.live === undefined) {
+      bk.live = 'checking';
+      const mos = bookingMonths().map(({ y: y2, m: m2 }) => `${y2}-${String(m2 + 1).padStart(2, '0')}`);
+      Promise.all(mos.map(mo => API.get('/api/booking/dates?month=' + mo)))
+        .then(rs => {
+          if (rs.every(r => Array.isArray(r.dates))) { bk.live = true; bk.availDates = new Set(rs.flatMap(r => r.dates)); }
+          else bk.live = false;
+          renderBooking(false);
+        })
+        .catch(() => { bk.live = false; renderBooking(false); });
+    }
     const months = bookingMonths();
     const { y, m } = months[Math.min(bk.view, months.length - 1)];
     const first = new Date(y, m, 1);
@@ -1347,16 +1361,46 @@
 
     let cells = '';
     for (let i = 0; i < lead; i++) cells += '<span></span>';
+    const dayAvailable = date => {
+      if (bk.live === 'checking') return false;
+      if (bk.live === true) {
+        const dow = date.getDay();
+        if (dow === 0 || dow === 6) return false;
+        const { min, max } = bookingWindow();
+        if (date < min || date > max) return false;
+        return bk.availDates.has(dayKey(date));
+      }
+      return slotsFor(date).length > 0;
+    };
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(y, m, day);
       const key = dayKey(date);
-      const avail = slotsFor(date).length > 0;
+      const avail = dayAvailable(date);
       cells += `<button class="bk-day ${avail ? 'avail' : ''} ${bk.date === key ? 'selected' : ''}"
         ${avail ? `data-day="${key}"` : 'disabled'}>${day}</button>`;
     }
 
     const selDate = bk.date ? new Date(bk.date + 'T00:00:00') : null;
-    const slots = selDate ? slotsFor(selDate) : [];
+    let slots = [];
+    let slotsLoading = false;
+    if (selDate) {
+      if (bk.live === true) {
+        const cached = bk.timesCache[bk.date];
+        if (Array.isArray(cached)) slots = cached.map(t2 => t2.label);
+        else {
+          slotsLoading = true;
+          if (cached !== 'loading') {
+            bk.timesCache[bk.date] = 'loading';
+            API.get('/api/booking/times?date=' + bk.date)
+              .then(r => { bk.timesCache[bk.date] = Array.isArray(r.times) ? r.times : []; renderBooking(false); })
+              .catch(() => { bk.timesCache[bk.date] = []; renderBooking(false); });
+          }
+        }
+      } else {
+        slots = slotsFor(selDate);
+      }
+    }
+    const bkError = bk.error; bk.error = null;
 
     document.getElementById('booking').innerHTML = `
       <div class="success-banner">
@@ -1398,18 +1442,21 @@
             ${cells}
           </div>
           <div class="bk-slots">
-            ${bk.date ? `
+            ${bk.live === 'checking' ? `<p class="bk-empty">Loading availability…</p>`
+            : bk.date ? `
               <p class="bk-slots-label">Available times — ${selDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+              ${slotsLoading ? `<p class="bk-empty">Loading times…</p>` : slots.length ? `
               <div class="bk-slot-grid">
                 ${slots.map(t2 => `<button class="bk-slot ${bk.time === t2 ? 'selected' : ''}" data-slot="${t2}">${t2}</button>`).join('')}
-              </div>`
+              </div>` : `<p class="bk-empty">No times left on this day — choose another highlighted day.</p>`}`
             : `<p class="bk-empty">Select a highlighted day to see available times.</p>`}
           </div>
+          ${bkError ? `<p class="req-error">${bkError}</p>` : ''}
           <div class="bk-actions">
             <button class="btn primary" id="bk-confirm" ${bk.date && bk.time ? '' : 'disabled'}>Confirm appointment</button>
             <button class="btn ghost" id="bk-skip">Book later using the emailed link</button>
           </div>
-          <p class="bk-caption">In the live service this is our online booking calendar, embedded here — this prototype simulates it.</p>
+          <p class="bk-caption">${bk.live === true ? 'Availability is live from our Belfast booking calendar.' : 'In the live service this is our online booking calendar, embedded here — this prototype simulates it.'}</p>
         </div>
       </div>`;
 
@@ -1423,9 +1470,30 @@
     const prev = wrap.querySelector('#bk-prev'), next = wrap.querySelector('#bk-next');
     if (prev) prev.addEventListener('click', () => { if (bk.view > 0) { bk.view--; renderBooking(false); } });
     if (next) next.addEventListener('click', () => { if (bk.view < months.length - 1) { bk.view++; renderBooking(false); } });
-    wrap.querySelector('#bk-confirm').addEventListener('click', () => {
+    wrap.querySelector('#bk-confirm').addEventListener('click', async () => {
       if (!bk.date || !bk.time) return;
+      const btn = wrap.querySelector('#bk-confirm');
       const dd = new Date(bk.date + 'T00:00:00');
+      const cached = bk.live === true ? bk.timesCache[bk.date] : null;
+      const iso = Array.isArray(cached) ? (cached.find(t2 => t2.label === bk.time) || {}).iso : null;
+      const datetime = iso || (bk.date + 'T' + bk.time + ':00');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Confirming';
+      try {
+        await API.post('/api/booking/confirm', { recordId: state.recordId, datetime, label: type.label });
+      } catch (e) {
+        if (bk.live === true) {
+          /* Live calendar — the slot may have just gone. Refresh and let them re-pick. */
+          bk.error = e.status === 409
+            ? 'That time has just been taken — choose another.'
+            : 'We could not confirm the appointment just now — please try again.';
+          bk.timesCache[bk.date] = undefined;
+          bk.time = null;
+          renderBooking(false);
+          return;
+        }
+        /* Simulated mode — the walkthrough continues regardless. */
+      }
       state.booking = {
         typeLabel: type.label,
         dateLabel: dd.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
@@ -1433,13 +1501,122 @@
         location: locLabel()
       };
       state.bookingSkipped = false;
-      if (state.recordId) {
-        const appointmentAt = /^\d{2}:\d{2}$/.test(bk.time) ? bk.date + 'T' + bk.time + ':00' : null;
-        API.patch('/api/fee-notes/' + state.recordId, { event: 'booked', appointmentAt, label: type.label }).catch(() => {});
-      }
       goTo(8);
     });
     wrap.querySelector('#bk-skip').addEventListener('click', () => {
+      state.booking = null;
+      state.bookingSkipped = true;
+      goTo(8);
+    });
+  }
+
+  /* ---------------- step 7 (Derry~Londonderry) — appointment by request ---------------- */
+  function derryMinDate() {
+    const d2 = new Date(); d2.setHours(0, 0, 0, 0);
+    let added = 0;
+    while (added < 5) {
+      d2.setDate(d2.getDate() + 1);
+      const w = d2.getDay();
+      if (w !== 0 && w !== 6) added++;
+    }
+    return d2;
+  }
+
+  function renderDerryRequest(isPrivate, type, d, donorName) {
+    const req = { date: '', window: 'Morning' };
+    const min = derryMinDate();
+    const max = new Date(); max.setHours(0, 0, 0, 0); max.setDate(max.getDate() + 35);
+    const minLabel = min.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    document.getElementById('booking').innerHTML = `
+      <div class="success-banner">
+        ${icon('check', 20)}
+        <div>
+          <strong>${isPrivate && state.payment
+            ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
+            : `Fee note ${state.refNumber} submitted`}</strong>
+          <span>${isPrivate && state.payment
+            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
+            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'} — now request the appointment.`}</span>
+        </div>
+      </div>
+      <div class="panel-head">
+        <p class="marker">Booking</p>
+        <h1>Request your appointment</h1>
+        <p class="lede">Appointments at our Derry~Londonderry office are arranged by request — tell us what suits and we confirm by email within one working day.</p>
+      </div>
+      <div class="bk-shell">
+        <div class="bk-meta">
+          <p class="doc-label">Appointment</p>
+          <p class="bk-type">${type.label}</p>
+          <p class="bk-meta-line">${icon('clock', 16)}<span>30 minutes</span></p>
+          <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
+          <p class="bk-note">Derry~Londonderry requests need five working days’ notice — the earliest date you can request is ${minLabel}.</p>
+        </div>
+        <div class="bk-cal-card">
+          <div class="bk-arrange">
+            <h2>Choose what suits</h2>
+            <div class="req-field">
+              <p class="req-label">Preferred date</p>
+              <input type="date" class="req-input" id="dr-date" min="${dayKey(min)}" max="${dayKey(max)}">
+              <p class="req-error" id="dr-error" hidden></p>
+              <p class="req-hint">Monday to Friday. The earliest date you can request is ${minLabel}.</p>
+            </div>
+            <div class="req-field">
+              <p class="req-label">Preferred time of day</p>
+              <div class="req-opts" id="dr-window">
+                <button type="button" class="req-opt selected" data-win="Morning">Morning<span class="req-opt-sub">09:00–12:30</span></button>
+                <button type="button" class="req-opt" data-win="Afternoon">Afternoon<span class="req-opt-sub">13:30–16:30</span></button>
+              </div>
+            </div>
+            <div class="bk-actions">
+              <button class="btn primary" id="dr-send" disabled>Send booking request</button>
+              <button class="btn ghost" id="dr-skip">Request later using the emailed link</button>
+            </div>
+            <p class="bk-caption">This is a request, not a confirmed booking — we confirm availability by email within one working day.</p>
+          </div>
+        </div>
+      </div>`;
+
+    const dateInput = document.getElementById('dr-date');
+    const errEl = document.getElementById('dr-error');
+    const sendBtn = document.getElementById('dr-send');
+    const validate = () => {
+      errEl.hidden = true;
+      if (!dateInput.value) { sendBtn.disabled = true; return; }
+      const chosen = new Date(dateInput.value + 'T00:00:00');
+      const w = chosen.getDay();
+      if (w === 0 || w === 6) {
+        errEl.textContent = 'Choose a weekday — collections run Monday to Friday.';
+        errEl.hidden = false; sendBtn.disabled = true; return;
+      }
+      if (chosen < min) {
+        errEl.textContent = `The earliest date you can request is ${minLabel}.`;
+        errEl.hidden = false; sendBtn.disabled = true; return;
+      }
+      req.date = dateInput.value;
+      sendBtn.disabled = false;
+    };
+    dateInput.addEventListener('change', validate);
+    dateInput.addEventListener('input', validate);
+    document.getElementById('dr-window').addEventListener('click', e => {
+      const b = e.target.closest('[data-win]'); if (!b) return;
+      req.window = b.dataset.win;
+      document.querySelectorAll('#dr-window .req-opt').forEach(x => x.classList.toggle('selected', x === b));
+    });
+    sendBtn.addEventListener('click', () => {
+      if (sendBtn.disabled || !req.date) return;
+      const pretty = new Date(req.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+      state.booking = { request: true, derryRequest: true, typeLabel: type.label, dateLabel: pretty, window: req.window, location: locLabel() };
+      state.bookingSkipped = false;
+      if (state.recordId) {
+        API.post('/api/booking/request', { recordId: state.recordId, preferredDate: req.date, window: req.window }).catch(() => {});
+      }
+      goTo(8);
+    });
+    document.getElementById('dr-skip').addEventListener('click', () => {
       state.booking = null;
       state.bookingSkipped = true;
       goTo(8);
@@ -1682,6 +1859,8 @@
     const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
       ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings photo ID.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
+      : booked && booked.derryRequest
+      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our Derry~Londonderry office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
@@ -1704,7 +1883,7 @@
       <div class="confirm">
         <div class="confirm-badge">${icon('check', 30)}</div>
         <p class="marker">Fee note ${state.refNumber}</p>
-        <h1>${isRequest ? 'Thank you — your visit is requested' : booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
+        <h1>${booked && booked.derryRequest ? 'Thank you — your appointment is requested' : isRequest ? 'Thank you — your visit is requested' : booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
         <p class="lede">Here is ${booked && !isRequest ? 'everything in one place' : 'what happens next'}.</p>
         <ol class="timeline">
           ${steps.map(([h, b], i) => `

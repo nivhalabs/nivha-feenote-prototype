@@ -24,6 +24,7 @@ const crypto = require('crypto');
 const { gateEmail, bookLaterEmail, EMAIL_DRY_RUN } = require('./lib/email');
 const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
+const acuity = require('./lib/acuity');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
@@ -253,7 +254,7 @@ function scheduleBookLater(recordId) {
       const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
       const f = rec.fields || {};
       const status = f['Status'] || '';
-      if (['Booked', 'On-site requested'].includes(status)) return;
+      if (['Booked', 'On-site requested', 'Booking requested'].includes(status)) return;
       if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
       const email = (f['Contact email'] || '').trim().toLowerCase();
       if (!email) return;
@@ -494,6 +495,141 @@ app.patch('/api/fee-notes/:id', async (req, res) => {
   } catch (err) {
     console.error('PATCH /api/fee-notes failed:', err.message);
     res.status(502).json({ ok: false, error: 'Could not update the fee note' });
+  }
+});
+
+/* ---------------- booking — Belfast calendar via Acuity, Derry by request ---------------- */
+
+/* One-off helper: list appointment types so ACUITY_TYPE_BELFAST can be set. */
+app.get('/api/booking/types', async (req, res) => {
+  if (acuity.SIMULATED) return res.json({ ok: true, simulated: true });
+  try {
+    const types = await acuity.getTypes();
+    res.json({ ok: true, configuredType: acuity.TYPE_BELFAST || null,
+      types: types.map(t => ({ id: t.id, name: t.name, duration: t.duration, active: t.active, private: t.private })) });
+  } catch (err) {
+    console.error('GET /api/booking/types failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not reach the booking calendar' });
+  }
+});
+
+app.get('/api/booking/dates', async (req, res) => {
+  const month = String(req.query.month || '');
+  if (!/^\d{4}-\d{2}$/.test(month)) return res.status(400).json({ ok: false, error: 'Bad month' });
+  if (acuity.SIMULATED || !acuity.TYPE_BELFAST) return res.json({ ok: true, simulated: true });
+  try {
+    const dates = await acuity.getDates(month);
+    res.json({ ok: true, dates: dates.map(d => d.date) });
+  } catch (err) {
+    console.error('GET /api/booking/dates failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not load availability' });
+  }
+});
+
+app.get('/api/booking/times', async (req, res) => {
+  const date = String(req.query.date || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ ok: false, error: 'Bad date' });
+  if (acuity.SIMULATED || !acuity.TYPE_BELFAST) return res.json({ ok: true, simulated: true });
+  try {
+    const times = await acuity.getTimes(date);
+    res.json({ ok: true, times: times.map(t => ({ iso: t.time, label: t.time.slice(11, 16) })) });
+  } catch (err) {
+    console.error('GET /api/booking/times failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not load times' });
+  }
+});
+
+/* Confirm a Belfast appointment. Live mode creates it in Acuity; simulated
+   mode records the choice against the fee note exactly as before. */
+app.post('/api/booking/confirm', async (req, res) => {
+  try {
+    const { recordId, datetime, label } = req.body || {};
+    if (!datetime || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(datetime))) {
+      return res.status(400).json({ ok: false, error: 'Bad datetime' });
+    }
+    if (!recordId) return res.json({ ok: true, offline: true });
+    if (!/^rec[A-Za-z0-9]{14}$/.test(recordId)) return res.status(400).json({ ok: false, error: 'Bad record id' });
+
+    if (acuity.SIMULATED || !acuity.TYPE_BELFAST) {
+      const fields = {
+        'Status': 'Booked',
+        'Acuity appointment ID': 'SIMULATED — prototype',
+        'Appointment at': String(datetime).slice(0, 19)
+      };
+      if (DRY_RUN) { console.log(`[dry-run] booking confirm on ${recordId}:`, JSON.stringify(fields)); return res.json({ ok: true, dryRun: true, simulated: true }); }
+      await at('PATCH', FEE_TABLE, { records: [{ id: recordId, fields }], typecast: true });
+      return res.json({ ok: true, simulated: true });
+    }
+
+    const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
+    const f = rec.fields || {};
+    if (f['Status'] === 'Booked') return res.json({ ok: true, alreadyBooked: true });
+    if (f['Route'] === 'Private' && f['Status'] !== 'Paid') {
+      return res.status(403).json({ ok: false, error: 'Payment must be confirmed before booking' });
+    }
+    const contactName = String(f['Contact name'] || '').trim();
+    const firstName = contactName.split(/\s+/)[0] || 'Fee';
+    const lastName = contactName.split(/\s+/).slice(1).join(' ') || 'note';
+    const appt = await acuity.createAppointment({
+      datetime,
+      firstName, lastName,
+      email: String(f['Contact email'] || '').trim(),
+      phone: String(f['Contact phone'] || '').trim(),
+      notes: `Fee note ${f['Reference'] || ''}${label ? ' — ' + label : ''}`
+    });
+    await at('PATCH', FEE_TABLE, {
+      records: [{ id: recordId, fields: {
+        'Status': 'Booked',
+        'Acuity appointment ID': String(appt.id),
+        'Appointment at': String(appt.datetime || datetime).slice(0, 19)
+      } }],
+      typecast: true
+    });
+    res.json({ ok: true, appointmentId: appt.id });
+  } catch (err) {
+    console.error('POST /api/booking/confirm failed:', err.message);
+    const slotGone = err.status === 400 && /not available|no longer/i.test(err.message);
+    res.status(slotGone ? 409 : 502).json({ ok: false, error: slotGone ? 'That time has just been taken — choose another' : 'Could not confirm the appointment' });
+  }
+});
+
+/* Derry~Londonderry appointments are by request — preferred date and morning
+   or afternoon, with five working days' notice enforced server-side. */
+function minRequestDate(workingDays) {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  let added = 0;
+  while (added < workingDays) {
+    d.setDate(d.getDate() + 1);
+    const dw = d.getDay();
+    if (dw !== 0 && dw !== 6) added++;
+  }
+  return d;
+}
+
+app.post('/api/booking/request', async (req, res) => {
+  try {
+    const { recordId, preferredDate, window: win } = req.body || {};
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(preferredDate || ''))) return res.status(400).json({ ok: false, error: 'Bad date' });
+    if (!['Morning', 'Afternoon'].includes(win)) return res.status(400).json({ ok: false, error: 'Bad time window' });
+    const chosen = new Date(preferredDate + 'T00:00:00');
+    const dw = chosen.getDay();
+    if (dw === 0 || dw === 6) return res.status(400).json({ ok: false, error: 'Choose a weekday' });
+    if (chosen < minRequestDate(5)) return res.status(400).json({ ok: false, error: 'Requests need five working days\u2019 notice' });
+
+    if (!recordId) return res.json({ ok: true, offline: true });
+    if (!/^rec[A-Za-z0-9]{14}$/.test(recordId)) return res.status(400).json({ ok: false, error: 'Bad record id' });
+
+    const pretty = chosen.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fields = {
+      'Status': 'Booking requested',
+      'Booking request detail': `Derry~Londonderry office — preferred ${pretty}, ${win}`
+    };
+    if (DRY_RUN) { console.log(`[dry-run] booking request on ${recordId}:`, JSON.stringify(fields)); return res.json({ ok: true, dryRun: true }); }
+    await at('PATCH', FEE_TABLE, { records: [{ id: recordId, fields }], typecast: true });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/booking/request failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not send the request' });
   }
 });
 
