@@ -568,9 +568,13 @@ app.post('/api/booking/confirm', async (req, res) => {
     if (f['Route'] === 'Private' && f['Status'] !== 'Paid') {
       return res.status(403).json({ ok: false, error: 'Payment must be confirmed before booking' });
     }
+    /* The diary shows the client name — that should be the donor, who is the
+       person attending. Email and phone stay with the requestor so booking
+       confirmations reach whoever raised the fee note. */
     const contactName = String(f['Contact name'] || '').trim();
-    const firstName = contactName.split(/\s+/)[0] || 'Fee';
-    const lastName = contactName.split(/\s+/).slice(1).join(' ') || 'note';
+    const attendee = String(f['Donor name'] || '').trim() || contactName;
+    const firstName = attendee.split(/\s+/)[0] || 'Fee';
+    const lastName = attendee.split(/\s+/).slice(1).join(' ') || 'note';
     /* Fee note summary on the appointment — what the collector needs at a glance. */
     let panels = '';
     try {
@@ -581,7 +585,8 @@ app.post('/api/booking/confirm', async (req, res) => {
       `Fee note ${f['Reference'] || ''}${label ? ' — ' + label : ''}`,
       f['Donor name'] ? `Donor: ${f['Donor name']}${dob} — photo ID required` : '',
       panels ? `Panels: ${panels}` : '',
-      `Route: ${f['Route'] || ''}${f['Turnaround'] === 'Fast track' ? ' · Fast track' : ''}`
+      `Route: ${f['Route'] || ''}${f['Turnaround'] === 'Fast track' ? ' · Fast track' : ''}`,
+      contactName && contactName !== attendee ? `Requested by: ${contactName}${f['Contact phone'] ? ' · ' + f['Contact phone'] : ''}` : ''
     ].filter(Boolean).join('\n');
     const appt = await acuity.createAppointment({
       datetime,
