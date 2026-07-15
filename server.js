@@ -517,6 +517,10 @@ app.get('/api/booking/types', async (req, res) => {
 
 /* Setup helper — intake forms and their field IDs, used once to find the
    fee note field for ACUITY_FIELD_FEENOTE. */
+app.get('/api/version', (req, res) => {
+  res.json({ sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown' });
+});
+
 app.get('/api/booking/forms', async (req, res) => {
   if (acuity.SIMULATED) return res.json({ ok: true, simulated: true });
   try {
