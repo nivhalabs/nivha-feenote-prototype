@@ -8,7 +8,8 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+/* Keep the raw body for Stripe webhook signature verification. */
+app.use(express.json({ limit: '1mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 
 /* ---------------- config ---------------- */
 const PAT = process.env.AIRTABLE_PAT || '';
@@ -21,6 +22,8 @@ const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 
 
 const crypto = require('crypto');
 const { gateEmail, bookLaterEmail, EMAIL_DRY_RUN } = require('./lib/email');
+const pricing = require('./lib/pricing');
+const stripe = require('./lib/stripe');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
@@ -286,6 +289,20 @@ app.post('/api/fee-notes', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'At least one panel is required' });
     }
 
+    /* Authoritative pricing — recompute from the raw basket and overwrite
+       whatever totals the browser sent. Private fee notes are charged by
+       card, so they must be priceable server-side. */
+    const serverTotals = pricing.computeTotals({ basket: p.basket, fastTrack: !!p.fastTrack, location: p.location });
+    if (serverTotals) {
+      if (p.totals && Math.abs((Number(p.totals.total) || 0) - serverTotals.total) > 0.01) {
+        console.warn(`totals mismatch — client £${p.totals.total} vs server £${serverTotals.total}; server wins`);
+        p.needsPriceReview = true;
+      }
+      p.totals = { net: serverTotals.net, vat: serverTotals.vat, total: serverTotals.total };
+    } else if (p.route === 'private') {
+      return res.status(400).json({ ok: false, error: 'Could not price the fee note' });
+    }
+
     const reference = await nextReference(p.route);
     if (DRY_RUN) {
       console.log(`[dry-run] fee note ${reference}:`, JSON.stringify(feeNoteFields(p, reference)));
@@ -328,8 +345,115 @@ app.post('/api/fee-notes', async (req, res) => {
   }
 });
 
+/* ---------------- payment (Stripe Checkout) ----------------
+ * Amounts are always computed server-side: from the stored Airtable record
+ * when live, or from the raw basket via lib/pricing when in dry run. With no
+ * STRIPE_SECRET_KEY the client falls back to the simulated card form. */
+app.post('/api/checkout', async (req, res) => {
+  try {
+    const b = req.body || {};
+    let amount = null, reference = '', email = '', recordId = null;
+
+    if (!DRY_RUN && b.recordId && /^rec[A-Za-z0-9]{14}$/.test(b.recordId)) {
+      const rec = await at('GET', `${FEE_TABLE}/${b.recordId}`);
+      const f = rec.fields || {};
+      if (f['Route'] !== 'Private') return res.status(400).json({ ok: false, error: 'Only private fee notes are paid by card' });
+      if (f['Status'] === 'Paid' || f['Status'] === 'Booked') return res.json({ ok: true, alreadyPaid: true, reference: f['Reference'] });
+      amount = Number(f['Total']);
+      reference = f['Reference'] || '';
+      email = (f['Contact email'] || '').trim();
+      recordId = b.recordId;
+    } else {
+      /* Dry run — price the raw basket with the shared catalogue. */
+      const t = pricing.computeTotals({ basket: b.basket, fastTrack: !!b.fastTrack, location: b.location });
+      if (!t) return res.status(400).json({ ok: false, error: 'Could not price the fee note' });
+      amount = t.total;
+      reference = String(b.reference || '').slice(0, 20);
+      email = String(b.email || '').trim();
+    }
+
+    if (!(amount > 0) || !reference) return res.status(400).json({ ok: false, error: 'Nothing to pay' });
+    if (stripe.SIMULATED) return res.json({ ok: true, simulated: true });
+
+    const session = await stripe.createCheckoutSession({
+      baseUrl: BASE_URL,
+      reference,
+      amountPence: Math.round(amount * 100),
+      email,
+      recordId
+    });
+    res.json({ ok: true, url: session.url });
+  } catch (err) {
+    console.error('POST /api/checkout failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not start the payment' });
+  }
+});
+
+/* Mark a fee note paid in Airtable (idempotent) and start the book-later nudge. */
+async function markPaid(recordId, paymentId) {
+  if (DRY_RUN || !recordId) return;
+  const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
+  const f = rec.fields || {};
+  if (f['Status'] === 'Paid' || f['Status'] === 'Booked') return;
+  await at('PATCH', FEE_TABLE, {
+    records: [{ id: recordId, fields: {
+      'Status': 'Paid',
+      'Paid at': new Date().toISOString(),
+      'Stripe payment ID': String(paymentId || '').slice(0, 100)
+    } }],
+    typecast: true
+  });
+  scheduleBookLater(recordId);
+}
+
+/* The browser returns from Stripe with ?paid=1&sid=... — confirm server-side. */
+app.get('/api/checkout/confirm', async (req, res) => {
+  try {
+    if (stripe.SIMULATED) return res.status(400).json({ ok: false, error: 'Payments are simulated in this environment' });
+    const sid = String(req.query.session_id || '');
+    if (!/^cs_[A-Za-z0-9_]+$/.test(sid)) return res.status(400).json({ ok: false, error: 'Bad session id' });
+    const session = await stripe.getSession(sid);
+    if (session.payment_status !== 'paid') return res.json({ ok: true, paid: false });
+    const meta = session.metadata || {};
+    await markPaid(meta.recordId, session.payment_intent);
+    res.json({
+      ok: true,
+      paid: true,
+      reference: meta.reference || session.client_reference_id || '',
+      amount: (session.amount_total || 0) / 100,
+      receipt: String(session.payment_intent || sid)
+    });
+  } catch (err) {
+    console.error('GET /api/checkout/confirm failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not confirm the payment' });
+  }
+});
+
+/* Stripe webhook — the authoritative 'paid' signal (survives closed tabs). */
+app.post('/api/stripe/webhook', async (req, res) => {
+  try {
+    if (!stripe.WEBHOOK_SECRET) return res.status(503).json({ ok: false, error: 'Webhook secret not configured' });
+    if (!stripe.verifyWebhook(req.rawBody, req.headers['stripe-signature'])) {
+      return res.status(400).json({ ok: false, error: 'Bad signature' });
+    }
+    const event = req.body || {};
+    if (event.type === 'checkout.session.completed') {
+      const session = (event.data && event.data.object) || {};
+      if (session.payment_status === 'paid') {
+        const meta = session.metadata || {};
+        await markPaid(meta.recordId, session.payment_intent);
+        console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent})`);
+      }
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('POST /api/stripe/webhook failed:', err.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
 /* Post-submission status events (simulated pay / booking in the prototype;
- * Stripe and Acuity webhooks replace these calls in later build steps). */
+ * the simulated 'paid' path is ignored once Stripe is configured). */
 app.patch('/api/fee-notes/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -339,6 +463,7 @@ app.patch('/api/fee-notes/:id', async (req, res) => {
     let fields;
 
     if (event === 'paid') {
+      if (!stripe.SIMULATED) return res.status(400).json({ ok: false, error: 'Payments are confirmed by Stripe' });
       fields = {
         'Status': 'Paid',
         'Paid at': now,

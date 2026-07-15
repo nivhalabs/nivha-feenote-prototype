@@ -604,6 +604,15 @@ a, button, input, [role='button'] {
   color: var(--color-primary); margin-bottom: var(--space-5);
 }
 .pay-secure { font-size: var(--text-xs); color: var(--color-text-muted); }
+.pay-explain { font-size: var(--text-sm); color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-5); }
+.pay-error { font-size: var(--text-sm); color: #b3261e; margin-top: var(--space-3); }
+.pay-notice {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  background: var(--color-callout); border: 1px solid var(--color-border);
+  border-radius: 12px; padding: var(--space-4) var(--space-5); margin-bottom: var(--space-6);
+  color: var(--color-primary);
+}
+.pay-notice span { font-size: var(--text-sm); color: var(--color-text); }
 .pay-note {
   display: flex; gap: var(--space-2); align-items: flex-start;
   font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-4);

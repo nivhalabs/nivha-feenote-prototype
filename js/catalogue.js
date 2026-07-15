@@ -373,3 +373,9 @@ const COURT_RATES = {
   ],
   note: "Where the instruction is legally aided, the applicable legal aid authority's rates are observed."
 };
+
+/* Node export so the server prices fee notes from the same catalogue.
+   Browsers ignore this block. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { CATALOGUE, COMBINED_RATES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
+}

@@ -1033,6 +1033,7 @@
       route: state.route,
       location: state.collection,
       fastTrack: !!state.fastTrack,
+      basket: rawBasket(),
       details: {
         org: d.org || '', orgAddress: d.orgAddress || '', orgTown: d.orgTown || '', orgPostcode: d.orgPostcode || '',
         caseref: d.caseref || '', costCentre: d.costCentre || '', legalAidRef: d.legalAidRef || '',
@@ -1076,10 +1077,52 @@
     goTo(state.route === 'private' ? 6 : 7);
   });
 
-  /* ---------------- step 6 — simulated checkout (private) ---------------- */
+  /* ---------------- step 6 — payment (private) ---------------- */
+  const PAY_STATE_KEY = 'nivha-pay-state';
+
+  function rawBasket() {
+    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1 }));
+  }
+
+  /* The wizard state lives in memory, so it is parked in sessionStorage for
+     the round trip to the payment provider and restored on return. */
+  function persistForPayment() {
+    try {
+      sessionStorage.setItem(PAY_STATE_KEY, JSON.stringify({
+        route: state.route,
+        basket: [...state.basket.entries()],
+        fastTrack: !!state.fastTrack,
+        collection: state.collection,
+        details: state.details,
+        refNumber: state.refNumber,
+        recordId: state.recordId || null
+      }));
+    } catch (e) {}
+  }
+
+  function restoreFromPayment() {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(PAY_STATE_KEY) || 'null'); } catch (e) {}
+    if (!saved || saved.route !== 'private' || !saved.refNumber) return false;
+    state.route = saved.route;
+    state.privateAck = true;
+    state.basket = new Map(saved.basket || []);
+    state.fastTrack = !!saved.fastTrack;
+    state.collection = saved.collection;
+    state.details = saved.details || {};
+    state.refNumber = saved.refNumber;
+    state.recordId = saved.recordId || null;
+    state.maxVisited = 5;
+    document.getElementById('gate').hidden = true;
+    document.querySelector('.stepper').hidden = false;
+    return true;
+  }
+
   function renderCheckout() {
     const t = computeTotals();
     const d = state.details;
+    const notice = state.payNotice || null;
+    state.payNotice = null;
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
       return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
@@ -1092,6 +1135,7 @@
         <div><strong>Fee note ${state.refNumber} submitted</strong>
         <span>One step left — private instructions are paid in advance. Booking opens as soon as payment is confirmed.</span></div>
       </div>
+      ${notice ? `<div class="pay-notice">${icon('info', 18)}<span>${notice}</span></div>` : ''}
       <div class="panel-head">
         <p class="marker">Payment</p>
         <h1>Secure payment</h1>
@@ -1113,6 +1157,52 @@
             ${t.onsite ? `<p class="sum-poa">The on-site collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) is priced on request — we confirm it with you and invoice it separately before the visit.</p>` : ''}
           </div>
         </div>
+        <div class="pay-card" id="pay-card">
+          <div class="pay-brand">${icon('lock', 18)}<span class="pay-secure">Secure card payment · handled by our payment provider</span></div>
+          <p class="pay-explain">You are taken to Stripe's secure checkout to pay by card. NIVHA never sees or stores your card details.</p>
+          <button type="button" class="btn primary full" id="pay-btn">Pay ${gbp(t.total)} securely</button>
+          <p class="pay-error" id="pay-error" hidden></p>
+          <p class="pay-note">${icon('info', 14)}<span>Your receipt is emailed to you automatically. Booking opens as soon as payment is confirmed — and if you close the page, we email you a secure link so you can book later.</span></p>
+        </div>
+      </div>
+      <div class="panel-actions">
+        <button class="btn ghost" id="pay-back">Back to review</button>
+      </div>`;
+
+    document.getElementById('pay-back').addEventListener('click', () => goTo(5));
+    document.getElementById('pay-btn').addEventListener('click', startPayment);
+
+    async function startPayment() {
+      const btn = document.getElementById('pay-btn');
+      const errEl = document.getElementById('pay-error');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      errEl.hidden = true;
+      btn.innerHTML = '<span class="spinner"></span> Opening secure checkout';
+      try {
+        const resp = await API.post('/api/checkout', {
+          recordId: state.recordId || undefined,
+          reference: state.refNumber,
+          basket: rawBasket(),
+          fastTrack: !!state.fastTrack,
+          location: state.collection,
+          email: d.contactEmail || ''
+        });
+        if (resp.url) { persistForPayment(); location.assign(resp.url); return; }
+        if (resp.alreadyPaid) { state.payment = { receipt: 'confirmed', amount: t.total }; goTo(7); return; }
+        if (resp.simulated) { renderSimulatedCard(); return; }
+        throw new Error('No checkout URL');
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = `Pay ${gbp(t.total)} securely`;
+        errEl.textContent = 'We could not open the secure checkout just now. Please try again in a moment — nothing has been taken.';
+        errEl.hidden = false;
+      }
+    }
+
+    /* Fallback while no payment key is configured — keeps the walkthrough usable. */
+    function renderSimulatedCard() {
+      document.getElementById('pay-card').outerHTML = `
         <form class="pay-card" id="pay-form" novalidate>
           <div class="pay-brand">${icon('lock', 18)}<span class="pay-secure">Secure card payment · encrypted end to end</span></div>
           <div class="form-field"><label for="pay-email">Email</label>
@@ -1129,25 +1219,55 @@
             <input type="text" id="pay-name" value="${d.contactName || ''}" autocomplete="off"></div>
           <button type="submit" class="btn primary full" id="pay-btn">Pay ${gbp(t.total)} securely</button>
           <p class="pay-note">${icon('info', 14)}<span>This is a simulation — no payment is taken and card details are pre-filled with test values. Card payments are handled by our payment provider; NIVHA never stores card details.</span></p>
-        </form>
-      </div>
-      <div class="panel-actions">
-        <button class="btn ghost" id="pay-back">Back to review</button>
-      </div>`;
+        </form>`;
+      document.getElementById('pay-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const btn = document.getElementById('pay-btn');
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Processing payment';
+        setTimeout(() => {
+          state.payment = { receipt: 'NV-8362', amount: t.total };
+          if (state.recordId) API.patch('/api/fee-notes/' + state.recordId, { event: 'paid', amount: t.total }).catch(() => {});
+          goTo(7);
+        }, 1400);
+      });
+    }
+  }
 
-    document.getElementById('pay-back').addEventListener('click', () => goTo(5));
-    document.getElementById('pay-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const btn = document.getElementById('pay-btn');
-      if (btn.disabled) return;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Processing payment';
-      setTimeout(() => {
-        state.payment = { receipt: 'NV-8362', amount: t.total };
-        if (state.recordId) API.patch('/api/fee-notes/' + state.recordId, { event: 'paid', amount: t.total }).catch(() => {});
+  /* Return from the payment provider: /?paid=1&sid=... or /?canceled=1 */
+  async function initPaymentReturn() {
+    const params = new URLSearchParams(location.search);
+    const paidSid = params.get('paid') === '1' ? params.get('sid') : null;
+    const canceled = params.get('canceled') === '1';
+    if (!paidSid && !canceled) return false;
+    history.replaceState(null, '', location.pathname);
+    if (!restoreFromPayment()) return false;
+    if (canceled) {
+      state.payNotice = 'Payment was cancelled — nothing has been taken. You can pay when you are ready.';
+      goTo(6);
+      return true;
+    }
+    sections.forEach(id => { document.getElementById(id).hidden = id !== 'step-pay'; });
+    document.getElementById('checkout').innerHTML = `
+      <div class="panel-head">
+        <p class="marker">Payment</p>
+        <h1>Confirming your payment</h1>
+        <p class="lede">One moment — we are confirming your payment with our payment provider.</p>
+      </div>`;
+    try {
+      const resp = await API.get('/api/checkout/confirm?session_id=' + encodeURIComponent(paidSid));
+      if (resp.paid) {
+        state.payment = { receipt: resp.receipt || state.refNumber, amount: resp.amount || computeTotals().total };
         goTo(7);
-      }, 1400);
-    });
+        return true;
+      }
+      state.payNotice = 'Your payment has not been confirmed yet — this can take a moment. Try again shortly, or contact info@nivha.net. You are never charged twice.';
+    } catch (e) {
+      state.payNotice = 'We could not confirm the payment just now. If you completed payment, we email you a secure link to book — or contact info@nivha.net.';
+    }
+    goTo(6);
+    return true;
   }
 
   /* ---------------- step 7 — simulated booking (embedded scheduling calendar) ---------------- */
@@ -1776,5 +1896,7 @@
   renderPrivateAdvice();
   renderLocations();
   renderConcerns();
-  initGate();
+  initPaymentReturn()
+    .then(handled => { if (!handled) initGate(); })
+    .catch(() => initGate());
 })();
