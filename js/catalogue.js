@@ -20,7 +20,7 @@ const CATALOGUE = [
     detects: 'Cannabis, cocaine and metabolites, ecstasy drugs, amphetamine and methamphetamine, opiates including heroin, and common benzodiazepines such as diazepam, temazepam and alprazolam.',
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'The panel most courts ask for. If you need ketamine, methadone or the wider benzodiazepine and sleep-medicine range as well, choose the extended panel instead — it already includes everything in this one. Additional hair segments can be analysed — priced on application.'
   },
   {
@@ -30,7 +30,7 @@ const CATALOGUE = [
     base: 'H-DP1',
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard panel — you do not need to order both. Additional hair segments can be analysed — priced on application.'
   },
   {
@@ -39,7 +39,7 @@ const CATALOGUE = [
     detects: 'Tramadol, oxycodone, dihydrocodeine, hydrocodone, hydromorphone, and the anticonvulsants pregabalin and gabapentin.',
     drugs: ['Tramadol', 'Oxycodone', 'Dihydrocodeine', 'Hydrocodone', 'Hydromorphone', 'Pregabalin', 'Gabapentin'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Choose this where misuse of prescribed painkillers is a concern. Ordered together with the standard panel, the combined rate of £600 + VAT applies automatically — a £60 saving.'
   },
   {
@@ -48,7 +48,7 @@ const CATALOGUE = [
     detects: 'Etizolam, bromazolam, clonazolam, flualprazolam, flubromazolam, meclonazepam and clobazam — non-pharmaceutical benzodiazepines currently prevalent in forensic casework.',
     drugs: ['Etizolam', 'Bromazolam', 'Clonazolam', 'Flualprazolam', 'Flubromazolam', 'Meclonazepam', 'Clobazam'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Useful where street or non-pharmaceutical benzodiazepines are suspected. Fast track is not available for this panel.'
   },
   {
@@ -57,7 +57,7 @@ const CATALOGUE = [
     detects: 'Synthetic cannabinoid receptor agonists, cathinones, tryptamines, phenethylamines and fentanyls. Drugs already covered by the standard panels are not included.',
     drugs: ['Synthetic cannabinoids', 'Cathinones', 'Tryptamines', 'Phenethylamines', 'Fentanyls'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Only needed where specific novel substances are suspected — our team can advise if unsure.',
     variants: [
       { short: 'Qualitative', label: 'Qualitative', price: 450 },
@@ -70,7 +70,7 @@ const CATALOGUE = [
     detects: 'Synthetic anabolic steroids and steroid esters.',
     drugs: ['Anabolic steroids', 'Steroid esters'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Choose this where steroid use is a specific concern.'
   },
   {
@@ -79,7 +79,7 @@ const CATALOGUE = [
     detects: 'One drug of your choosing, named at instruction.',
     drugs: ['One named drug of your choice'],
     window: 'Around 3 months of history (3cm of head hair).',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'A focused test for one named substance — tell us which drug when you complete your details.',
     variants: [
       { short: 'Standard', label: 'Standard analysis', price: 300 },
@@ -92,7 +92,7 @@ const CATALOGUE = [
     detects: 'EtG, the alcohol marker recommended for assessing claimed abstinence.',
     drugs: ['EtG — the abstinence marker for alcohol'],
     window: 'Around 3 months of drinking history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'The right choice where someone says they are not drinking and the court needs that verified.'
   },
   {
@@ -102,7 +102,7 @@ const CATALOGUE = [
     base: 'H-EtG',
     adds: ['FAEE — the second alcohol marker, needed to evidence chronic excessive drinking'],
     window: 'Around 3 months of drinking history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the abstinence marker — you do not need to order both alcohol tests.'
   },
 
@@ -113,7 +113,7 @@ const CATALOGUE = [
     detects: 'Cannabis, cocaine and metabolites, ecstasy drugs, amphetamine and methamphetamine, opiates including heroin, and common benzodiazepines such as diazepam, temazepam and alprazolam.',
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: '6 to 12 months of history. Nails show sustained use rather than one-off events.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Useful where hair is too short or treated, or a longer history is needed. Nail polish and false nails must be removed before collection.'
   },
   {
@@ -123,7 +123,7 @@ const CATALOGUE = [
     base: 'N-DP1',
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
     window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard nail panel — you do not need to order both.'
   },
   {
@@ -132,7 +132,7 @@ const CATALOGUE = [
     detects: 'Tramadol, oxycodone, dihydrocodeine, hydrocodone, hydromorphone, and the anticonvulsants pregabalin and gabapentin.',
     drugs: ['Tramadol', 'Oxycodone', 'Dihydrocodeine', 'Hydrocodone', 'Hydromorphone', 'Pregabalin', 'Gabapentin'],
     window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'The nail equivalent of the hair analgesics panel.'
   },
   {
@@ -141,7 +141,7 @@ const CATALOGUE = [
     detects: 'Synthetic cannabinoid receptor agonists, cathinones, tryptamines, phenethylamines and fentanyls. Drugs already covered by the standard panels are not included.',
     drugs: ['Synthetic cannabinoids', 'Cathinones', 'Tryptamines', 'Phenethylamines', 'Fentanyls'],
     window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Only needed where specific novel substances are suspected — our team can advise if unsure.',
     variants: [
       { short: 'Qualitative', label: 'Qualitative', price: 475 },
@@ -154,7 +154,7 @@ const CATALOGUE = [
     detects: 'Synthetic anabolic steroids and steroid esters.',
     drugs: ['Anabolic steroids', 'Steroid esters'],
     window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Choose this where steroid use is a specific concern.'
   },
   {
@@ -163,7 +163,7 @@ const CATALOGUE = [
     detects: 'One drug of your choosing, named at instruction.',
     drugs: ['One named drug of your choice'],
     window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'A focused test for one named substance — tell us which drug when you complete your details.'
   },
   {
@@ -172,7 +172,7 @@ const CATALOGUE = [
     detects: 'EtG, the alcohol marker, measured in nail.',
     drugs: ['EtG — the abstinence marker for alcohol'],
     window: '6 to 12 months of drinking history.',
-    turnaround: 'About 15 working days from the lab receiving the sample.',
+    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'An alternative where head hair is unavailable. Where suitable hair cannot be collected, blood PEth can also be considered.'
   },
 

@@ -598,6 +598,48 @@
     }).join('');
 
     const empty = state.basket.size === 0;
+
+    /* Fast track upsell — shown whenever the basket holds eligible panels,
+       including pre-selected baskets where panel cards are never opened. */
+    const addWorkingDays = (from, n) => {
+      const d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+      let added = 0;
+      while (added < n) {
+        d.setDate(d.getDate() + 1);
+        const dw = d.getDay();
+        if (dw !== 0 && dw !== 6) added++;
+      }
+      return d;
+    };
+    const ftFmt = d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const ftEligible = [...state.basket.keys()].filter(c => byCode[c].fastTrack);
+    const ftInelig = [...state.basket.keys()].filter(c => !byCode[c].fastTrack);
+    const ftUpsell = (empty || !ftEligible.length) ? '' : state.fastTrack
+      ? `<div class="ft-upsell on">
+           <div>
+             <strong>Fast track added</strong>
+             <p>Eligible panels are reported in about 5 working days of the sample reaching the lab.</p>
+           </div>
+           <button class="ft-remove-link" id="ft-remove">Remove</button>
+         </div>`
+      : (() => {
+          const appt = addWorkingDays(new Date(), 2);
+          const receipt = addWorkingDays(appt, 2); /* postal transit to the lab */
+          const std = addWorkingDays(receipt, 15);
+          const fast = addWorkingDays(receipt, 5);
+          return `<div class="ft-upsell">
+           <strong>Need the report sooner?</strong>
+           <p>Standard turnaround is about 15 working days from the lab receiving the sample — allow 2 working days for post. Fast track brings ${ftInelig.length ? 'eligible panels' : 'your report'} to about 5 working days, at ${gbp(FAST_TRACK_FEE)} + VAT per panel.</p>
+           <div class="ft-example">
+             <p>As a guide, if the appointment were ${ftFmt(appt)}, you could expect the report:</p>
+             <div class="ft-example-row"><span>Standard</span><span>around ${ftFmt(std)}</span></div>
+             <div class="ft-example-row on"><span>Fast track</span><span>around ${ftFmt(fast)}</span></div>
+           </div>
+           ${ftInelig.length ? `<p class="ft-upsell-note">${ftInelig.map(disp).join(', ')} ${ftInelig.length === 1 ? 'is' : 'are'} not eligible for fast track and ${ftInelig.length === 1 ? 'keeps' : 'keep'} the standard turnaround.</p>` : ''}
+           <button class="btn ghost full" id="ft-add">Fast track this instruction — about 5 working days</button>
+         </div>`;
+        })();
+
     const html = `
       <div class="summary-card">
         <h2>Your fee note</h2>
@@ -618,6 +660,7 @@
              <p class="sum-note">${state.route === 'private'
                 ? 'Payment is taken securely in advance by card. Booking opens as soon as payment clears.'
                 : 'We invoice your organisation — results are released on payment of the fee note.'}</p>`}
+        ${ftUpsell}
         ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty ? 'disabled' : ''}>Continue to your details</button>` : ''}
         ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review fee note</button>` : ''}
       </div>`;
@@ -629,6 +672,16 @@
     if (c) c.addEventListener('click', () => goTo(4));
     const r = document.getElementById('sum-review');
     if (r) r.addEventListener('click', () => validateDetails() && goTo(5));
+    const setFt = on => {
+      state.fastTrack = on;
+      updateFtNotice();
+      if (state.step === 3) { renderCatalogue(); renderNotices(); }
+      renderSummary(); updateMobileBar();
+    };
+    const fa = document.getElementById('ft-add');
+    if (fa) fa.addEventListener('click', () => setFt(true));
+    const fr = document.getElementById('ft-remove');
+    if (fr) fr.addEventListener('click', () => setFt(false));
   }
 
   /* ---------------- mobile bar ---------------- */
