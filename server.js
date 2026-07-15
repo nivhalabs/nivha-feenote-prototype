@@ -414,9 +414,10 @@ app.get('/api/checkout/confirm', async (req, res) => {
     const sid = String(req.query.session_id || '');
     if (!/^cs_[A-Za-z0-9_]+$/.test(sid)) return res.status(400).json({ ok: false, error: 'Bad session id' });
     const session = await stripe.getSession(sid);
-    if (session.payment_status !== 'paid') return res.json({ ok: true, paid: false });
+    /* 'no_payment_required' covers 100%-discounted sessions — still completed. */
+    if (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required') return res.json({ ok: true, paid: false });
     const meta = session.metadata || {};
-    await markPaid(meta.recordId, session.payment_intent);
+    await markPaid(meta.recordId, session.payment_intent || session.id);
     res.json({
       ok: true,
       paid: true,
@@ -440,10 +441,10 @@ app.post('/api/stripe/webhook', async (req, res) => {
     const event = req.body || {};
     if (event.type === 'checkout.session.completed') {
       const session = (event.data && event.data.object) || {};
-      if (session.payment_status === 'paid') {
+      if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
         const meta = session.metadata || {};
-        await markPaid(meta.recordId, session.payment_intent);
-        console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent})`);
+        await markPaid(meta.recordId, session.payment_intent || session.id);
+        console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent || session.id})`);
       }
     }
     res.json({ received: true });
