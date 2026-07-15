@@ -571,12 +571,24 @@ app.post('/api/booking/confirm', async (req, res) => {
     const contactName = String(f['Contact name'] || '').trim();
     const firstName = contactName.split(/\s+/)[0] || 'Fee';
     const lastName = contactName.split(/\s+/).slice(1).join(' ') || 'note';
+    /* Fee note summary on the appointment — what the collector needs at a glance. */
+    let panels = '';
+    try {
+      panels = JSON.parse(f['Panels JSON'] || '[]').map(p => `${p.code} — ${p.label}`).join('; ');
+    } catch { /* leave blank */ }
+    const dob = f['Donor DOB'] ? ` (DOB ${String(f['Donor DOB']).split('-').reverse().join('/')})` : '';
+    const notes = [
+      `Fee note ${f['Reference'] || ''}${label ? ' — ' + label : ''}`,
+      f['Donor name'] ? `Donor: ${f['Donor name']}${dob} — photo ID required` : '',
+      panels ? `Panels: ${panels}` : '',
+      `Route: ${f['Route'] || ''}${f['Turnaround'] === 'Fast track' ? ' · Fast track' : ''}`
+    ].filter(Boolean).join('\n');
     const appt = await acuity.createAppointment({
       datetime,
       firstName, lastName,
       email: String(f['Contact email'] || '').trim(),
       phone: String(f['Contact phone'] || '').trim(),
-      notes: `Fee note ${f['Reference'] || ''}${label ? ' — ' + label : ''}`
+      notes
     });
     await at('PATCH', FEE_TABLE, {
       records: [{ id: recordId, fields: {
