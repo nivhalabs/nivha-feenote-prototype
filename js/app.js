@@ -1323,9 +1323,10 @@
   const bk = { view: 0, date: null, time: null, live: undefined, availDates: null, timesCache: {}, error: null };
 
   function bookingMonths() {
-    const { min, max } = bookingWindow();
-    const months = [{ y: min.getFullYear(), m: min.getMonth() }];
-    if (max.getFullYear() !== min.getFullYear() || max.getMonth() !== min.getMonth()) {
+    const from = startOfDay(new Date());
+    const { max } = bookingWindow();
+    const months = [{ y: from.getFullYear(), m: from.getMonth() }];
+    if (max.getFullYear() !== from.getFullYear() || max.getMonth() !== from.getMonth()) {
       months.push({ y: max.getFullYear(), m: max.getMonth() });
     }
     return months;
@@ -1364,10 +1365,10 @@
     const dayAvailable = date => {
       if (bk.live === 'checking') return false;
       if (bk.live === true) {
-        const dow = date.getDay();
-        if (dow === 0 || dow === 6) return false;
-        const { min, max } = bookingWindow();
-        if (date < min || date > max) return false;
+        /* Live mode trusts Acuity — its own scheduling limits decide the
+           earliest bookable slot. We only cap how far ahead we show. */
+        const { max } = bookingWindow();
+        if (date < startOfDay(new Date()) || date > max) return false;
         return bk.availDates.has(dayKey(date));
       }
       return slotsFor(date).length > 0;
@@ -1427,7 +1428,7 @@
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
           ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
-          ${isPrivate ? `<p class="bk-note">Private appointments open five working days ahead — the calendar shows the earliest available dates.</p>` : ''}
+
         </div>
         <div class="bk-cal-card">
           <div class="bk-cal-head">
