@@ -22,7 +22,7 @@ This annex supplements the Subject Access Request SOP (CD37). Where anything in 
 
 This annex applies when the person contacting NIVHA is (or claims to be) **the donor** in a Trust-instructed or solicitor-instructed medico-legal case, or someone acting for them. It does **not** apply to:
 
-- **Private clients** (self-instructed, self-paid) — they are our client; respond under CD37 directly, no signposting. See section 7.
+- **Private clients** (self-instructed, self-paid) — they are our client; respond under CD37 directly, no signposting. See section 8.
 - **Statutory testing** (SMC / Probation Board) — covered by the Government DPA and the statutory privacy notice.
 - **Workplace testing** — covered by the SAR SOP main procedure and the workplace notices.
 - The instructing Trust or solicitor asking for case records — that is normal case correspondence, not a SAR.
@@ -33,8 +33,9 @@ This annex applies when the person contacting NIVHA is (or claims to be) **the d
 2. **Never confirm case details to an unverified caller** — including whether a person was tested at all. Confirming that a test took place is itself a disclosure of special category data.
 3. **No fee. Ever.** SARs are free of charge.
 4. **Signposting is not refusing.** We point the donor to the instructing party first because they hold the case file and the court context — but if the donor insists on a SAR to NIVHA, we must take it and respond within **one calendar month** for the data NIVHA holds.
-5. **Formal SARs follow CD37.** This annex adds the medico-legal signposting layer; identity verification, logging, exemptions, and response steps are as per CD37.
-6. **When in doubt, take details and escalate** to Andy McDonald (andy@nivha.net) before disclosing anything.
+5. **Court material is the court's.** Reports and records prepared for family proceedings are not NIVHA's to hand out — the default is that they are provided through the instructing party or with the court's permission, never directly in response to a SAR. Section 7 sets out the rules.
+6. **Formal SARs follow CD37.** This annex adds the medico-legal signposting layer; identity verification, logging, exemptions, and response steps are as per CD37.
+7. **When in doubt, take details and escalate** to Andy McDonald (andy@nivha.net) before disclosing anything.
 
 ## 4. Call Handling Script
 
@@ -61,7 +62,7 @@ Do not confirm that any test, case, or record exists at this stage — even if t
 >
 > Separately, you do have the right to ask NIVHA for a copy of the personal information we hold about you ourselves — that's called a subject access request, it's free, and if you'd like to make one I can explain how. I do need to let you know that what NIVHA holds is our own records — things like the collection record and correspondence — and some information connected to court proceedings may be restricted or may need to come through the court or your solicitor."
 
-If the donor is content to go to the instructing party: offer to send the signposting letter (section 5) by email or post, and log the contact (section 8). **Do not send the letter to an unverified address if it would confirm a test took place — verify identity first, or use neutral wording.**
+If the donor is content to go to the instructing party: offer to send the signposting letter (section 5) by email or post, and log the contact (section 9). **Do not send the letter to an unverified address if it would confirm a test took place — verify identity first, or use neutral wording.**
 
 **Step 4 — Take the SAR (donor insists, or asks for NIVHA's records).**
 
@@ -116,12 +117,45 @@ NIVHA Laboratory Services Ltd
 When a formal SAR from a medico-legal donor proceeds, apply CD37 in full, **plus**:
 
 1. **Inform the instructing party** (per the Data Sharing Agreement, clause 11.3) that a SAR has been received, without delaying the response clock.
-2. **Scope carefully.** NIVHA discloses the personal data NIVHA holds: collection records, donor acknowledgement, chain of custody entries naming the donor, correspondence with the donor, and the result/report data NIVHA controls. Third-party personal data (case workers, other parties to proceedings) must be redacted per CD37 Step 7.
-3. **Consider proceedings-related restrictions before disclosure.** Where records were prepared for, or filed in, family proceedings, disclosure may be restricted by court rules. If any requested record was prepared for proceedings, escalate to Andy and take legal advice before disclosing that record. Never treat this as a blanket refusal — assess record by record and document the reasoning.
+2. **Scope carefully.** NIVHA discloses its own operational records about the donor: collection records, donor acknowledgement, identity verification record, correspondence with the donor, and appointment data. **Results and reports are not released through this route while a case is live** — they are assessed under section 7 and provided through the instructing party or the court. Third-party personal data (case workers, other parties to proceedings) must be redacted per CD37 Step 7.
+3. **Apply the withholding rules in section 7 before disclosing anything.** Where any requested record was prepared for, filed in, or obtained in connection with legal proceedings or safeguarding work, the default is **not** to disclose that record — escalate to Andy, who decides record by record under section 7. Never treat this as a blanket refusal of the whole SAR.
 4. **B sample queries** raised during a SAR are handled as in section 4 Step 5 — signpost to the instructing party; note the request in the SAR register.
 5. **Under-18 donors:** verify parental responsibility, and consider the young person's own rights and competence before responding to a parent's request; escalate to Andy in all cases.
 
-## 7. Private Clients — No Signposting
+## 7. When Information Must Be Withheld
+
+A SAR gives the donor a right to **NIVHA's records about them** — it is not a route to the court bundle, the case file, or the expert evidence. The following rules apply record by record. The decision, the exemption relied on, and the reasoning are recorded in the SAR Register in every case.
+
+**7.1 Records prepared for family proceedings — do not release directly.**
+Expert reports, statements, and any record prepared for use in family or care proceedings are confidential to those proceedings. Court rules restrict who may see them, and releasing them outside the proceedings without the court's permission can amount to contempt of court. The default position is: these records are provided **through the instructing party, or with the permission of the court — never directly by NIVHA in response to a SAR**. Tell the requester this is why, and signpost them to their solicitor or the instructing Trust.
+
+**7.2 Solicitor-instructed work — privilege is not NIVHA's to waive.**
+Where a report was commissioned by a solicitor for actual or contemplated proceedings, it is likely to be covered by litigation privilege (UK GDPR read with DPA 2018 Schedule 2, paragraph 19 — legal professional privilege). That privilege belongs to the instructing solicitor's client, not to NIVHA and not automatically to the donor. NIVHA must not release the report or related instructions; direct the requester to the instructing solicitor.
+
+**7.3 Safeguarding — the serious harm test.**
+Information obtained from a Trust in connection with its social work functions may be withheld where disclosure **would be likely to cause serious harm to the physical or mental health of the donor or any other person** (DPA 2018 Schedule 3, Part 4 — social work data). Examples: material that would reveal what a social worker or family member reported, or that could put a child or another party at risk. Where this may apply, NIVHA consults the instructing Trust before responding — they hold the safeguarding context; NIVHA does not guess.
+
+**7.4 Results in a live case — not released directly. Default: through the instructing party or the court.**
+In a Trust or solicitor instruction, the test result exists for one purpose: the proceedings. While proceedings are live or in contemplation, the result and anything derived from it are treated as part of the evidence in the case — releasing them directly to the donor in response to a SAR could prejudice the proceedings and, in care cases, put children or other parties at risk. The default is therefore:
+
+- **Do not release results or reports directly to the donor while the case is live.** They receive them through the instructing party or as the court directs — that is where the result can be explained in context, with the safeguarding picture the Trust holds and NIVHA does not.
+- **Consult the instructing party before responding to any donor SAR** (this also satisfies the notification duty in the Data Sharing Agreement): confirm whether proceedings are live and whether any safeguarding concern applies to direct release.
+- The legal footing: results are data concerning health, and the serious harm test applies (DPA 2018 Schedule 3, Part 2 — with the reporting scientist consulted); material prepared for the proceedings is covered by 7.1 and 7.2; and safeguarding-sensitive material by 7.3.
+- **Once proceedings have concluded** and the instructing party confirms no ongoing safeguarding concern, direct release of the donor's own result can be appropriate — decided record by record and documented.
+
+What the donor is told, in plain terms: "Your results form part of the evidence in your case, so they are provided through [the Trust / your solicitor] or the court rather than directly by us — this protects the proceedings and everyone involved in them. The information NIVHA holds about you outside the case papers is included in our response."
+
+**7.5 Other people's information — redact.**
+Names and details of case workers, family members, and other parties are redacted per CD37 Step 7, unless they have consented or it is reasonable to disclose without consent.
+
+**7.6 What we always still do.**
+
+- **Never a blanket refusal.** NIVHA's own operational records — the collection record, donor acknowledgement, identity verification record, correspondence with the donor, and booking or payment data — are disclosed as normal unless a rule above applies to a specific record.
+- **Respond within one calendar month** even where material is withheld.
+- **Say that something was withheld.** Tell the requester that some information has been withheld under a legal exemption and that they may complain to the ICO — unless, exceptionally, even confirming that would itself cause the harm (escalate to Andy; this is rare).
+- **Document everything.** Which records were withheld, under what rule, decided by whom, and why — logged in the SAR Register. This record is NIVHA's protection if the decision is ever challenged.
+
+## 8. Private Clients — No Signposting
 
 A private client instructed and paid for their own test. They are NIVHA's client and data subject:
 
@@ -129,7 +163,7 @@ A private client instructed and paid for their own test. They are NIVHA's client
 - A formal SAR from a private client is handled wholly under CD37, no signposting, one calendar month, free of charge.
 - Do not disclose a private client's testing to anyone else — including family members who "arranged" or paid for the appointment — without the client's written instruction.
 
-## 8. Logging
+## 9. Logging
 
 Log **every** medico-legal donor contact — signposted calls as well as formal SARs — in the SAR Register with the CD37 fields, plus:
 
@@ -139,11 +173,11 @@ Log **every** medico-legal donor contact — signposted calls as well as formal 
 | Route | Trust / Solicitor / Private |
 | Outcome | Signposted / SAR taken / SAR completed / No disclosure — unverified / Escalated |
 | Instructing party informed | Y / N / n.a. and date |
-| Proceedings-restriction check | Y / N / n.a. and outcome |
+| Withholding check (section 7) | Y / N / n.a. — rules applied and outcome |
 
-## 9. Escalation
+## 10. Escalation
 
-Escalate to Andy McDonald (andy@nivha.net) before any disclosure where: identity cannot be fully verified; the record was prepared for court proceedings; the donor is under 18; the caller alleges NIVHA disclosed something wrongly (possible breach — apply the Breach Response Card, CD29); or anything else feels off. It is always acceptable to pause and check — the one-month clock allows time to get it right.
+Escalate to Andy McDonald (andy@nivha.net) before any disclosure where: identity cannot be fully verified; any section 7 rule may apply; the donor is under 18; the caller alleges NIVHA disclosed something wrongly (possible breach — apply the Breach Response Card, CD29); or anything else feels off. It is always acceptable to pause and check — the one-month clock allows time to get it right.
 
 ---
 

@@ -140,7 +140,7 @@ Under UK GDPR and EU GDPR, you have rights in relation to your personal data. Th
 
 | Right | Description | Notes |
 | --- | --- | --- |
-| Right of access (Article 15) | You may request a copy of the personal data we hold about you | Formal written Subject Access Requests are processed within 30 calendar days. Donors in Trust or solicitor instructions may also wish to approach the instructing party, which holds the case file |
+| Right of access (Article 15) | You may request a copy of the personal data we hold about you | Formal written Subject Access Requests are processed within 30 calendar days. Donors in Trust or solicitor instructions may also wish to approach the instructing party, which holds the case file. Records prepared for court proceedings, or information subject to legal privilege or safeguarding restrictions, may be withheld or may need to be provided through the court or the instructing party — any restriction is assessed record by record and confirmed in our response |
 | Right to rectification (Article 16) | You may request correction of inaccurate personal data | Applies to identity and contact data. Test results are scientific records and cannot be "corrected" through this right |
 | Right to erasure (Article 17) | You may request deletion of your personal data in certain circumstances | This right is limited where records must be retained for legal claims or proceedings |
 | Right to restriction (Article 18) | You may request that we restrict processing | Available while accuracy is contested or where erasure is not appropriate |
