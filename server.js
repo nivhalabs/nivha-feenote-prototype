@@ -21,7 +21,10 @@ const DRY_RUN = !PAT;
 const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 1000 per process
 
 const crypto = require('crypto');
-const { gateEmail, bookLaterEmail, EMAIL_DRY_RUN } = require('./lib/email');
+const fs = require('fs');
+const os = require('os');
+const { gateEmail, bookLaterEmail, feeNoteEmail, EMAIL_DRY_RUN } = require('./lib/email');
+const { generateFeeNote } = require('./lib/pdf');
 const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
@@ -72,6 +75,70 @@ async function nextReference(route) {
 /* ---------------- mapping ---------------- */
 const ROUTE_MAP = { solicitor: 'Solicitor', trust: 'Trust', private: 'Private' };
 const LOCATION_MAP = { belfast: 'Belfast', derry: 'Derry~Londonderry', onsite: 'On-site' };
+const ROUTE_KEY = Object.fromEntries(Object.entries(ROUTE_MAP).map(([k, v]) => [v, k]));
+const LOCATION_KEY = Object.fromEntries(Object.entries(LOCATION_MAP).map(([k, v]) => [v, k]));
+
+/* Rebuild the PDF generator's input from a stored Airtable record, so the
+   fee note can be regenerated at any time — download link or email. */
+function pdfDataFromFields(f) {
+  let panels = [];
+  try { panels = JSON.parse(f['Panels JSON'] || '[]'); } catch (e) { /* leave empty */ }
+  return {
+    ref: f['Reference'] || '',
+    route: ROUTE_KEY[f['Route']] || 'trust',
+    location: LOCATION_KEY[f['Location']] || 'belfast',
+    fastTrack: f['Turnaround'] === 'Fast track',
+    issued: f['Submitted at'] ? new Date(f['Submitted at']) : new Date(),
+    panels,
+    totals: {
+      net: Number(f['Subtotal']) || 0,
+      vat: Number(f['VAT']) || 0,
+      total: Number(f['Total']) || 0
+    },
+    details: {
+      org: f['Organisation'] || '', orgAddress: f['Org address'] || '',
+      orgTown: f['Org town'] || '', orgPostcode: f['Org postcode'] || '',
+      caseref: f['Case / PO reference'] || '', legalAidRef: f['Legal Aid reference'] || '',
+      costCentre: f['Cost centre'] || '', approverName: f['Approver name'] || '',
+      authoriserName: f['Authoriser name'] || '', contactName: f['Contact name'] || '',
+      contactEmail: f['Contact email'] || '', contactPhone: f['Contact phone'] || '',
+      donorName: f['Donor name'] || '', donorDob: f['Donor DOB'] || ''
+    },
+    payment: f['Paid at'] ? { paidAt: f['Paid at'], cardRef: f['Stripe payment ID'] || '' } : null,
+    appointment: f['Appointment at'] ? { when: f['Appointment at'] } : null
+  };
+}
+
+async function feeNotePdfBuffer(recordId) {
+  const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
+  const fields = rec.fields || {};
+  const data = pdfDataFromFields(fields);
+  const tmp = path.join(os.tmpdir(), `feenote-${recordId}-${Date.now()}.pdf`);
+  await generateFeeNote(data, tmp);
+  const buf = fs.readFileSync(tmp);
+  fs.unlink(tmp, () => {});
+  return { buf, data, fields };
+}
+
+/* Email the fee note PDF to the requestor — fire and forget, never fatal. */
+async function sendFeeNoteEmail(recordId) {
+  try {
+    const { buf, data, fields } = await feeNotePdfBuffer(recordId);
+    const to = fields['Contact email'];
+    if (!to) return;
+    await feeNoteEmail({
+      baseUrl: BASE_URL,
+      to,
+      reference: data.ref,
+      isPrivate: data.route === 'private',
+      paid: !!fields['Paid at'],
+      pdfBuffer: buf,
+      downloadLink: `${BASE_URL}/api/fee-notes/${recordId}/pdf`
+    });
+  } catch (e) {
+    console.error('fee note email failed (non-fatal):', e.message);
+  }
+}
 
 function feeNoteFields(p, reference) {
   const d = p.details || {};
@@ -337,7 +404,12 @@ app.post('/api/fee-notes', async (req, res) => {
 
     // Trust/solicitor routes can book straight away; nudge later if they don't.
     // Private waits for payment — the nudge is scheduled on the 'paid' event instead.
-    if (p.route !== 'private') scheduleBookLater(recordId);
+    // The fee note PDF is emailed straight away for invoiced routes; private
+    // clients receive theirs (marked paid) once payment clears.
+    if (p.route !== 'private') {
+      scheduleBookLater(recordId);
+      sendFeeNoteEmail(recordId);
+    }
 
     res.json({ ok: true, reference, recordId });
   } catch (err) {
@@ -405,6 +477,7 @@ async function markPaid(recordId, paymentId) {
     typecast: true
   });
   scheduleBookLater(recordId);
+  sendFeeNoteEmail(recordId); // marked paid — doubles as the receipt
 }
 
 /* The browser returns from Stripe with ?paid=1&sid=... — confirm server-side. */
@@ -517,6 +590,27 @@ app.get('/api/booking/types', async (req, res) => {
 
 /* Setup helper — intake forms and their field IDs, used once to find the
    fee note field for ACUITY_FIELD_FEENOTE. */
+/* Download the fee note as a PDF, regenerated from the stored record.
+   The unguessable record id acts as the capability token (prototype).
+   Private fee notes are only available once paid — the PDF states paid. */
+app.get('/api/fee-notes/:recordId/pdf', async (req, res) => {
+  try {
+    if (DRY_RUN) return res.status(400).json({ ok: false, error: 'Records are not stored in this environment' });
+    const rid = String(req.params.recordId || '');
+    if (!/^rec[A-Za-z0-9]{14,20}$/.test(rid)) return res.status(400).json({ ok: false, error: 'Bad record id' });
+    const { buf, data, fields } = await feeNotePdfBuffer(rid);
+    if (data.route === 'private' && !fields['Paid at']) {
+      return res.status(403).json({ ok: false, error: 'The fee note becomes available once payment clears' });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="NIVHA-fee-note-${data.ref}.pdf"`);
+    res.send(buf);
+  } catch (err) {
+    console.error('GET /api/fee-notes/:id/pdf failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not generate the fee note PDF' });
+  }
+});
+
 app.get('/api/version', (req, res) => {
   res.json({ sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown' });
 });

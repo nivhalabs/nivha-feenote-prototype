@@ -54,6 +54,10 @@
 
   const byCode = Object.fromEntries(CATALOGUE.map(p => [p.code, p]));
   const gbp = n => '£' + n.toLocaleString('en-GB');
+  /* Inline "download it now" link — only when the record exists server-side. */
+  const dlInline = () => state.recordId
+    ? ` <a href="/api/fee-notes/${state.recordId}/pdf" class="dl-link">Download it now</a>.`
+    : '';
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
 
   const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1 };
@@ -1464,8 +1468,8 @@
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
             : `Fee note ${state.refNumber} submitted`}</strong>
           <span>${isPrivate && state.payment
-            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
-            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'} — now choose the appointment.`}</span>
+            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now choose the appointment.`
+            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now choose the appointment.`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -1590,8 +1594,8 @@
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
             : `Fee note ${state.refNumber} submitted`}</strong>
           <span>${isPrivate && state.payment
-            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
-            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'} — now request the appointment.`}</span>
+            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now request the appointment.`
+            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now request the appointment.`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -1697,8 +1701,8 @@
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
             : `Fee note ${state.refNumber} submitted`}</strong>
           <span>${isPrivate && state.payment
-            ? `Fee note ${state.refNumber} is confirmed. A VAT receipt is on its way to ${d.contactEmail || 'your inbox'}.`
-            : `A PDF copy is on its way to ${d.contactEmail || 'your inbox'}.`}</span>
+            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()}`
+            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()}`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -1921,13 +1925,14 @@
 
     const steps = isPrivate
       ? [
-        ['Payment received', gbp(state.payment ? state.payment.amount : computeTotals().total) + ' paid by card — receipt ' + (state.payment ? state.payment.receipt : 'NV-8362') + '. A VAT receipt is on its way to ' + (state.details.contactEmail || 'your inbox') + '.'],
+        ['Payment received', gbp(state.payment ? state.payment.amount : computeTotals().total) + ' paid by card — reference ' + (state.payment ? state.payment.receipt : 'NV-8362') + '.'],
+        ['Your fee note', 'Fee note ' + state.refNumber + ', marked paid, has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — it doubles as your receipt. You can also download it below.'],
         bookingStep,
         ['Analysis', analysisCopy],
         ['Your results', 'Your report is released to you, or an authorised representative, and to no one else, as soon as analysis is complete.']
       ]
       : [
-        ['Your fee note', 'A PDF of fee note ' + state.refNumber + ' is on its way to ' + (state.details.contactEmail || 'your inbox') + ' — ready to file or present.'],
+        ['Your fee note', 'Fee note ' + state.refNumber + ' has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — ready to file or present, with a download link in the email. You can also download it below.'],
         bookingStep,
         ['Analysis', analysisCopy],
         ['The report', 'A court-ready expert report is released on payment of the fee note.']
@@ -1945,6 +1950,7 @@
               <div><strong>${h}</strong><p>${b}</p></div></li>`).join('')}
         </ol>
         <div class="confirm-actions">
+          ${state.recordId ? `<a class="btn primary" href="/api/fee-notes/${state.recordId}/pdf">Download fee note (PDF)</a>` : ''}
           <button class="btn outline" id="restart">Start another fee note</button>
         </div>
       </div>`;
