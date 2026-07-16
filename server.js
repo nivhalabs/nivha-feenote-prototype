@@ -133,7 +133,10 @@ async function sendFeeNoteEmail(recordId) {
       isPrivate: data.route === 'private',
       paid: !!fields['Paid at'],
       pdfBuffer: buf,
-      downloadLink: `${BASE_URL}/api/fee-notes/${recordId}/pdf`
+      downloadLink: `${BASE_URL}/api/fee-notes/${recordId}/pdf`,
+      /* Internal copy — NIVHA receives every fee note. Set FEE_NOTE_BCC to
+         change or FEE_NOTE_BCC=off to disable. */
+      bcc: process.env.FEE_NOTE_BCC === 'off' ? undefined : (process.env.FEE_NOTE_BCC || 'info@nivha.net')
     });
   } catch (e) {
     console.error('fee note email failed (non-fatal):', e.message);
