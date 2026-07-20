@@ -28,6 +28,7 @@ const { generateFeeNote } = require('./lib/pdf');
 const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
+const { uploadFeeNote } = require('./lib/dropbox');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
@@ -124,6 +125,9 @@ async function feeNotePdfBuffer(recordId) {
 async function sendFeeNoteEmail(recordId) {
   try {
     const { buf, data, fields } = await feeNotePdfBuffer(recordId);
+    /* Archive a copy to Dropbox regardless of email outcome (non-fatal). */
+    uploadFeeNote({ reference: data.ref, pdfBuffer: buf })
+      .catch(e => console.error('dropbox archive failed (non-fatal):', e.message));
     const to = fields['Contact email'];
     if (!to) return;
     await feeNoteEmail({
