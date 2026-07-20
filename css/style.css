@@ -860,3 +860,7 @@ a, button, input, [role='button'] {
 /* fee note download links */
 .dl-link { color: var(--color-primary); font-weight: 600; }
 .confirm-actions a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+/* password note under confirmation actions */
+.confirm-pw-note { margin-top: 14px; font-size: 13.5px; color: var(--muted, #5b6b73); }
+.confirm-pw-note strong { color: var(--ink, #17262c); }

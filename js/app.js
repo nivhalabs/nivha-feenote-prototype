@@ -56,7 +56,7 @@
   const gbp = n => '£' + n.toLocaleString('en-GB');
   /* Inline "download it now" link — only when the record exists server-side. */
   const dlInline = () => state.recordId
-    ? ` <a href="/api/fee-notes/${state.recordId}/pdf" class="dl-link">Download it now</a>.`
+    ? ` <a href="/api/fee-notes/${state.recordId}/pdf" class="dl-link">Download it now</a>. The PDF password is ${(state.refNumber || '').replace('-', '_')}.`
     : '';
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
 
@@ -1953,6 +1953,7 @@
           ${state.recordId ? `<a class="btn primary" href="/api/fee-notes/${state.recordId}/pdf">Download fee note (PDF)</a>` : ''}
           <button class="btn outline" id="restart">Start another fee note</button>
         </div>
+        ${state.recordId ? `<p class="confirm-pw-note">The PDF is password protected. The password is your reference with an underscore: <strong>${(state.refNumber || '').replace('-', '_')}</strong></p>` : ''}
       </div>`;
     document.getElementById('restart').addEventListener('click', () => location.reload());
   }
