@@ -618,6 +618,11 @@ app.get('/api/fee-notes/:recordId/pdf', async (req, res) => {
   }
 });
 
+app.get('/api/dropbox/health', async (req, res) => {
+  try { res.json(await require('./lib/dropbox').health()); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/api/version', (req, res) => {
   res.json({ sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown' });
 });
