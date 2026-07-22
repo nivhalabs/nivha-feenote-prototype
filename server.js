@@ -787,7 +787,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const PUBLIC_PAGES = new Set(['/', '/index', '/index.html',
+const PUBLIC_PAGES = new Set(['/', '/index', '/index.html', '/dna', '/dna.html',
   '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html']);
 app.use((req, res, next) => {
   const p = req.path;
