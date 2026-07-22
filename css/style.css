@@ -864,3 +864,184 @@ a, button, input, [role='button'] {
 /* password note under confirmation actions */
 .confirm-pw-note { margin-top: 14px; font-size: 13.5px; color: var(--muted, #5b6b73); }
 .confirm-pw-note strong { color: var(--ink, #17262c); }
+
+/* ==================== DNA relationship testing route ==================== */
+
+/* service switch — top-level choice between the two testing services */
+.service-switch { background: var(--color-surface); border-bottom: 1px solid var(--color-divider); }
+.service-switch-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 var(--space-5);
+  display: flex; gap: var(--space-2);
+}
+.service-tab {
+  padding: var(--space-3) var(--space-3);
+  font-size: var(--text-sm); font-weight: 600;
+  color: var(--color-text-muted); text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.service-tab:hover { color: var(--color-text); }
+.service-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+/* step 2 — test cards */
+.test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
+.test-card {
+  position: relative; text-align: left;
+  display: flex; flex-direction: column; gap: var(--space-2);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.test-card:hover { border-color: var(--color-primary); }
+.test-card.selected { border-color: var(--color-primary); background: var(--color-callout); box-shadow: 0 0 0 1px var(--color-primary); }
+.test-card-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); padding-right: 38px; }
+.test-q { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-primary); }
+.test-price { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.test-name { font-size: var(--text-lg); font-weight: 600; padding-right: var(--space-8); }
+.test-proves { font-size: var(--text-sm); color: var(--color-text-muted); }
+.test-meta { font-size: var(--text-xs); color: var(--color-text-faint); border-top: 1px solid var(--color-divider); padding-top: var(--space-3); margin-top: var(--space-1); }
+.test-card .concern-tick { position: absolute; top: var(--space-5); right: var(--space-5); }
+.test-card .concern-tick {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: transparent; flex-shrink: 0; background: var(--color-surface);
+}
+.test-card.selected .concern-tick { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+
+/* step 2 — triage */
+.triage-open {
+  margin-top: var(--space-6);
+  display: flex; gap: var(--space-3); align-items: center; text-align: left;
+  background: var(--color-callout); border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5); width: 100%;
+  color: var(--color-text); font-size: var(--text-sm);
+}
+.triage-open svg { color: var(--color-primary); flex-shrink: 0; }
+.triage-open:hover { box-shadow: var(--shadow-sm); }
+.triage-card {
+  margin-top: var(--space-6);
+  background: var(--color-callout); border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+}
+.triage-q { font-size: var(--text-sm); margin-bottom: var(--space-3); }
+.triage-q:not(:first-child) { margin-top: var(--space-5); }
+.triage-answers { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.triage-answers.stack { flex-direction: column; align-items: flex-start; }
+.triage-answers .btn { background: var(--color-surface); }
+.triage-answers .btn[aria-pressed="true"] { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+.triage-rec {
+  margin-top: var(--space-5); background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+.triage-rec strong { display: block; margin-bottom: var(--space-2); }
+.triage-rec p { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-4); }
+.triage-rec .btn { margin-top: 0; }
+
+/* step 3 — participant roster */
+.roster-group { margin-bottom: var(--space-8); }
+.roster-group h2 { font-size: var(--text-lg); margin-bottom: var(--space-4); }
+.participant-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  box-shadow: var(--shadow-sm); margin-bottom: var(--space-4);
+}
+.participant-card.is-minor { border-color: var(--color-warn-border); }
+.participant-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+.participant-role {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--color-primary);
+}
+.participant-remove { color: var(--color-text-faint); font-size: var(--text-sm); }
+.participant-remove:hover { color: var(--color-error); }
+.participant-fields { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 0 var(--space-4); }
+.participant-fields .form-field { margin-bottom: 0; max-width: none; }
+.minor-block {
+  margin-top: var(--space-4);
+  background: var(--color-warn-bg); border: 1px solid var(--color-warn-border);
+  border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);
+}
+.minor-head {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-weight: 600; font-size: var(--text-sm); color: var(--color-warn-text);
+  margin-bottom: var(--space-2);
+}
+.minor-block > p:not(.minor-head) { font-size: var(--text-xs); color: var(--color-warn-text); margin-bottom: var(--space-3); }
+.minor-block .form-field { margin-bottom: 0; }
+.minor-block .form-field input { background: var(--color-surface); }
+.add-person {
+  width: 100%; display: flex; align-items: center; gap: var(--space-3);
+  border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5); color: var(--color-text-muted);
+  font-size: var(--text-sm); font-weight: 600; text-align: left;
+}
+.add-person:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-callout); }
+.add-person-plus {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--color-callout); color: var(--color-primary);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--text-lg); font-weight: 600; line-height: 1;
+}
+.add-person:hover .add-person-plus { background: var(--color-primary); color: #fff; }
+.add-person-fee { margin-left: auto; font-size: var(--text-xs); color: var(--color-text-faint); font-weight: 400; white-space: nowrap; }
+
+/* step 4 — attendance + per-person collection */
+.attend-toggle { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8); }
+.attend-option {
+  text-align: left; display: grid; gap: var(--space-1);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.attend-option:hover { border-color: var(--color-primary); }
+.attend-option.selected { border-color: var(--color-primary); background: var(--color-callout); box-shadow: 0 0 0 1px var(--color-primary); }
+.attend-option strong { font-size: var(--text-base); }
+.attend-option span { font-size: var(--text-sm); color: var(--color-text-muted); }
+.collect-person { margin-bottom: var(--space-8); padding-top: var(--space-2); }
+.collect-person-name {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-base); margin-bottom: var(--space-4);
+}
+.collect-person-name svg { color: var(--color-primary); }
+.collect-person-name span { color: var(--color-text-faint); font-size: var(--text-sm); font-weight: 400; }
+.location-grid.compact { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
+.location-grid.compact .route-card { padding: var(--space-4); gap: var(--space-1); }
+.location-grid.compact .route-title { font-size: var(--text-base); }
+.location-grid.compact .route-sub { font-size: var(--text-xs); }
+.location-grid.compact .route-cta { font-size: var(--text-xs); padding-top: var(--space-2); }
+.location-grid.compact .location-flag { font-size: var(--text-xs); }
+.gp-fields {
+  margin-top: var(--space-4); background: var(--color-callout);
+  border-radius: var(--radius-md); padding: var(--space-4) var(--space-5) var(--space-5);
+}
+.gp-fields .form-field { max-width: none; margin-bottom: 0; }
+.gp-fields .form-field input { background: var(--color-surface); }
+.gp-fields .field-hint { margin-bottom: var(--space-3); }
+
+/* step 5 — section heads */
+.form-section-head { font-size: var(--text-lg); margin: var(--space-8) 0 var(--space-5); }
+.form-section-head:first-child { margin-top: 0; }
+
+/* step 6 — checklist document */
+.doc.checklist { margin-top: var(--space-8); }
+.check-person { border-top: 1px solid var(--color-divider); padding: var(--space-5) 0; }
+.check-person:last-of-type { margin-bottom: var(--space-6); }
+.check-person-name { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-3); }
+.check-person-name strong { color: var(--color-text); font-size: var(--text-base); }
+.check-items { list-style: none; display: grid; gap: var(--space-2); }
+.check-items li { display: flex; gap: var(--space-2); align-items: flex-start; font-size: var(--text-sm); color: var(--color-text-muted); }
+.check-items svg { color: var(--color-primary); flex-shrink: 0; margin-top: 4px; }
+
+/* checkout + confirmation reuse */
+.checkout-card { max-width: 460px; }
+.checkout-card .btn.primary svg { display: inline-block; vertical-align: -3px; margin-right: var(--space-2); }
+.checkout-card .sum-note svg { display: inline-block; vertical-align: -2px; margin-right: var(--space-1); }
+.confirm-strip { margin-top: var(--space-8); }
+
+@media (max-width: 720px) {
+  .participant-fields { grid-template-columns: 1fr; }
+  .test-grid { grid-template-columns: 1fr; }
+  .attend-toggle { grid-template-columns: 1fr; }
+}

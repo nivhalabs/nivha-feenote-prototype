@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIVHA — DNA relationship testing fee note</title>
+<meta name="description" content="Build your NIVHA DNA relationship testing fee note — a guided experience for solicitors, trusts and private clients.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=16">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="NIVHA home">
+      <img src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96">
+    </a>
+    <span class="header-context">Medico-legal fee note</span>
+    <div class="header-help">
+      <span class="header-help-label">Need a hand?</span>
+      <a href="tel:+442890737942">+44 (0) 28 9073 7942</a>
+    </div>
+  </div>
+</header>
+
+<div class="service-switch" aria-label="Testing service">
+  <div class="service-switch-inner">
+    <a class="service-tab" href="/">Drug and alcohol testing</a>
+    <a class="service-tab active" href="/dna" aria-current="page">DNA relationship testing</a>
+  </div>
+</div>
+
+<nav class="stepper" aria-label="Progress" hidden>
+  <div class="stepper-inner" id="stepper">
+    <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Who is instructing</span></button>
+    <button class="step" data-step="2"><span class="step-num">02</span><span class="step-label">Which test</span></button>
+    <button class="step" data-step="3"><span class="step-num">03</span><span class="step-label">Who is being tested</span></button>
+    <button class="step" data-step="4"><span class="step-num">04</span><span class="step-label">Collection</span></button>
+    <button class="step" data-step="5"><span class="step-num">05</span><span class="step-label">Your details</span></button>
+    <button class="step" data-step="6"><span class="step-num">06</span><span class="step-label">Review and submit</span></button>
+  </div>
+</nav>
+
+<main class="wizard" id="wizard">
+
+  <!-- LANDING GATE -->
+  <section class="panel" id="gate"></section>
+
+  <!-- STEP 1 — instructing party -->
+  <section class="panel" id="step-1" hidden>
+    <div class="panel-head">
+      <p class="marker">01</p>
+      <h1>Who is instructing this testing?</h1>
+      <p class="lede">This shapes your fee note, how it is worded for court, and how payment works. It takes about three minutes from here.</p>
+    </div>
+
+    <ol class="process-strip" aria-label="How it works">
+      <li><span class="ps-num">1</span><div><strong>Build your fee note</strong><span>Priced as you add each person to the test.</span></div></li>
+      <li><span class="ps-num">2</span><div><strong>Everyone gets a checklist</strong><span>Each participant is told exactly what to bring.</span></div></li>
+      <li><span class="ps-num">3</span><div><strong>Samples collected</strong><span>Mouth swabs, taken under chain of custody.</span></div></li>
+      <li><span class="ps-num">4</span><div><strong>Legal report</strong><span>15 working days from the lab receiving all samples.</span></div></li>
+    </ol>
+
+    <div class="route-grid" id="route-grid"></div>
+  </section>
+
+  <!-- STEP 2 — which test -->
+  <section class="panel" id="step-2" hidden>
+    <div class="panel-head">
+      <p class="marker">02</p>
+      <h1>What do you need to establish?</h1>
+      <p class="lede">Choose the relationship question the court — or you — need answered. If you are not sure, the short guide below points you to the right test.</p>
+    </div>
+    <div class="test-grid" id="test-grid"></div>
+    <div id="triage"></div>
+    <div class="panel-actions">
+      <button class="btn ghost" data-back>Back</button>
+      <button class="btn primary" id="to-step-3" disabled>Continue — who is being tested</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 — participant roster -->
+  <section class="panel panel-with-aside" id="step-3" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">03</p>
+        <h1 id="roster-title">Who is being tested?</h1>
+        <p class="lede" id="roster-lede">Name each person taking part. The price covers two people — the total updates as you add more.</p>
+      </div>
+      <div id="roster"></div>
+      <div id="roster-notices"></div>
+    </div>
+    <aside class="summary" id="summary-3" aria-label="Fee note summary"></aside>
+  </section>
+
+  <!-- STEP 4 — collection -->
+  <section class="panel panel-with-aside" id="step-4" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">04</p>
+        <h1>Where will the samples be collected?</h1>
+        <p class="lede">Mouth swabs, taken under chain of custody. Participants can attend together or separately — including through their own GP surgery.</p>
+      </div>
+      <div id="collection"></div>
+    </div>
+    <aside class="summary" id="summary-4" aria-label="Fee note summary"></aside>
+  </section>
+
+  <!-- STEP 5 — details -->
+  <section class="panel panel-with-aside" id="step-5" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">05</p>
+        <h1>Your details</h1>
+        <p class="lede">Everything we need to raise the fee note and issue each participant's checklist.</p>
+        <p class="data-note">We only ask for what the fee note and collection appointments need. Participant details are treated as special category data, are never prefilled for returning clients, and are handled as set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+      </div>
+      <form id="details-form" novalidate></form>
+    </div>
+    <aside class="summary" id="summary-5" aria-label="Fee note summary"></aside>
+  </section>
+
+  <!-- STEP 6 — review -->
+  <section class="panel" id="step-6" hidden>
+    <div class="panel-head">
+      <p class="marker">06</p>
+      <h1>Review your fee note</h1>
+      <p class="lede">This is the document your instruction generates — itemised and ready to present. The participant checklist below it is issued alongside, so everyone knows exactly what to bring.</p>
+    </div>
+    <div id="feenote-doc"></div>
+    <div id="checklist-doc"></div>
+    <div class="declaration" id="declaration-box"></div>
+    <div class="panel-actions">
+      <button class="btn ghost" data-back>Back</button>
+      <button class="btn primary" id="submit-btn" disabled>Submit fee note</button>
+    </div>
+  </section>
+
+  <!-- PAYMENT (private clients) -->
+  <section class="panel" id="step-pay" hidden>
+    <div id="checkout"></div>
+  </section>
+
+  <!-- CONFIRMATION -->
+  <section class="panel" id="step-done" hidden>
+    <div id="confirmation"></div>
+  </section>
+
+</main>
+
+<div class="mobile-total" id="mobile-total" hidden>
+  <div class="mobile-total-line"><span id="mt-count"></span><strong id="mt-amount"></strong></div>
+  <button class="btn primary" id="mt-continue">Continue</button>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>NIVHA Laboratory Services Ltd · Belfast · Derry~Londonderry</p>
+    <p>Prototype for NIVHA review. Details you submit are stored securely so we can raise your fee note — see our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+  </div>
+</footer>
+
+<script src="js/dna-catalogue.js?v=16"></script>
+<script src="js/dna.js?v=16"></script>
+</body>
+</html>
