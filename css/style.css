@@ -1045,3 +1045,32 @@ a, button, input, [role='button'] {
   .test-grid { grid-template-columns: 1fr; }
   .attend-toggle { grid-template-columns: 1fr; }
 }
+
+/* ---------------- policy builder (v17) ---------------- */
+.quiz-group { margin-bottom: 6px; }
+.quiz-cards .radio-card { padding: 14px 16px; }
+
+.snap-list { display: flex; flex-direction: column; gap: 14px; margin: 26px 0; }
+.snap-item { display: flex; gap: 14px; align-items: flex-start; background: #fff; border: 1px solid var(--line, #d9dee3); border-radius: 10px; padding: 18px 20px; }
+.snap-item .snap-icon { color: var(--teal, #01696f); flex: 0 0 auto; margin-top: 2px; }
+.snap-item strong { display: block; margin-bottom: 6px; }
+.snap-item p, .snap-item ul { margin: 0; color: var(--ink-soft, #4a5560); font-size: 0.95rem; line-height: 1.55; }
+.snap-item ul { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.snap-item.locked { background: #f5f7f8; border-style: dashed; }
+.snap-item.locked .snap-icon { color: #8a97a3; }
+.snap-item.locked strong, .snap-item.locked p { color: #6b7885; }
+.snap-locked-label { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: #6b7885; }
+.snap-disclaimer { margin-top: 22px; }
+
+.teaser-clause { background: #fff; border: 1px solid var(--line, #d9dee3); border-left: 4px solid var(--teal, #01696f); border-radius: 10px; padding: 22px 26px; margin: 26px 0; }
+.teaser-clause .marker { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.teaser-clause blockquote { margin: 0; font-size: 1.02rem; line-height: 1.65; color: var(--ink, #1d2730); }
+.teaser-clause .teaser-note { margin: 14px 0 0; font-size: 0.9rem; color: var(--ink-soft, #4a5560); }
+
+.snap-cta .sum-rows { margin: 14px 0 18px; }
+.code-form input { text-transform: uppercase; }
+.doc-map-table .doc-included { color: var(--teal, #01696f); text-align: right; width: 40px; }
+.doc-map-table .num { width: 34px; color: #8a97a3; font-weight: 600; }
+.doc-map-table .doc-subline { display: block; font-size: 0.85rem; color: var(--ink-soft, #4a5560); margin-top: 3px; font-weight: 400; }
+.declaration-row { margin-top: 18px; }
+.notice-inline-error { margin-top: 18px; }

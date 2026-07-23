@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIVHA — drug and alcohol policy builder</title>
+<meta name="description" content="Check your workplace drug and alcohol policy in two minutes, then build a complete, tailored policy aligned to EWDTS guidelines — for Northern Ireland, Great Britain and the Republic of Ireland.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="NIVHA home">
+      <img src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96">
+    </a>
+    <span class="header-context">Policy builder</span>
+    <div class="header-help">
+      <span class="header-help-label">Need a hand?</span>
+      <a href="tel:+442890737942">+44 (0) 28 9073 7942</a>
+    </div>
+  </div>
+</header>
+
+<div class="service-switch" aria-label="NIVHA services">
+  <div class="service-switch-inner">
+    <a class="service-tab" href="/">Drug and alcohol testing</a>
+    <a class="service-tab" href="/dna">DNA relationship testing</a>
+    <a class="service-tab active" href="/policy" aria-current="page">Workplace policy</a>
+  </div>
+</div>
+
+<nav class="stepper" aria-label="Progress" hidden>
+  <div class="stepper-inner" id="stepper">
+    <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Your stance</span></button>
+    <button class="step" data-step="2"><span class="step-num">02</span><span class="step-label">Testing programme</span></button>
+    <button class="step" data-step="3"><span class="step-num">03</span><span class="step-label">Support</span></button>
+    <button class="step" data-step="4"><span class="step-num">04</span><span class="step-label">Governance and contacts</span></button>
+    <button class="step" data-step="5"><span class="step-num">05</span><span class="step-label">Review and pay</span></button>
+  </div>
+</nav>
+
+<main class="wizard" id="wizard">
+
+  <!-- FREE LAYER — policy health check -->
+  <section class="panel" id="quiz"></section>
+
+  <!-- FREE LAYER — snapshot + email gate + teaser clause -->
+  <section class="panel" id="snapshot" hidden></section>
+
+  <!-- PAID WIZARD -->
+  <section class="panel" id="step-1" hidden>
+    <div class="panel-head">
+      <p class="marker">01</p>
+      <h1>Where does the organisation stand?</h1>
+      <p class="lede">Two decisions that shape the tone of the whole document. There is no wrong answer — the policy is drafted around the position you choose.</p>
+    </div>
+    <div id="stance-body"></div>
+    <div class="panel-actions">
+      <button class="btn ghost" data-back>Back</button>
+      <button class="btn primary" id="to-step-2">Continue — testing programme</button>
+    </div>
+  </section>
+
+  <section class="panel panel-with-aside" id="step-2" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">02</p>
+        <h1>Your testing programme</h1>
+        <p class="lede">The policy describes when testing happens, how samples are taken and what happens to a result. Choose what applies — every selection is drafted to EWDTS chain of custody standards.</p>
+      </div>
+      <div id="testing-body"></div>
+    </div>
+    <aside class="summary" id="summary-2" aria-label="Policy summary"></aside>
+  </section>
+
+  <section class="panel panel-with-aside" id="step-3" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">03</p>
+        <h1>Support for your people</h1>
+        <p class="lede">A defensible policy pairs clear rules with a genuine route to help. Tell us what support exists so the policy reflects it honestly.</p>
+      </div>
+      <div id="support-body"></div>
+    </div>
+    <aside class="summary" id="summary-3" aria-label="Policy summary"></aside>
+  </section>
+
+  <section class="panel panel-with-aside" id="step-4" hidden>
+    <div class="panel-main">
+      <div class="panel-head">
+        <p class="marker">04</p>
+        <h1>Governance and contacts</h1>
+        <p class="lede">Who owns the policy, who answers data protection questions, and where we send the finished document.</p>
+      </div>
+      <form id="gov-form" novalidate></form>
+    </div>
+    <aside class="summary" id="summary-4" aria-label="Policy summary"></aside>
+  </section>
+
+  <section class="panel" id="step-5" hidden>
+    <div class="panel-head">
+      <p class="marker">05</p>
+      <h1>Review your policy</h1>
+      <p class="lede">This is the document your answers build — section by section, tailored to your organisation. Add supporting documents if you want the full pack.</p>
+    </div>
+    <div id="doc-map"></div>
+    <div id="pack-upsell"></div>
+    <div id="client-code-box"></div>
+    <div class="declaration" id="declaration-box"></div>
+    <div class="panel-actions">
+      <button class="btn ghost" data-back>Back</button>
+      <button class="btn primary" id="submit-btn" disabled>Continue to payment</button>
+    </div>
+  </section>
+
+  <!-- PAYMENT -->
+  <section class="panel" id="step-pay" hidden>
+    <div id="checkout"></div>
+  </section>
+
+  <!-- CONFIRMATION -->
+  <section class="panel" id="step-done" hidden>
+    <div id="confirmation"></div>
+  </section>
+
+</main>
+
+<div class="mobile-total" id="mobile-total" hidden>
+  <div class="mobile-total-line"><span id="mt-count"></span><strong id="mt-amount"></strong></div>
+  <button class="btn primary" id="mt-continue">Continue</button>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>NIVHA Laboratory Services Ltd · Belfast · Derry~Londonderry</p>
+    <p>Prototype for NIVHA review. The policy builder provides template documents for review by your organisation — it is not legal advice. Details you submit are handled as set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+  </div>
+</footer>
+
+<script src="js/policy-catalogue.js?v=1"></script>
+<script src="js/policy.js?v=1"></script>
+</body>
+</html>
