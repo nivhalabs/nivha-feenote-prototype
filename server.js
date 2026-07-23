@@ -29,6 +29,7 @@ const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
 const { uploadFeeNote } = require('./lib/dropbox');
+const { buildPolicyDoc } = require('./lib/policy-doc');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
@@ -201,6 +202,22 @@ const round2 = n => (typeof n === 'number' && isFinite(n) ? Math.round(n * 100) 
 const escapeFormula = s => String(s).replace(/'/g, "\\'");
 
 /* ---------------- routes ---------------- */
+app.post('/api/policy/generate', async (req, res) => {
+  try {
+    const a = req.body || {};
+    if (!a.details || !String(a.details.company || '').trim()) {
+      return res.status(400).json({ error: 'Organisation name is required.' });
+    }
+    const { buffer, filename } = await buildPolicyDoc(a);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('policy generate failed', err);
+    res.status(500).json({ error: 'Document generation failed.' });
+  }
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, mode: DRY_RUN ? 'dry-run' : 'live' });
 });

@@ -332,8 +332,8 @@
         <p class="teaser-note">That is one paragraph of a fifteen-section document. The full builder tailors every section the same way — your jurisdiction, your roles, your testing programme, your names and dates.</p>
       </div>
       <div class="gate-card snap-cta">
-        <h2>Build the complete policy</h2>
-        <p>About four minutes of questions. You get the full tailored policy as a Word and PDF document — fifteen sections, two appendices, aligned to EWDTS guidelines and drafted around the choices you make.</p>
+        <h2>Your snapshot PDF is on its way — the full policy is ${gbp(POLICY_PRICE)} + VAT</h2>
+        <p>The snapshot tells you what your policy has to cover. The builder writes it: about four minutes of questions and your answers become the complete tailored policy — fifteen sections, two appendices, aligned to EWDTS guidelines — delivered as a Word and PDF document.</p>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(POLICY_PRICE)} + VAT</span></div>
           <div class="sum-row"><span>Supporting document pack</span><span>optional, from ${gbp(PACK_ITEM_PRICE)} + VAT</span></div>
@@ -846,7 +846,7 @@
     const d = state.details;
     const providerHook = state.provider === 'undecided' && state.testingEnabled === 'active';
     const steps = [
-      ['Your documents are being generated', 'The tailored policy' + (state.packItems.length ? ' and your ' + state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') : '') + ' — drafted from your answers and emailed to ' + esc(d.contactEmail || 'you') + ' as Word and PDF files.'],
+      ['Your policy is ready now', 'Drafted from your answers — download it below as a Word document' + (state.packItems.length ? ', with your ' + state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') + ' to follow' : '') + '. A copy also goes to ' + esc(d.contactEmail || 'you') + '.'],
       ['Review and adopt', 'Read it, adjust anything that does not fit, and set the date it takes effect. The document carries its version stamp and a review date ' + d.reviewCycle + ' months out.'],
       ['Communicate it', state.packItems.includes('toolbox_talk') ? 'The toolbox talk and sign-off sheet give you evidence the policy was briefed to every team.' : 'A policy nobody has heard of protects nobody — brief it to every team and keep a record.']
     ];
@@ -863,9 +863,50 @@
         ${steps.map((s, i) => `<li><span class="ps-num">${i + 1}</span><div><strong>${s[0]}</strong><span>${s[1]}</span></div></li>`).join('')}
       </ol>
       <div class="panel-actions">
+        <button class="btn primary" id="download-policy">${icon('doc', 16)} Download your policy (Word)</button>
         <a class="btn outline" href="/policy">Start another policy</a>
         <a class="btn ghost" href="/">Drug and alcohol testing</a>
-      </div>`;
+      </div>
+      <p class="gate-small" id="download-note">Generated from your answers just now — the same document that is emailed to you.</p>`;
+
+    document.getElementById('download-policy').addEventListener('click', downloadPolicy);
+  }
+
+  async function downloadPolicy() {
+    const btn = document.getElementById('download-policy');
+    const note = document.getElementById('download-note');
+    btn.disabled = true;
+    const label = btn.innerHTML;
+    btn.textContent = 'Generating your policy\u2026';
+    try {
+      const res = await fetch('/api/policy/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quiz: state.quiz, lead: state.lead, stance: state.stance,
+          alcoholEvents: state.alcoholEvents, testingEnabled: state.testingEnabled,
+          testingTypes: state.testingTypes, randomMethod: state.randomMethod,
+          sampleTypes: state.sampleTypes, provider: state.provider,
+          scTypes: state.scTypes, scScope: state.scScope, support: state.support,
+          details: state.details, packItems: state.packItems, refNumber: state.refNumber
+        })
+      });
+      if (!res.ok) throw new Error('generate failed');
+      const blob = await res.blob();
+      const dispo = res.headers.get('Content-Disposition') || '';
+      const m = dispo.match(/filename="([^"]+)"/);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = m ? m[1] : 'Drug-and-alcohol-policy.docx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (e) {
+      if (note) note.textContent = 'Something went wrong generating the document — please try again.';
+    }
+    btn.disabled = false;
+    btn.innerHTML = label;
   }
 
   /* ---------------- mobile bar ---------------- */
