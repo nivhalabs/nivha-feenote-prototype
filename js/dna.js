@@ -280,25 +280,53 @@
         state.participants = state.participants.filter(p => p.uid !== b.dataset.remove);
         renderRoster(); renderSummary(); updateMobileBar();
       }));
-    box.querySelectorAll('input[data-uid]').forEach(inp => {
-      inp.addEventListener('input', () => {
-        const p = state.participants.find(x => x.uid === inp.dataset.uid);
-        if (!p) return;
-        p[inp.dataset.prop] = inp.value;
-        if (inp.dataset.prop === 'dob') { renderRoster(); }
-        renderSummary(); updateMobileBar();
-      });
-      inp.addEventListener('change', () => {
-        if (inp.dataset.prop === 'dob') renderRoster();
-      });
+    box.querySelectorAll('input[data-uid]').forEach(bindRosterInput);
+  }
+
+  function bindRosterInput(inp) {
+    inp.addEventListener('input', () => {
+      const p = state.participants.find(x => x.uid === inp.dataset.uid);
+      if (!p) return;
+      p[inp.dataset.prop] = inp.value;
+      if (inp.dataset.prop === 'dob') syncMinorBlock(inp, p);
+      renderSummary(); updateMobileBar();
     });
+  }
+
+  /* Toggle the under-18 block in place — never rebuild the card while the
+     user is typing, or the date field loses focus mid-entry. */
+  function syncMinorBlock(inp, p) {
+    const card = inp.closest('.participant-card');
+    if (!card) return;
+    const minor = isMinor(p);
+    const existing = card.querySelector('.minor-block');
+    card.classList.toggle('is-minor', minor);
+    if (minor && !existing) {
+      card.insertAdjacentHTML('beforeend', minorBlockHtml(p));
+      const g = card.querySelector('#guardian-' + p.uid);
+      if (g) bindRosterInput(g);
+    } else if (!minor && existing) {
+      existing.remove();
+    }
+  }
+
+  function minorBlockHtml(p) {
+    const fatherRule = state.test === 'paternity'
+      ? ' and cannot be the potential father'
+      : ' and must not be one of the people being tested';
+    return `
+          <div class="minor-block">
+            <p class="minor-head">${icon('alert', 16)} Under 18 \u2014 an accompanying adult is required</p>
+            <p>The adult must bring their own photographic ID, must be legally able to sign on the child\u2019s behalf${fatherRule}. Where a care order is in place, a copy is required and the child may need to attend with a social worker or someone holding parental responsibility.</p>
+            <div class="form-field">
+              <label for="guardian-${p.uid}">Accompanying adult\u2019s full name</label>
+              <input type="text" id="guardian-${p.uid}" data-uid="${p.uid}" data-prop="guardianName" value="${esc(p.guardianName)}" autocomplete="off">
+            </div>
+          </div>`;
   }
 
   function participantCard(t, p, i, count, removable) {
     const minor = isMinor(p);
-    const fatherRule = state.test === 'paternity'
-      ? ' and cannot be the potential father'
-      : ' and must not be one of the people being tested';
     return `
       <div class="participant-card ${minor ? 'is-minor' : ''}">
         <div class="participant-head">
@@ -315,15 +343,7 @@
             <input type="date" id="dob-${p.uid}" data-uid="${p.uid}" data-prop="dob" value="${esc(p.dob)}" max="${new Date().toISOString().slice(0, 10)}">
           </div>
         </div>
-        ${minor ? `
-          <div class="minor-block">
-            <p class="minor-head">${icon('alert', 16)} Under 18 \u2014 an accompanying adult is required</p>
-            <p>The adult must bring their own photographic ID, must be legally able to sign on the child\u2019s behalf${fatherRule}. Where a care order is in place, a copy is required and the child may need to attend with a social worker or someone holding parental responsibility.</p>
-            <div class="form-field">
-              <label for="guardian-${p.uid}">Accompanying adult\u2019s full name</label>
-              <input type="text" id="guardian-${p.uid}" data-uid="${p.uid}" data-prop="guardianName" value="${esc(p.guardianName)}" autocomplete="off">
-            </div>
-          </div>` : ''}
+        ${minor ? minorBlockHtml(p) : ''}
       </div>`;
   }
 
