@@ -443,7 +443,7 @@
           ${TESTING_TYPES.map(t => checkRow('testingTypes', t.id, t.name, t.sub, state.testingTypes.includes(t.id))).join('')}
         </div>
         ${state.testingTypes.includes('random') ? `
-          <h2 class="form-section-head">How are people selected for random testing?</h2>
+          <h2 class="form-section-head">How are people selected for unannounced testing?</h2>
           <div class="radio-cards">
             <button class="radio-card ${state.randomMethod === 'independent_random' ? 'selected' : ''}" data-rnd="independent_random">
               <span class="radio-title">Independent random selection</span>

@@ -178,7 +178,7 @@ const SC_TYPES = [
 
 const TESTING_TYPES = [
   { id: 'pre_employment', name: 'Pre-employment', sub: 'Screening as part of recruitment, before a start date is confirmed.' },
-  { id: 'random', name: 'Random', sub: 'Unannounced testing of people selected by an independent, documented method.' },
+  { id: 'random', name: 'Unannounced random', sub: 'Unannounced testing of people selected by an independent, documented method.' },
   { id: 'for_cause', name: 'For cause', sub: 'Where behaviour, appearance or other evidence gives reasonable belief of impairment.' },
   { id: 'post_incident', name: 'Post-incident', sub: 'After an accident, near miss or significant operational incident.' },
   { id: 'return_to_work', name: 'Return to work and monitoring', sub: 'Part of an agreed plan after treatment or a previous breach.' }
