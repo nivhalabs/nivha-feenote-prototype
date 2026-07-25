@@ -145,7 +145,17 @@ JURISDICTIONS.gb_roi = {
     'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
   ]
 };
-JURISDICTIONS.ni_gb_roi = JURISDICTIONS.uk_roi;
+JURISDICTIONS.ni_gb_roi = {
+  name: 'Northern Ireland, Great Britain and Republic of Ireland',
+  legislation: [
+    'Health and Safety at Work etc. Act 1974 (Great Britain) and the Health and Safety at Work (Northern Ireland) Order 1978, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
+    'Misuse of Drugs Act 1971 (UK) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Psychoactive Substances Act 2016 (UK)',
+    'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
+  ]
+};
+/* legacy single-select key — same coverage as all three selected */
+JURISDICTIONS.uk_roi = JURISDICTIONS.ni_gb_roi;
 
 const SECTOR_NOTES = {
   construction: 'On construction sites, for-cause and post-incident testing arrangements are increasingly expected by principal contractors — many main contractors now ask to see your policy at pre-qualification.',
