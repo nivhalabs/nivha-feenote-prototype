@@ -22,13 +22,12 @@ const PACK_ITEMS = [
 /* ---------------- quiz (free layer) ---------------- */
 const QUIZ = [
   {
-    id: 'jurisdiction', label: 'Where do your people work?',
-    hint: 'The legal framework your policy must cite depends on jurisdiction.',
+    id: 'jurisdiction', label: 'Where do your people work?', multi: true,
+    hint: 'Select all that apply. The legal framework your policy must cite depends on where people are employed — one policy covers every jurisdiction you pick.',
     options: [
       { id: 'ni', title: 'Northern Ireland' },
       { id: 'gb', title: 'Great Britain' },
-      { id: 'roi', title: 'Republic of Ireland' },
-      { id: 'uk_roi', title: 'Both UK and Republic of Ireland' }
+      { id: 'roi', title: 'Republic of Ireland' }
     ]
   },
   {
@@ -117,6 +116,36 @@ const JURISDICTIONS = {
     ]
   }
 };
+
+/* combined-jurisdiction entries, keyed by canonical multi-select keys */
+JURISDICTIONS.ni_gb = {
+  name: 'United Kingdom',
+  legislation: [
+    'Health and Safety at Work etc. Act 1974 (Great Britain) and the Health and Safety at Work (Northern Ireland) Order 1978 — the duty of care your policy is built on',
+    'Misuse of Drugs Act 1971 — controlled drugs on your premises',
+    'Psychoactive Substances Act 2016 — so-called legal highs, missed by most older policies',
+    'UK GDPR and Data Protection Act 2018 — test results are special category health data'
+  ]
+};
+JURISDICTIONS.ni_roi = {
+  name: 'Northern Ireland and Republic of Ireland',
+  legislation: [
+    'Health and Safety at Work (Northern Ireland) Order 1978, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
+    'Misuse of Drugs Act 1971 (NI) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Psychoactive Substances Act 2016 (NI)',
+    'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
+  ]
+};
+JURISDICTIONS.gb_roi = {
+  name: 'Great Britain and Republic of Ireland',
+  legislation: [
+    'Health and Safety at Work etc. Act 1974, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
+    'Misuse of Drugs Act 1971 (GB) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Psychoactive Substances Act 2016 (GB)',
+    'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
+  ]
+};
+JURISDICTIONS.ni_gb_roi = JURISDICTIONS.uk_roi;
 
 const SECTOR_NOTES = {
   construction: 'On construction sites, for-cause and post-incident testing arrangements are increasingly expected by principal contractors — many main contractors now ask to see your policy at pre-qualification.',

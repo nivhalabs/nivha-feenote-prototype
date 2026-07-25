@@ -114,7 +114,7 @@
           ${q.hint ? `<p class="field-hint">${q.hint}</p>` : ''}
           <div class="radio-cards quiz-cards">
             ${q.options.map(o => `
-              <button class="radio-card ${state.quiz[q.id] === o.id ? 'selected' : ''}" data-q="${q.id}" data-opt="${o.id}">
+              <button class="radio-card ${q.multi ? ((state.quiz[q.id] || '').split('_').includes(o.id) ? 'selected' : '') : (state.quiz[q.id] === o.id ? 'selected' : '')}" data-q="${q.id}" data-opt="${o.id}">
                 <span class="radio-title">${o.title}</span>
               </button>`).join('')}
           </div>
@@ -129,9 +129,18 @@
 
     panel.querySelectorAll('.radio-card').forEach(el =>
       el.addEventListener('click', () => {
-        state.quiz[el.dataset.q] = el.dataset.opt;
-        el.closest('.quiz-cards').querySelectorAll('.radio-card').forEach(x =>
-          x.classList.toggle('selected', x === el));
+        const qDef = QUIZ.find(q => q.id === el.dataset.q);
+        if (qDef && qDef.multi) {
+          const cur = new Set((state.quiz[el.dataset.q] || '').split('_').filter(Boolean));
+          cur.has(el.dataset.opt) ? cur.delete(el.dataset.opt) : cur.add(el.dataset.opt);
+          const key = qDef.options.map(o => o.id).filter(id => cur.has(id)).join('_');
+          if (key) state.quiz[el.dataset.q] = key; else delete state.quiz[el.dataset.q];
+          el.classList.toggle('selected', cur.has(el.dataset.opt));
+        } else {
+          state.quiz[el.dataset.q] = el.dataset.opt;
+          el.closest('.quiz-cards').querySelectorAll('.radio-card').forEach(x =>
+            x.classList.toggle('selected', x === el));
+        }
         syncQuizCta();
       }));
 
@@ -310,8 +319,10 @@
       ni: 'the Health and Safety at Work (Northern Ireland) Order 1978',
       gb: 'the Health and Safety at Work etc. Act 1974',
       roi: 'the Safety, Health and Welfare at Work Act 2005',
-      uk_roi: 'health and safety at work legislation in each jurisdiction in which it operates'
-    }[q.jurisdiction];
+      ni_gb: 'the Health and Safety at Work etc. Act 1974 and the Health and Safety at Work (Northern Ireland) Order 1978',
+      ni_roi: 'the Health and Safety at Work (Northern Ireland) Order 1978 and the Safety, Health and Welfare at Work Act 2005',
+      gb_roi: 'the Health and Safety at Work etc. Act 1974 and the Safety, Health and Welfare at Work Act 2005'
+    }[q.jurisdiction] || 'health and safety at work legislation in each jurisdiction in which it operates';
     const sc = q.safety_critical !== 'no'
       ? ` Because some of the work ${co} does is safety-critical, any impairment in that work presents an immediate risk to life — and this policy applies its strictest standard to it.`
       : '';
@@ -415,19 +426,19 @@
     const active = state.testingEnabled === 'active';
     const showSc = state.quiz.safety_critical !== 'no';
     document.getElementById('testing-body').innerHTML = `
-      <h2 class="form-section-head">Does the policy include an active testing programme?</h2>
+      <h2 class="form-section-head">Should your new policy include an active testing programme?</h2>
       <div class="radio-cards">
         <button class="radio-card ${active ? 'selected' : ''}" data-ten="active">
           <span class="radio-title">Yes — an active programme</span>
-          <span class="radio-sub">The policy sets out when testing happens and how it is run.</span>
+          <span class="radio-sub">Your policy will set out when testing happens and how it is run.</span>
         </button>
         <button class="radio-card ${state.testingEnabled === 'reserve' ? 'selected' : ''}" data-ten="reserve">
           <span class="radio-title">Not yet — reserve the right</span>
-          <span class="radio-sub">The policy reserves the right to introduce testing, so starting later does not need a rewrite.</span>
+          <span class="radio-sub">Your policy will reserve the right to introduce testing, so starting later does not need a rewrite.</span>
         </button>
       </div>
       ${active ? `
-        <h2 class="form-section-head">When can testing happen?</h2>
+        <h2 class="form-section-head">When should testing be able to happen?</h2>
         <div class="check-items">
           ${TESTING_TYPES.map(t => checkRow('testingTypes', t.id, t.name, t.sub, state.testingTypes.includes(t.id))).join('')}
         </div>
@@ -708,7 +719,7 @@
          'EWDTS chain of custody, laboratory confirmation, medical review, B sample'].join(' \u00b7 ')
       : 'Right to introduce testing reserved';
     notes['11'] = state.support.selfReferral === 'yes' ? 'Voluntary disclosure protected' : 'Standard support wording';
-    notes['12'] = q.jurisdiction === 'roi' ? 'EU GDPR wording' : (q.jurisdiction === 'uk_roi' ? 'UK and EU GDPR wording' : 'UK GDPR wording');
+    notes['12'] = q.jurisdiction === 'roi' ? 'EU GDPR wording' : (q.jurisdiction.includes('roi') ? 'UK and EU GDPR wording' : 'UK GDPR wording');
     notes['15'] = 'Reviewed every ' + state.details.reviewCycle + ' months';
     notes['B'] = state.packItems.length ? state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') + ' included' : 'No supporting documents selected';
     return notes;
