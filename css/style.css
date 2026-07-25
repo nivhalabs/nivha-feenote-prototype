@@ -318,9 +318,9 @@ a, button, input, [role='button'] {
 .summary-card h2 { font-size: var(--text-base); margin-bottom: var(--space-4); }
 .sum-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
 .sum-rows { display: grid; gap: var(--space-2); }
-.sum-row { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm); }
-.sum-row span:first-child { color: var(--color-text-muted); }
-.sum-row span:last-child { font-weight: 600; white-space: nowrap; }
+.sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: var(--text-sm); }
+.sum-row span:first-child { color: var(--color-text-muted); flex-shrink: 0; }
+.sum-row span:last-child { font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
 .sum-row.sub { padding-left: var(--space-3); }
 .sum-row.sub span:first-child { color: var(--color-text-faint); }
 .sum-row.saving span { color: var(--color-primary-active, #1d6274); }
@@ -872,7 +872,9 @@ a, button, input, [role='button'] {
 .service-switch-inner {
   max-width: 1100px; margin: 0 auto; padding: 0 var(--space-5);
   display: flex; gap: var(--space-2);
+  overflow-x: auto; scrollbar-width: none;
 }
+.service-switch-inner::-webkit-scrollbar { display: none; }
 .service-tab {
   padding: var(--space-3) var(--space-3);
   font-size: var(--text-sm); font-weight: 600;
@@ -1023,6 +1025,12 @@ a, button, input, [role='button'] {
 /* step 5 — section heads */
 .form-section-head { font-size: var(--text-lg); margin: var(--space-8) 0 var(--space-5); }
 .form-section-head:first-child { margin-top: 0; }
+
+/* step 5 — review sections need their own rhythm: each rendered
+   container starts with a .form-section-head whose top margin is
+   stripped by :first-child, so space the containers themselves */
+#pack-upsell, #client-code-box, #declaration-box { margin-top: var(--space-8); }
+#pack-upsell .check-items { gap: var(--space-4); }
 
 /* step 6 — checklist document */
 .doc.checklist { margin-top: var(--space-8); }
