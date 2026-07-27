@@ -98,7 +98,7 @@ const DNA_TURNAROUND =
   'Analysis cannot begin until every participant\u2019s sample has arrived, so one outstanding participant delays the result for the whole case.';
 
 const DNA_MARKER_CLAIM =
-  'Samples are analysed by our partner laboratory DNA Legal at up to 68 genetic markers \u2014 the industry standard is 16 \u2014 giving a stronger, more conclusive result.';
+  'Samples are analysed by an ISO 17025 accredited laboratory at up to 68 genetic markers \u2014 the industry standard is 16 \u2014 giving a stronger, more conclusive result.';
 
 const DNA_LEGAL_REPORT =
   'A full legal report suitable for court is issued for every test \u2014 samples are collected under chain of custody by an HCPC-registered practitioner.';

@@ -991,7 +991,7 @@
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
         <h1>Court-ready DNA relationship testing, with an itemised fee note in about three minutes</h1>
-        <p class="lede">Paternity, maternity, sibling and family relationship testing for care proceedings, legal cases and personal certainty \u2014 analysed at up to 68 genetic markers by our partner laboratory DNA Legal.</p>
+        <p class="lede">Paternity, maternity, sibling and family relationship testing for care proceedings, legal cases and personal certainty \u2014 analysed at up to 68 genetic markers by an ISO 17025 accredited laboratory.</p>
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Priced as you build it</strong><p>The fee covers two people \u2014 add each extra person and watch the total update before you commit.</p></div>
