@@ -16,6 +16,7 @@ const PAT = process.env.AIRTABLE_PAT || '';
 const BASE_ID = process.env.AIRTABLE_BASE_ID || 'appSr0GuDnDK0bdfy';
 const FEE_TABLE = process.env.AIRTABLE_FEE_TABLE_ID || 'tblg5dALJogJxLL4j';   // LegalSocial_FeeNote_v2
 const LEADS_TABLE = process.env.AIRTABLE_LEADS_TABLE_ID || 'tbl91O7LF3iezIKv2'; // LegalSocial_Leads
+const REVIEW_TABLE = process.env.AIRTABLE_REVIEW_TABLE_ID || 'tblz4Aspnd54HNFVY'; // PolicyReview_Comments
 const AT_URL = 'https://api.airtable.com/v0';
 const DRY_RUN = !PAT;
 const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 1000 per process
@@ -794,6 +795,65 @@ app.post('/api/booking/request', async (req, res) => {
   }
 });
 
+/* ---------------- policy review comments (staff) ---------------- */
+const reviewDry = []; // dry-run fallback so the page works locally without a PAT
+
+app.get('/api/policy-review/comments', async (req, res) => {
+  try {
+    if (DRY_RUN) return res.json({ ok: true, comments: reviewDry });
+    const comments = [];
+    let offset;
+    do {
+      const q = new URLSearchParams({ pageSize: '100' });
+      if (offset) q.set('offset', offset);
+      const page = await at('GET', `${REVIEW_TABLE}?${q}`);
+      page.records.forEach(r => comments.push({
+        ref: r.fields['Item ref'] || '',
+        title: r.fields['Item title'] || '',
+        name: r.fields['Name'] || '',
+        comment: r.fields['Comment'] || '',
+        submitted: r.fields['Submitted'] || ''
+      }));
+      offset = page.offset;
+    } while (offset);
+    comments.sort((a, b) => (a.submitted < b.submitted ? -1 : a.submitted > b.submitted ? 1 : 0));
+    res.json({ ok: true, comments });
+  } catch (err) {
+    console.error('GET /api/policy-review/comments failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not load comments' });
+  }
+});
+
+app.post('/api/policy-review/comments', async (req, res) => {
+  try {
+    const ref = String(req.body.ref || '').trim().slice(0, 60);
+    const title = String(req.body.title || '').trim().slice(0, 200);
+    const name = String(req.body.name || '').trim().slice(0, 80);
+    const comment = String(req.body.comment || '').trim().slice(0, 4000);
+    if (!ref || !name || !comment) {
+      return res.status(400).json({ ok: false, error: 'ref, name and comment are required' });
+    }
+    const submitted = new Date().toISOString();
+    if (DRY_RUN) {
+      reviewDry.push({ ref, title, name, comment, submitted });
+      return res.json({ ok: true, dryRun: true });
+    }
+    await at('POST', REVIEW_TABLE, {
+      records: [{ fields: {
+        'Item ref': ref,
+        'Item title': title,
+        'Name': name,
+        'Comment': comment,
+        'Submitted': submitted
+      } }]
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/policy-review/comments failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not save the comment' });
+  }
+});
+
 /* ---------------- static site ---------------- */
 /* Serve only the public web assets. Server code, libraries, internal
    documents and tooling must never be reachable over HTTP. */
@@ -805,7 +865,7 @@ app.use((req, res, next) => {
 });
 
 const PUBLIC_PAGES = new Set(['/', '/index', '/index.html', '/dna', '/dna.html',
-  '/policy', '/policy.html',
+  '/policy', '/policy.html', '/policy-review', '/policy-review.html',
   '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html']);
 app.use((req, res, next) => {
   const p = req.path;
