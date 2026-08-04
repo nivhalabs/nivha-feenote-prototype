@@ -1082,3 +1082,19 @@ a, button, input, [role='button'] {
 .doc-map-table .doc-subline { display: block; font-size: 0.85rem; color: var(--ink-soft, #4a5560); margin-top: 3px; font-weight: 400; }
 .declaration-row { margin-top: 18px; }
 .notice-inline-error { margin-top: 18px; }
+
+/* ---------- policy builder pack bundle banner ---------- */
+.bundle-banner {
+  display: flex; gap: var(--space-4); align-items: center; justify-content: space-between;
+  padding: var(--space-4) var(--space-5); border-radius: var(--radius-md);
+  border: 1px solid var(--color-border); background: var(--color-callout);
+  margin-bottom: var(--space-5); font-size: var(--text-sm);
+}
+.bundle-banner.active { border-color: var(--color-primary); }
+.bundle-banner strong { display: block; margin-bottom: 2px; }
+.bundle-banner p { margin: 0; color: var(--color-text-muted, #5a6b72); }
+.bundle-banner .btn { flex-shrink: 0; white-space: nowrap; }
+.check-row .pack-price { margin-left: auto; font-weight: 600; font-size: var(--text-sm); color: var(--color-primary); flex-shrink: 0; }
+@media (max-width: 640px) {
+  .bundle-banner { flex-direction: column; align-items: flex-start; }
+}

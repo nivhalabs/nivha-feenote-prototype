@@ -601,6 +601,12 @@
         <button type="button" class="radio-card ${state.details.reviewCycle === '12' ? 'selected' : ''}" data-cycle="12"><span class="radio-title">Every 12 months</span><span class="radio-sub">Recommended — testing practice and case law move quickly.</span></button>
         <button type="button" class="radio-card ${state.details.reviewCycle === '24' ? 'selected' : ''}" data-cycle="24"><span class="radio-title">Every 24 months</span><span class="radio-sub">The longest interval we suggest between reviews.</span></button>
       </div>
+      <h2 class="form-section-head">Billing</h2>
+      <div class="radio-cards">
+        <button type="button" class="radio-card ${(state.details.billingCountry || 'uk') === 'uk' ? 'selected' : ''}" data-billing="uk"><span class="radio-title">United Kingdom</span><span class="radio-sub">VAT at 20% is added at checkout.</span></button>
+        <button type="button" class="radio-card ${state.details.billingCountry === 'roi' ? 'selected' : ''}" data-billing="roi"><span class="radio-title">Republic of Ireland</span><span class="radio-sub">No UK VAT — your organisation accounts for VAT in Ireland under the reverse charge.</span></button>
+      </div>
+      ${state.details.billingCountry === 'roi' ? field('vatNumber', 'Irish VAT number', { hint: 'Optional, but it should appear on your invoice for the reverse charge.', placeholder: 'IE1234567X' }) : ''}
       <h2 class="form-section-head">Where we send the documents</h2>
       ${field('contactName', 'Your name', { required: true })}
       ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your documents are delivered here as Word and PDF.' })}
@@ -623,6 +629,8 @@
     form.addEventListener('submit', e => e.preventDefault());
     form.querySelectorAll('[data-cycle]').forEach(el =>
       el.addEventListener('click', () => { state.details.reviewCycle = el.dataset.cycle; renderGovForm(); }));
+    form.querySelectorAll('[data-billing]').forEach(el =>
+      el.addEventListener('click', () => { state.details.billingCountry = el.dataset.billing; renderGovForm(); renderSummary(4); updateMobileBar(); }));
     form.querySelector('[data-back-4]').addEventListener('click', () => goTo(3));
     form.querySelector('#to-step-5').addEventListener('click', () => {
       if (validateGov()) goTo(5);
@@ -664,8 +672,9 @@
       discount = Math.round(net * CLIENT_DISCOUNT * 100) / 100;
       net = net - discount;
     }
-    const vat = Math.round(net * VAT_RATE * 100) / 100;
-    return { policy: POLICY_PRICE, packNet, allPack, discount, net, vat, total: Math.round((net + vat) * 100) / 100 };
+    const reverseCharge = state.details.billingCountry === 'roi';
+    const vat = reverseCharge ? 0 : Math.round(net * VAT_RATE * 100) / 100;
+    return { policy: POLICY_PRICE, packNet, allPack, discount, net, vat, reverseCharge, total: Math.round((net + vat) * 100) / 100 };
   }
 
   /* ---------------- summary aside ---------------- */
@@ -698,7 +707,7 @@
           <div class="sum-row"><span>Policy document</span><span>${gbp(tot.policy)}</span></div>
           ${tot.packNet ? `<div class="sum-row"><span>Document pack${tot.allPack ? ' (all five)' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
           ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
-          <div class="sum-row"><span>VAT at 20%</span><span>${gbp(tot.vat)}</span></div>
+          <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
           <div class="sum-row grand"><span>Total</span><span>${gbp(tot.total)}</span></div>
         </div>
         <p class="sum-note">${icon('doc', 14)} Delivered as a Word and PDF document, drafted from your answers.</p>
@@ -757,15 +766,26 @@
     const tot = computeTotals();
     document.getElementById('pack-upsell').innerHTML = `
       <h2 class="form-section-head">Add the supporting documents</h2>
-      <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices. ${gbp(PACK_ITEM_PRICE)} + VAT each, or all five for ${gbp(PACK_BUNDLE_PRICE)} + VAT.</p>
+      <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices.</p>
+      <div class="bundle-banner ${tot.allPack ? 'active' : ''}">
+        <div>
+          <strong>${tot.allPack ? 'Full pack selected — bundle price applied' : 'Full pack — all five for ' + gbp(PACK_BUNDLE_PRICE) + ' + VAT'}</strong>
+          <p>${tot.allPack ? 'You are saving ' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE - PACK_BUNDLE_PRICE) + ' against the per-document price.' : 'Individually they are ' + gbp(PACK_ITEM_PRICE) + ' + VAT each (' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE) + ' for all five) — the bundle saves ' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE - PACK_BUNDLE_PRICE) + '.'}</p>
+        </div>
+        <button type="button" class="btn small ${tot.allPack ? 'ghost' : 'primary'}" id="bundle-toggle">${tot.allPack ? 'Remove all' : 'Add all five — ' + gbp(PACK_BUNDLE_PRICE)}</button>
+      </div>
       <div class="check-items">
         ${PACK_ITEMS.map(p => `
           <label class="check-row">
             <input type="checkbox" data-pack="${p.id}" ${state.packItems.includes(p.id) ? 'checked' : ''}>
             <div><strong>${p.name}</strong><p>${p.sub}</p></div>
+            <span class="pack-price">${gbp(PACK_ITEM_PRICE)}</span>
           </label>`).join('')}
-      </div>
-      ${tot.allPack ? `<div class="notice">${icon('check', 18)}<p>Full pack selected — bundle price applied, saving ${gbp(PACK_ITEMS.length * PACK_ITEM_PRICE - PACK_BUNDLE_PRICE)}.</p></div>` : ''}`;
+      </div>`;
+    document.getElementById('bundle-toggle').addEventListener('click', () => {
+      state.packItems = tot.allPack ? [] : PACK_ITEMS.map(p => p.id);
+      renderDocMap(); renderPackUpsell(); renderClientCode(); renderDeclaration();
+    });
     document.querySelectorAll('[data-pack]').forEach(inp =>
       inp.addEventListener('change', () => {
         const i = state.packItems.indexOf(inp.dataset.pack);
@@ -803,10 +823,10 @@
         <div class="sum-row"><span>Policy document</span><span>${gbp(tot.policy)}</span></div>
         ${tot.packNet ? `<div class="sum-row"><span>Supporting documents${tot.allPack ? ' \u2014 full pack' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
         ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate (40% off)</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
-        <div class="sum-row"><span>VAT at 20%</span><span>${gbp(tot.vat)}</span></div>
+        <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge, accounted for in Ireland' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
         <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
       </div>
-      <p class="sum-note">${gbp(tot.policy)} + VAT buys a tailored starter template for your advisers to check and your organisation to adopt. It is not a legal opinion and it is not a substitute for advice on your own circumstances.</p>
+      <p class="sum-note">${gbp(tot.policy)}${tot.reverseCharge ? '' : ' + VAT'} buys a tailored starter template for your advisers to check and your organisation to adopt. It is not a legal opinion and it is not a substitute for advice on your own circumstances.</p>
       <label class="check-row declaration-row">
         <input type="checkbox" id="accept" ${state.accepted ? 'checked' : ''}>
         <div><strong>I understand what I am buying</strong><p>This is a starter template drafted from my answers. It is not legal advice, and NIVHA is not acting as my organisation’s legal adviser. Before this policy takes effect, ${esc(state.details.company || 'my organisation')} will have it reviewed by its own legal or HR adviser and will check it fits its contracts, procedures and operations — NIVHA has not seen those and cannot assess them. NIVHA’s liability is limited as set out in the terms of sale, which cap it at the greater of the price paid and £500; liability for death or personal injury caused by negligence, or for fraud, is never excluded.</p></div>
@@ -848,11 +868,12 @@
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(tot.policy)}</span></div>
           ${tot.packNet ? `<div class="sum-row"><span>Supporting documents${tot.allPack ? ' \u2014 full pack' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
           ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
-          <div class="sum-row"><span>VAT at 20%</span><span>${gbp(tot.vat)}</span></div>
+          <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
         </div>
         <div class="sum-totals">
           <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
         </div>
+        ${tot.reverseCharge ? `<p class="sum-note">No UK VAT is charged — ${esc(state.details.company || 'your organisation')} accounts for VAT in Ireland under the reverse charge${state.details.vatNumber ? ' (VAT number ' + esc(state.details.vatNumber) + ')' : ''}.</p>` : ''}
         <button class="btn primary full" id="pay-btn">${icon('lock', 16)} Pay ${gbp(tot.total)} — order starter template</button>
         <p class="sum-note">By paying you accept the <a href="/policy-terms" target="_blank" rel="noopener">terms of sale</a> and confirm you are buying in the course of a business.</p>
         <p class="sum-note">${icon('card', 14)} Payment is processed by Stripe. NIVHA never sees your card details.</p>
@@ -918,6 +939,11 @@
             businessBuyer: state.businessAccepted,
             termsVersion: state.termsVersion,
             acceptedAt: new Date().toISOString()
+          },
+          billing: {
+            country: state.details.billingCountry || 'uk',
+            vatNumber: state.details.vatNumber || '',
+            reverseCharge: state.details.billingCountry === 'roi'
           }
         })
       });
@@ -947,7 +973,7 @@
     if (bar.hidden) return;
     const tot = computeTotals();
     document.getElementById('mt-count').textContent = 'Policy' + (state.packItems.length ? ' + ' + state.packItems.length + ' doc' + (state.packItems.length === 1 ? '' : 's') : '');
-    document.getElementById('mt-amount').textContent = gbp(tot.total) + ' inc. VAT';
+    document.getElementById('mt-amount').textContent = gbp(tot.total) + (tot.reverseCharge ? ' — no UK VAT' : ' inc. VAT');
     const btn = document.getElementById('mt-continue');
     btn.onclick = () => {
       if (state.step === 1) document.getElementById('to-step-2').click();
