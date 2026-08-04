@@ -15,7 +15,7 @@ const PACK_ITEMS = [
   { id: 'employee_awareness_leaflet', name: 'Employee awareness leaflet', sub: 'A plain-language summary of the policy for all staff — what it means for them, in one page.' },
   { id: 'manager_guidance', name: 'Manager guidance', sub: 'Recognising possible impairment, holding the conversation, and arranging for-cause testing without getting it wrong.' },
   { id: 'toolbox_talk', name: 'Toolbox talk', sub: 'A ten-minute team briefing with a sign-off sheet — evidence the policy was communicated.' },
-  { id: 'consent_forms', name: 'Consent and declaration forms', sub: 'Testing consent and medication declaration templates, ready to use on collection day.' },
+  { id: 'consent_forms', name: 'Collection records and declarations', sub: 'Collection record and medication declaration templates for use on collection day.' },
   { id: 'contract_clause', name: 'Contract clause wording', sub: 'Wording for employment contracts and contractor engagement terms referencing the policy.' }
 ];
 
@@ -102,7 +102,7 @@ const JURISDICTIONS = {
     name: 'Republic of Ireland',
     legislation: [
       'Safety, Health and Welfare at Work Act 2005 — including the section 13 duty not to be under the influence of an intoxicant at work',
-      'Misuse of Drugs Acts 1977 to 2016 — controlled drugs on your premises',
+      'Misuse of Drugs Acts 1977 to 2017 — controlled drugs on your premises',
       'EU GDPR and Data Protection Act 2018 — test results are special category health data'
     ]
   },
@@ -110,7 +110,7 @@ const JURISDICTIONS = {
     name: 'UK and Republic of Ireland',
     legislation: [
       'Health and Safety at Work legislation in each UK jurisdiction, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
-      'Misuse of Drugs Act 1971 (UK) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+      'Misuse of Drugs Act 1971 (UK) and Misuse of Drugs Acts 1977 to 2017 (Ireland)',
       'Psychoactive Substances Act 2016 (UK)',
       'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
     ]
@@ -131,7 +131,7 @@ JURISDICTIONS.ni_roi = {
   name: 'Northern Ireland and Republic of Ireland',
   legislation: [
     'Health and Safety at Work (Northern Ireland) Order 1978, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
-    'Misuse of Drugs Act 1971 (NI) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Misuse of Drugs Act 1971 (NI) and Misuse of Drugs Acts 1977 to 2017 (Ireland)',
     'Psychoactive Substances Act 2016 (NI)',
     'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
   ]
@@ -140,7 +140,7 @@ JURISDICTIONS.gb_roi = {
   name: 'Great Britain and Republic of Ireland',
   legislation: [
     'Health and Safety at Work etc. Act 1974, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
-    'Misuse of Drugs Act 1971 (GB) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Misuse of Drugs Act 1971 (GB) and Misuse of Drugs Acts 1977 to 2017 (Ireland)',
     'Psychoactive Substances Act 2016 (GB)',
     'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
   ]
@@ -149,7 +149,7 @@ JURISDICTIONS.ni_gb_roi = {
   name: 'Northern Ireland, Great Britain and Republic of Ireland',
   legislation: [
     'Health and Safety at Work etc. Act 1974 (Great Britain) and the Health and Safety at Work (Northern Ireland) Order 1978, plus the Safety, Health and Welfare at Work Act 2005 with its section 13 intoxicants duty in the Republic of Ireland',
-    'Misuse of Drugs Act 1971 (UK) and Misuse of Drugs Acts 1977 to 2016 (Ireland)',
+    'Misuse of Drugs Act 1971 (UK) and Misuse of Drugs Acts 1977 to 2017 (Ireland)',
     'Psychoactive Substances Act 2016 (UK)',
     'UK GDPR and EU GDPR with the respective Data Protection Acts 2018 — test results are special category health data in both'
   ]
@@ -159,7 +159,7 @@ JURISDICTIONS.uk_roi = JURISDICTIONS.ni_gb_roi;
 
 const SECTOR_NOTES = {
   construction: 'On construction sites, for-cause and post-incident testing arrangements are increasingly expected by principal contractors — many main contractors now ask to see your policy at pre-qualification.',
-  transport: 'Where people drive for work, road traffic law sits alongside workplace law — and a defensible policy separates the two clearly.',
+  transport: 'Where people drive for work, road traffic law sits alongside workplace law — and your policy needs to separate the two clearly.',
   manufacturing: 'Around plant and machinery, an impairment-at-work standard on its own is hard to operate — designated safety-critical roles with a stricter standard are the recognised approach.',
   care: 'Where your people care for vulnerable people, regulators and commissioners increasingly expect substance misuse arrangements as part of safeguarding.',
   office: 'Lower physical risk does not remove the duty of care — and alcohol at client events is where office policies most often go wrong.',
@@ -177,7 +177,7 @@ const SC_TYPES = [
 ];
 
 const TESTING_TYPES = [
-  { id: 'pre_employment', name: 'Pre-employment', sub: 'Screening as part of recruitment, before a start date is confirmed.' },
+  { id: 'pre_employment', name: 'Pre-employment', sub: 'Screening after a conditional job offer — the policy applies it at offer stage, never before.' },
   { id: 'random', name: 'Unannounced random', sub: 'Testing without notice, of people selected by an independent, documented method.' },
   { id: 'for_cause', name: 'For cause', sub: 'Where behaviour, appearance or other evidence gives reasonable belief of impairment.' },
   { id: 'post_incident', name: 'Post-incident', sub: 'After an accident, near miss or significant operational incident.' },

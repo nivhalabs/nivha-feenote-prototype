@@ -209,6 +209,9 @@ app.post('/api/policy/generate', async (req, res) => {
     if (!a.details || !String(a.details.company || '').trim()) {
       return res.status(400).json({ error: 'Organisation name is required.' });
     }
+    if (a.acknowledgements) {
+      console.log('policy order evidence', a.refNumber || '(no ref)', JSON.stringify(a.acknowledgements));
+    }
     const { buffer, filename } = await buildPolicyDoc(a);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -865,7 +868,7 @@ app.use((req, res, next) => {
 });
 
 const PUBLIC_PAGES = new Set(['/', '/index', '/index.html', '/dna', '/dna.html',
-  '/policy', '/policy.html', '/policy-review', '/policy-review.html',
+  '/policy', '/policy.html', '/policy-review', '/policy-review.html', '/policy-terms', '/policy-terms.html',
   '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html']);
 app.use((req, res, next) => {
   const p = req.path;

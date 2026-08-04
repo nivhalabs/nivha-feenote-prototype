@@ -29,6 +29,8 @@
     clientCode: '',
     clientApplied: false,
     accepted: false,
+    businessAccepted: false,
+    termsVersion: 'v1.0',
     refNumber: '',
     paid: false
   };
@@ -106,7 +108,7 @@
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
         <h1>Does your drug and alcohol policy hold up?</h1>
-        <p class="lede">Six quick questions — no email needed. You get an instant, personalised snapshot of what your policy has to cover, built from the same framework we use for workplace testing under EWDTS guidelines.</p>
+        <p class="lede">Six quick questions — no email needed. You get an instant, personalised snapshot of what a policy like yours typically needs to cover, built from the same framework we use for workplace testing under EWDTS guidelines.</p>
       </div>
       ${QUIZ.map(q => `
         <div class="quiz-group" data-q="${q.id}">
@@ -183,12 +185,12 @@
     if (q.safety_critical !== 'no') {
       items.push({
         open: true, icon: 'alert', title: q.safety_critical === 'unsure' ? 'You may have safety-critical roles — the policy must decide' : 'Safety-critical roles need their own standard',
-        body: `<p>Where impairment could cost a life — driving, machinery, height, care of vulnerable people — a general "fit for work" rule is not enough. A defensible policy designates the work, applies a stricter standard to it, and never softens that standard, however supportive the rest of the document is.${q.safety_critical === 'unsure' ? ' If you are unsure, the builder walks you through the recognised categories.' : ''}</p>`
+        body: `<p>Where impairment could cost a life — driving, machinery, height, care of vulnerable people — a general "fit for work" rule is not enough. A well-drafted policy designates the work, applies a stricter standard to it, and never softens that standard, however supportive the rest of the document is.${q.safety_critical === 'unsure' ? ' If you are unsure, the builder walks you through the recognised categories.' : ''}</p>`
       });
     }
 
     const lockedItems = [
-      { icon: 'lock', title: 'What a defensible testing section contains', sub: 'Chain of custody to EWDTS guidelines, laboratory confirmation of every screening result, medical review before anyone is told, and the B sample right.' },
+      { icon: 'lock', title: 'What a well-run testing section contains', sub: 'Chain of custody to EWDTS guidelines, laboratory confirmation of every screening result, medical review before anyone is told, and the B sample right.' },
       { icon: 'lock', title: 'Medication and medicinal cannabis', sub: 'Legally prescribed cannabis products exist — a policy written before that will call a lawful prescription a breach.' },
       { icon: 'lock', title: 'Refusal, adulteration and non-attendance', sub: 'What happens when someone refuses or interferes with a test — the clause most older policies are missing.' },
       { icon: 'lock', title: `Roles and responsibilities for a ${q.headcount === 'micro' ? 'team of ten or fewer' : q.headcount === 'small' ? 'team of eleven to fifty' : q.headcount === 'medium' ? 'workforce of fifty to two hundred and fifty' : 'workforce of more than two hundred and fifty'}`, sub: 'Who owns what — sized to your organisation, not a corporate org chart pasted in.' }
@@ -211,7 +213,7 @@
     };
     return {
       tone: 'ok',
-      text: 'A recently reviewed policy is a strong position. The snapshot below is still worth a look — it shows what a complete policy covers, so you can check nothing is missing.'
+      text: 'A recently reviewed policy is a strong position. The snapshot below is still worth a look — it shows the ground a policy like yours typically covers, so you can check nothing is missing.'
     };
   }
 
@@ -344,7 +346,7 @@
       </div>
       <div class="gate-card snap-cta">
         <h2>Your snapshot PDF is on its way — the full policy is ${gbp(POLICY_PRICE)} + VAT</h2>
-        <p>The snapshot tells you what your policy has to cover. The builder writes it: about four minutes of questions and your answers become the complete tailored policy — fifteen sections, two appendices, aligned to EWDTS guidelines — delivered as a Word and PDF document.</p>
+        <p>The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as a Word and PDF document for your advisers to check and your organisation to adopt.</p>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(POLICY_PRICE)} + VAT</span></div>
           <div class="sum-row"><span>Supporting document pack</span><span>optional, from ${gbp(PACK_ITEM_PRICE)} + VAT</span></div>
@@ -597,11 +599,11 @@
       <h2 class="form-section-head">Review cycle</h2>
       <div class="radio-cards">
         <button type="button" class="radio-card ${state.details.reviewCycle === '12' ? 'selected' : ''}" data-cycle="12"><span class="radio-title">Every 12 months</span><span class="radio-sub">Recommended — testing practice and case law move quickly.</span></button>
-        <button type="button" class="radio-card ${state.details.reviewCycle === '24' ? 'selected' : ''}" data-cycle="24"><span class="radio-title">Every 24 months</span><span class="radio-sub">The outer edge of what is defensible.</span></button>
+        <button type="button" class="radio-card ${state.details.reviewCycle === '24' ? 'selected' : ''}" data-cycle="24"><span class="radio-title">Every 24 months</span><span class="radio-sub">The longest interval we suggest between reviews.</span></button>
       </div>
       <h2 class="form-section-head">Where we send the documents</h2>
       ${field('contactName', 'Your name', { required: true })}
-      ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The finished policy is delivered here as a Word and PDF document.' })}
+      ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your documents are delivered here as Word and PDF.' })}
       ${field('contactPhone', 'Phone number', { type: 'tel' })}
       <div class="dev-fill-bar">
         <span>Prototype helper</span>
@@ -733,7 +735,7 @@
         <div class="doc-head">
           <div class="doc-brand">
             <span class="doc-brand-name">Drug and alcohol policy</span>
-            <span class="doc-brand-sub">${esc(co)} \u00b7 prepared by NIVHA Laboratory Services</span>
+            <span class="doc-brand-sub">${esc(co)} \u00b7 base template supplied by NIVHA Laboratory Services</span>
           </div>
           <span class="doc-label">Document map</span>
         </div>
@@ -747,7 +749,7 @@
               </tr>`).join('')}
           </tbody>
         </table>
-        <p class="doc-small">Scientific figures such as laboratory cut-off levels are confirmed against the current NIVHA laboratory schedule at generation and shown in a versioned appendix. The document carries a version stamp and a review date ${state.details.reviewCycle} months out.</p>
+        <p class="doc-small">The policy refers to laboratory cut-off levels generically — the current published schedule of the analysing laboratory applies at the time of any test, so the document does not go out of date when a schedule changes. It carries a version stamp and a review date ${state.details.reviewCycle} months out.</p>
       </div>`;
   }
 
@@ -755,7 +757,7 @@
     const tot = computeTotals();
     document.getElementById('pack-upsell').innerHTML = `
       <h2 class="form-section-head">Add the supporting documents</h2>
-      <p class="field-hint">A policy nobody has heard of protects nobody. These are how it lands with your people — each tailored with your organisation's name and choices. ${gbp(PACK_ITEM_PRICE)} + VAT each, or all five for ${gbp(PACK_BUNDLE_PRICE)} + VAT.</p>
+      <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices. ${gbp(PACK_ITEM_PRICE)} + VAT each, or all five for ${gbp(PACK_BUNDLE_PRICE)} + VAT.</p>
       <div class="check-items">
         ${PACK_ITEMS.map(p => `
           <label class="check-row">
@@ -804,19 +806,29 @@
         <div class="sum-row"><span>VAT at 20%</span><span>${gbp(tot.vat)}</span></div>
         <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
       </div>
+      <p class="sum-note">${gbp(tot.policy)} + VAT buys a tailored starter template for your advisers to check and your organisation to adopt. It is not a legal opinion and it is not a substitute for advice on your own circumstances.</p>
       <label class="check-row declaration-row">
         <input type="checkbox" id="accept" ${state.accepted ? 'checked' : ''}>
-        <div><strong>I understand what I am buying</strong><p>A tailored template policy for ${esc(state.details.company || 'my organisation')} to review and adopt — not legal advice. NIVHA recommends the document is reviewed by the organisation before it takes effect.</p></div>
+        <div><strong>I understand what I am buying</strong><p>This is a starter template drafted from my answers. It is not legal advice, and NIVHA is not acting as my organisation’s legal adviser. Before this policy takes effect, ${esc(state.details.company || 'my organisation')} will have it reviewed by its own legal or HR adviser and will check it fits its contracts, procedures and operations — NIVHA has not seen those and cannot assess them. NIVHA’s liability is limited as set out in the terms of sale, which cap it at the greater of the price paid and £500; liability for death or personal injury caused by negligence, or for fraud, is never excluded.</p></div>
+      </label>
+      <label class="check-row declaration-row">
+        <input type="checkbox" id="accept-business" ${state.businessAccepted ? 'checked' : ''}>
+        <div><strong>I am buying for an organisation in the course of business</strong><p>I have authority to bind ${esc(state.details.company || 'the organisation')}, and I have read and agree to the <a href="/policy-terms" target="_blank" rel="noopener">terms of sale (${esc(state.termsVersion)})</a>, including the starter-template, professional-review and liability provisions above.</p></div>
       </label>`;
+    const syncSubmit = () => {
+      document.getElementById('submit-btn').disabled = !(state.accepted && state.businessAccepted);
+    };
     document.getElementById('accept').addEventListener('change', e => {
-      state.accepted = e.target.checked;
-      document.getElementById('submit-btn').disabled = !state.accepted;
+      state.accepted = e.target.checked; syncSubmit();
     });
-    document.getElementById('submit-btn').disabled = !state.accepted;
+    document.getElementById('accept-business').addEventListener('change', e => {
+      state.businessAccepted = e.target.checked; syncSubmit();
+    });
+    syncSubmit();
   }
 
   document.getElementById('submit-btn').addEventListener('click', () => {
-    if (!state.accepted) return;
+    if (!state.accepted || !state.businessAccepted) return;
     if (!state.refNumber) state.refNumber = 'POL-' + new Date().getFullYear() + '-' + String(Math.floor(1000 + Math.random() * 9000));
     goTo(6);
   });
@@ -841,7 +853,8 @@
         <div class="sum-totals">
           <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
         </div>
-        <button class="btn primary full" id="pay-btn">${icon('lock', 16)} Pay ${gbp(tot.total)} securely</button>
+        <button class="btn primary full" id="pay-btn">${icon('lock', 16)} Pay ${gbp(tot.total)} — order starter template</button>
+        <p class="sum-note">By paying you accept the <a href="/policy-terms" target="_blank" rel="noopener">terms of sale</a> and confirm you are buying in the course of a business.</p>
         <p class="sum-note">${icon('card', 14)} Payment is processed by Stripe. NIVHA never sees your card details.</p>
         <p class="sum-note">Prototype — no card is charged at this stage.</p>
       </div>`;
@@ -858,8 +871,8 @@
     const providerHook = state.provider === 'undecided' && state.testingEnabled === 'active';
     const steps = [
       ['Your policy is ready now', 'Drafted from your answers — download it below as a Word document' + (state.packItems.length ? ', with your ' + state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') + ' to follow' : '') + '. A copy also goes to ' + esc(d.contactEmail || 'you') + '.'],
-      ['Review and adopt', 'Read it, adjust anything that does not fit, and set the date it takes effect. The document carries its version stamp and a review date ' + d.reviewCycle + ' months out.'],
-      ['Communicate it', state.packItems.includes('toolbox_talk') ? 'The toolbox talk and sign-off sheet give you evidence the policy was briefed to every team.' : 'A policy nobody has heard of protects nobody — brief it to every team and keep a record.']
+      ['Have it reviewed, then adopt', 'Have your own legal or HR adviser check it, adjust anything that does not fit, and complete the adoption record inside the document before it takes effect. The document carries its version stamp and a review date ' + d.reviewCycle + ' months out.'],
+      ['Communicate it', state.packItems.includes('toolbox_talk') ? 'The toolbox talk and sign-off sheet give you evidence the policy was briefed to every team.' : 'Brief it to every team and keep a record — a policy only protects the organisation once people know it.']
     ];
     if (providerHook) steps.push(['A case manager will be in touch', 'You told us there is no testing provider yet. A NIVHA case manager will call to talk through what a programme would look like for ' + esc(d.company || 'your organisation') + ' — no obligation.']);
 
@@ -899,7 +912,13 @@
           testingTypes: state.testingTypes, randomMethod: state.randomMethod,
           sampleTypes: state.sampleTypes, provider: state.provider,
           scTypes: state.scTypes, scScope: state.scScope, support: state.support,
-          details: state.details, packItems: state.packItems, refNumber: state.refNumber
+          details: state.details, packItems: state.packItems, refNumber: state.refNumber,
+          acknowledgements: {
+            understanding: state.accepted,
+            businessBuyer: state.businessAccepted,
+            termsVersion: state.termsVersion,
+            acceptedAt: new Date().toISOString()
+          }
         })
       });
       if (!res.ok) throw new Error('generate failed');
