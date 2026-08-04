@@ -26,6 +26,8 @@
     support: { eap: null, oh: null, selfReferral: 'yes' },
     details: {},                   /* policyOwner, dpContact, reviewCycle, contactName, contactEmail, contactPhone */
     packItems: [],
+    reviewService: false,
+    payMethod: 'card',             /* 'card' | 'invoice' — invoice available to verified NIVHA clients */
     clientCode: '',
     clientApplied: false,
     accepted: false,
@@ -349,7 +351,8 @@
         <p>The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as a Word and PDF document for your advisers to check and your organisation to adopt.</p>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(POLICY_PRICE)} + VAT</span></div>
-          <div class="sum-row"><span>Supporting document pack</span><span>optional, from ${gbp(PACK_ITEM_PRICE)} + VAT</span></div>
+          <div class="sum-row"><span>Supporting document pack</span><span>optional, from ${gbp(Math.min(...PACK_ITEMS.map(p => p.price)))} + VAT</span></div>
+          <div class="sum-row"><span>Annual review service</span><span>optional, ${gbp(REVIEW_PRICE)} per year + VAT</span></div>
         </div>
         <button class="btn primary full" id="start-builder">Start building — ${gbp(POLICY_PRICE)} + VAT</button>
         <p class="gate-small">NIVHA testing clients get a discounted rate — there is a code box at review. Payment is taken at the end, once you have seen exactly what the document contains.</p>
@@ -665,16 +668,22 @@
   /* ---------------- totals ---------------- */
   function computeTotals() {
     const allPack = state.packItems.length === PACK_ITEMS.length;
-    const packNet = allPack ? PACK_BUNDLE_PRICE : state.packItems.length * PACK_ITEM_PRICE;
-    let net = POLICY_PRICE + packNet;
+    const itemsNet = state.packItems.reduce((s, id) => { const p = PACK_ITEMS.find(x => x.id === id); return s + (p ? p.price : 0); }, 0);
+    const packNet = allPack ? PACK_BUNDLE_PRICE : itemsNet;
+    const reviewNet = state.reviewService ? REVIEW_PRICE : 0;
+    let goodsNet = POLICY_PRICE + packNet;
     let discount = 0;
     if (state.clientApplied) {
-      discount = Math.round(net * CLIENT_DISCOUNT * 100) / 100;
-      net = net - discount;
+      discount = Math.round(goodsNet * CLIENT_DISCOUNT * 100) / 100;
+      goodsNet = goodsNet - discount;
     }
+    /* pay-now discount — clients choosing card over invoice; excludes the review subscription */
+    const promptDiscount = (state.clientApplied && state.payMethod === 'card')
+      ? Math.round(goodsNet * CARD_PROMPT_DISCOUNT * 100) / 100 : 0;
+    const net = goodsNet - promptDiscount + reviewNet;
     const reverseCharge = state.details.billingCountry === 'roi';
     const vat = reverseCharge ? 0 : Math.round(net * VAT_RATE * 100) / 100;
-    return { policy: POLICY_PRICE, packNet, allPack, discount, net, vat, reverseCharge, total: Math.round((net + vat) * 100) / 100 };
+    return { policy: POLICY_PRICE, packNet, allPack, reviewNet, discount, promptDiscount, invoiceAvailable: state.clientApplied, net, vat, reverseCharge, total: Math.round((net + vat) * 100) / 100 };
   }
 
   /* ---------------- summary aside ---------------- */
@@ -705,7 +714,8 @@
         </div>
         <div class="sum-totals">
           <div class="sum-row"><span>Policy document</span><span>${gbp(tot.policy)}</span></div>
-          ${tot.packNet ? `<div class="sum-row"><span>Document pack${tot.allPack ? ' (all five)' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
+          ${tot.packNet ? `<div class="sum-row"><span>Document pack${tot.allPack ? ' (all three)' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
+          ${tot.reviewNet ? `<div class="sum-row"><span>Annual review service</span><span>${gbp(tot.reviewNet)}/yr</span></div>` : ''}
           ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
           <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
           <div class="sum-row grand"><span>Total</span><span>${gbp(tot.total)}</span></div>
@@ -732,7 +742,7 @@
     notes['11'] = state.support.selfReferral === 'yes' ? 'Voluntary disclosure protected' : 'Standard support wording';
     notes['12'] = q.jurisdiction === 'roi' ? 'EU GDPR wording' : (q.jurisdiction.includes('roi') ? 'UK and EU GDPR wording' : 'UK GDPR wording');
     notes['15'] = 'Reviewed every ' + state.details.reviewCycle + ' months';
-    notes['B'] = state.packItems.length ? state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') + ' included' : 'No supporting documents selected';
+    notes['B'] = 'Contract clause wording included' + (state.packItems.length ? ' \u00b7 ' + state.packItems.length + ' supporting document' + (state.packItems.length === 1 ? '' : 's') : '');
     return notes;
   }
 
@@ -766,21 +776,30 @@
     const tot = computeTotals();
     document.getElementById('pack-upsell').innerHTML = `
       <h2 class="form-section-head">Add the supporting documents</h2>
-      <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices.</p>
+      <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices. Contract clause wording and adoption notes are already included with the policy itself.</p>
       <div class="bundle-banner ${tot.allPack ? 'active' : ''}">
         <div>
-          <strong>${tot.allPack ? 'Full pack selected — bundle price applied' : 'Full pack — all five for ' + gbp(PACK_BUNDLE_PRICE) + ' + VAT'}</strong>
-          <p>${tot.allPack ? 'You are saving ' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE - PACK_BUNDLE_PRICE) + ' against the per-document price.' : 'Individually they are ' + gbp(PACK_ITEM_PRICE) + ' + VAT each (' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE) + ' for all five) — the bundle saves ' + gbp(PACK_ITEMS.length * PACK_ITEM_PRICE - PACK_BUNDLE_PRICE) + '.'}</p>
+          <strong>${tot.allPack ? 'Full pack selected — bundle price applied' : 'Full pack — all three for ' + gbp(PACK_BUNDLE_PRICE) + ' + VAT'}</strong>
+          <p>${tot.allPack ? 'You are saving ' + gbp(PACK_FULL_PRICE - PACK_BUNDLE_PRICE) + ' against the per-document price.' : 'Individually they are ' + gbp(PACK_FULL_PRICE) + ' + VAT for all three — the bundle saves ' + gbp(PACK_FULL_PRICE - PACK_BUNDLE_PRICE) + '.'}</p>
         </div>
-        <button type="button" class="btn small ${tot.allPack ? 'ghost' : 'primary'}" id="bundle-toggle">${tot.allPack ? 'Remove all' : 'Add all five — ' + gbp(PACK_BUNDLE_PRICE)}</button>
+        <button type="button" class="btn small ${tot.allPack ? 'ghost' : 'primary'}" id="bundle-toggle">${tot.allPack ? 'Remove all' : 'Add all three — ' + gbp(PACK_BUNDLE_PRICE)}</button>
       </div>
       <div class="check-items">
         ${PACK_ITEMS.map(p => `
           <label class="check-row">
             <input type="checkbox" data-pack="${p.id}" ${state.packItems.includes(p.id) ? 'checked' : ''}>
-            <div><strong>${p.name}</strong><p>${p.sub}</p></div>
-            <span class="pack-price">${gbp(PACK_ITEM_PRICE)}</span>
+            <div><strong>${p.name}</strong><p>${p.sub}</p><ul class="pack-includes">${p.includes.map(i => `<li>${i}</li>`).join('')}</ul></div>
+            <span class="pack-price">${gbp(p.price)}</span>
           </label>`).join('')}
+      </div>
+      <h2 class="form-section-head">Keep it current</h2>
+      <p class="field-hint">Employment, safety and data protection law moves — the review service keeps your policy on the latest legal position without you watching for changes.</p>
+      <div class="check-items">
+        <label class="check-row">
+          <input type="checkbox" data-review ${state.reviewService ? 'checked' : ''}>
+          <div><strong>Annual review service</strong><p>A full refresh of your policy every year on the latest NIVHA master, automatic re-issues when the law materially changes, and a plain-English change note with every update. Covers the policy document. Renews annually — cancel any time.</p></div>
+          <span class="pack-price">${gbp(REVIEW_PRICE)}/yr</span>
+        </label>
       </div>`;
     document.getElementById('bundle-toggle').addEventListener('click', () => {
       state.packItems = tot.allPack ? [] : PACK_ITEMS.map(p => p.id);
@@ -793,12 +812,16 @@
         if (!inp.checked && i > -1) state.packItems.splice(i, 1);
         renderDocMap(); renderPackUpsell(); renderClientCode(); renderDeclaration();
       }));
+    document.querySelector('[data-review]').addEventListener('change', e => {
+      state.reviewService = e.target.checked;
+      renderPackUpsell(); renderClientCode(); renderDeclaration();
+    });
   }
 
   function renderClientCode() {
     document.getElementById('client-code-box').innerHTML = `
       <h2 class="form-section-head">NIVHA client code</h2>
-      <p class="field-hint">Testing clients get the client rate — the code is on your latest fee note or from your case manager.</p>
+      <p class="field-hint">Testing clients get the client rate and the option to pay by invoice on account — the code is on your latest fee note or from your case manager.</p>
       <div class="gate-form code-form">
         <input type="text" id="client-code" placeholder="Client code" value="${esc(state.clientCode)}" ${state.clientApplied ? 'disabled' : ''}>
         <button class="btn ${state.clientApplied ? 'ghost' : 'outline'}" id="apply-code" ${state.clientApplied ? 'disabled' : ''}>${state.clientApplied ? 'Client rate applied' : 'Apply code'}</button>
@@ -822,10 +845,14 @@
       <div class="sum-totals">
         <div class="sum-row"><span>Policy document</span><span>${gbp(tot.policy)}</span></div>
         ${tot.packNet ? `<div class="sum-row"><span>Supporting documents${tot.allPack ? ' \u2014 full pack' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
+        ${tot.reviewNet ? `<div class="sum-row"><span>Annual review service \u2014 first year</span><span>${gbp(tot.reviewNet)}</span></div>` : ''}
         ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate (40% off)</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
+        ${tot.promptDiscount ? `<div class="sum-row"><span>Pay-now card discount (10%)</span><span>\u2212${gbp(tot.promptDiscount)}</span></div>` : ''}
         <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge, accounted for in Ireland' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
         <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
       </div>
+      ${tot.promptDiscount ? `<p class="sum-note">The pay-now discount applies when paying by card — you can choose an invoice instead at payment.</p>` : ''}
+      ${tot.reviewNet ? `<p class="sum-note">The review service renews at ${gbp(REVIEW_PRICE)}${tot.reverseCharge ? '' : ' + VAT'} each year — cancel any time with effect from the next renewal.</p>` : ''}
       <p class="sum-note">${gbp(tot.policy)}${tot.reverseCharge ? '' : ' + VAT'} buys a tailored starter template for your advisers to check and your organisation to adopt. It is not a legal opinion and it is not a substitute for advice on your own circumstances.</p>
       <label class="check-row declaration-row">
         <input type="checkbox" id="accept" ${state.accepted ? 'checked' : ''}>
@@ -856,29 +883,41 @@
   /* ---------------- payment ---------------- */
   function renderCheckout() {
     const tot = computeTotals();
+    const inv = state.payMethod === 'invoice';
     document.getElementById('checkout').innerHTML = `
       <div class="panel-head">
         <p class="marker">Payment</p>
-        <h1>Secure card payment</h1>
-        <p class="lede">Order ${state.refNumber}. Payment is taken securely in advance — your documents are generated as soon as it clears.</p>
+        <h1>${inv ? 'Request payment by invoice' : 'Secure card payment'}</h1>
+        <p class="lede">Order ${state.refNumber}. ${inv ? 'As a NIVHA testing client you can pay on account — your documents are generated now and a fee note follows by email.' : 'Payment is taken securely in advance — your documents are generated as soon as it clears.'}</p>
       </div>
+      ${tot.invoiceAvailable ? `
+      <div class="radio-cards pay-methods">
+        <button type="button" class="radio-card ${!inv ? 'selected' : ''}" data-paym="card"><span class="radio-title">Pay by card now</span><span class="radio-sub">10% pay-now discount applied — documents generated the moment payment clears.</span></button>
+        <button type="button" class="radio-card ${inv ? 'selected' : ''}" data-paym="invoice"><span class="radio-title">Request invoice</span><span class="radio-sub">Added to your NIVHA account — fee note by email, payment due in 14 days.</span></button>
+      </div>` : ''}
       <div class="summary-card checkout-card">
         <h2>Drug and alcohol policy \u00b7 ${esc(state.details.company || state.lead.company)}</h2>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(tot.policy)}</span></div>
           ${tot.packNet ? `<div class="sum-row"><span>Supporting documents${tot.allPack ? ' \u2014 full pack' : ''}</span><span>${gbp(tot.packNet)}</span></div>` : ''}
+          ${tot.reviewNet ? `<div class="sum-row"><span>Annual review service \u2014 first year</span><span>${gbp(tot.reviewNet)}</span></div>` : ''}
           ${tot.discount ? `<div class="sum-row"><span>NIVHA client rate</span><span>\u2212${gbp(tot.discount)}</span></div>` : ''}
+          ${tot.promptDiscount ? `<div class="sum-row"><span>Pay-now card discount (10%)</span><span>\u2212${gbp(tot.promptDiscount)}</span></div>` : ''}
           <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
         </div>
         <div class="sum-totals">
-          <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
+          <div class="sum-row grand"><span>${inv ? 'Total for invoice' : 'Total to pay'}</span><span>${gbp(tot.total)}</span></div>
         </div>
         ${tot.reverseCharge ? `<p class="sum-note">No UK VAT is charged — ${esc(state.details.company || 'your organisation')} accounts for VAT in Ireland under the reverse charge${state.details.vatNumber ? ' (VAT number ' + esc(state.details.vatNumber) + ')' : ''}.</p>` : ''}
-        <button class="btn primary full" id="pay-btn">${icon('lock', 16)} Pay ${gbp(tot.total)} — order starter template</button>
-        <p class="sum-note">By paying you accept the <a href="/policy-terms" target="_blank" rel="noopener">terms of sale</a> and confirm you are buying in the course of a business.</p>
-        <p class="sum-note">${icon('card', 14)} Payment is processed by Stripe. NIVHA never sees your card details.</p>
+        <button class="btn primary full" id="pay-btn">${icon('lock', 16)} ${inv ? 'Request invoice for ' + gbp(tot.total) + ' — order starter template' : 'Pay ' + gbp(tot.total) + ' — order starter template'}</button>
+        <p class="sum-note">By ${inv ? 'ordering' : 'paying'} you accept the <a href="/policy-terms" target="_blank" rel="noopener">terms of sale</a> and confirm you are buying in the course of a business.</p>
+        ${inv ? `<p class="sum-note">${icon('doc', 14)} The fee note is issued to ${esc(state.details.contactEmail || 'your billing contact')} with 14-day payment terms, and this order appears on your NIVHA account like any other instruction.</p>` : `<p class="sum-note">${icon('card', 14)} Payment is processed by Stripe. NIVHA never sees your card details.</p>`}
         <p class="sum-note">Prototype — no card is charged at this stage.</p>
       </div>`;
+    document.querySelectorAll('[data-paym]').forEach(btn => btn.addEventListener('click', () => {
+      state.payMethod = btn.dataset.paym;
+      renderCheckout();
+    }));
     document.getElementById('pay-btn').addEventListener('click', () => {
       state.paid = true;
       goTo(7);
@@ -895,13 +934,14 @@
       ['Have it reviewed, then adopt', 'Have your own legal or HR adviser check it, adjust anything that does not fit, and complete the adoption record inside the document before it takes effect. The document carries its version stamp and a review date ' + d.reviewCycle + ' months out.'],
       ['Communicate it', state.packItems.includes('toolbox_talk') ? 'The toolbox talk and sign-off sheet give you evidence the policy was briefed to every team.' : 'Brief it to every team and keep a record — a policy only protects the organisation once people know it.']
     ];
+    if (state.payMethod === 'invoice') steps.splice(1, 0, ['Settle the fee note', 'Your fee note for ' + gbp(tot.total) + ' arrives by email with 14-day payment terms, alongside your usual NIVHA account paperwork.']);
     if (providerHook) steps.push(['A case manager will be in touch', 'You told us there is no testing provider yet. A NIVHA case manager will call to talk through what a programme would look like for ' + esc(d.company || 'your organisation') + ' — no obligation.']);
 
     document.getElementById('confirmation').innerHTML = `
       <div class="success-banner">${icon('check', 20)}
         <div>
-          <strong>Payment received — your policy is on its way</strong>
-          <span>Order ${state.refNumber} \u00b7 ${esc(d.company || state.lead.company)} \u00b7 ${gbp(tot.total)} inc. VAT</span>
+          <strong>${state.payMethod === 'invoice' ? 'Order received — your fee note follows by email' : 'Payment received — your policy is on its way'}</strong>
+          <span>Order ${state.refNumber} \u00b7 ${esc(d.company || state.lead.company)} \u00b7 ${gbp(tot.total)}${tot.reverseCharge ? '' : ' inc. VAT'}${state.payMethod === 'invoice' ? ' \u00b7 invoiced to your NIVHA account, 14-day terms' : ''}</span>
         </div>
       </div>
       <ol class="process-strip confirm-strip" aria-label="What happens next">
@@ -933,7 +973,8 @@
           testingTypes: state.testingTypes, randomMethod: state.randomMethod,
           sampleTypes: state.sampleTypes, provider: state.provider,
           scTypes: state.scTypes, scScope: state.scScope, support: state.support,
-          details: state.details, packItems: state.packItems, refNumber: state.refNumber,
+          details: state.details, packItems: state.packItems, reviewService: state.reviewService,
+          payment: { method: state.payMethod, promptDiscount: computeTotals().promptDiscount }, refNumber: state.refNumber,
           acknowledgements: {
             understanding: state.accepted,
             businessBuyer: state.businessAccepted,
@@ -972,7 +1013,7 @@
     bar.hidden = !onPaid || window.innerWidth > 900;
     if (bar.hidden) return;
     const tot = computeTotals();
-    document.getElementById('mt-count').textContent = 'Policy' + (state.packItems.length ? ' + ' + state.packItems.length + ' doc' + (state.packItems.length === 1 ? '' : 's') : '');
+    document.getElementById('mt-count').textContent = 'Policy' + (state.packItems.length ? ' + ' + state.packItems.length + ' doc' + (state.packItems.length === 1 ? '' : 's') : '') + (state.reviewService ? ' + review' : '');
     document.getElementById('mt-amount').textContent = gbp(tot.total) + (tot.reverseCharge ? ' — no UK VAT' : ' inc. VAT');
     const btn = document.getElementById('mt-continue');
     btn.onclick = () => {

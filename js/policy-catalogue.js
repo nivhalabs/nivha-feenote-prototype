@@ -3,21 +3,35 @@
    All prices are indicative and for NIVHA review. */
 
 /* ---------------- pricing (indicative, + VAT) ---------------- */
-const POLICY_PRICE = 125;            /* tailored policy document */
-const PACK_ITEM_PRICE = 55;          /* each supporting document */
-const PACK_BUNDLE_PRICE = 220;       /* all five supporting documents */
+const POLICY_PRICE = 125;            /* tailored policy document — includes contract clause wording annex */
+const PACK_BUNDLE_PRICE = 75;        /* all three supporting documents */
+const REVIEW_PRICE = 60;             /* annual review service, per year */
 const CLIENT_DISCOUNT = 0.4;         /* NIVHA client rate — 40% off */
+const CARD_PROMPT_DISCOUNT = 0.1;    /* pay-now discount for clients paying by card instead of invoice */
 const DEMO_CLIENT_CODE = 'NIVHA-CLIENT';
 const VAT_RATE = 0.2;
 
 /* ---------------- document pack ---------------- */
 const PACK_ITEMS = [
-  { id: 'employee_awareness_leaflet', name: 'Employee awareness leaflet', sub: 'A plain-language summary of the policy for all staff — what it means for them, in one page.' },
-  { id: 'manager_guidance', name: 'Manager guidance', sub: 'Recognising possible impairment, holding the conversation, and arranging for-cause testing without getting it wrong.' },
-  { id: 'toolbox_talk', name: 'Toolbox talk', sub: 'A ten-minute team briefing with a sign-off sheet — evidence the policy was communicated.' },
-  { id: 'consent_forms', name: 'Collection records and declarations', sub: 'Collection record and medication declaration templates for use on collection day.' },
-  { id: 'contract_clause', name: 'Contract clause wording', sub: 'Wording for employment contracts and contractor engagement terms referencing the policy.' }
+  { id: 'employee_awareness_leaflet', name: 'Employee awareness leaflet', price: 10, sub: 'The policy as your people will actually read it — one page, plain language.', includes: [
+    'One-page summary written in the second person, for every member of staff',
+    'The rules, medication guidance and where to get help — no legal jargon',
+    'Tailored to your stance, your testing programme and your events policy'
+  ] },
+  { id: 'manager_guidance', name: 'Manager guidance', price: 35, sub: 'The document that stops a well-meaning supervisor creating a tribunal claim.', includes: [
+    'Recognising possible impairment — what to note, and what never to diagnose',
+    'A step-by-step structure for the conversation, with wording to avoid',
+    'When and how to arrange for-cause testing, and the record to keep',
+    'Confidentiality rules — who may know, and who must not'
+  ] },
+  { id: 'toolbox_talk', name: 'Toolbox talk presentation', price: 45, sub: 'Brief every team in ten minutes — and prove you did.', includes: [
+    'Ready-to-deliver landscape presentation with full speaker notes',
+    'No preparation needed — a supervisor can deliver it cold',
+    'The four questions teams always ask, answered on the slides',
+    'Print-ready sign-off sheet — your evidence the policy was communicated'
+  ] }
 ];
+const PACK_FULL_PRICE = PACK_ITEMS.reduce((s, p) => s + p.price, 0);
 
 /* ---------------- quiz (free layer) ---------------- */
 const QUIZ = [
@@ -209,5 +223,5 @@ const DOC_SECTIONS = [
   { num: '14', title: 'Breaches of this policy' },
   { num: '15', title: 'Communication and review' },
   { num: 'A', title: 'Appendix A — testing procedure summary for donors' },
-  { num: 'B', title: 'Appendix B — document pack' }
+  { num: 'B', title: 'Appendix B — accompanying documents' }
 ];
