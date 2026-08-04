@@ -161,7 +161,7 @@ const REVIEW_PARTS = [
       { ref: 'SN-10', title: 'Builder call to action', blocks: [
         ['copy', 'Your snapshot PDF is on its way — the full policy is £125 + VAT'],
         ['copy', 'The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as a Word and PDF document for your advisers to check and your organisation to adopt.'],
-        ['note', 'Price rows: "Tailored policy document — £125 + VAT" and "Supporting document pack — optional, from £55 + VAT". Button: "Start building — £125 + VAT".'],
+        ['note', 'Price rows: "Tailored policy document — £125 + VAT" and "Supporting document pack — optional, from £10 + VAT". Button: "Start building — £125 + VAT".'],
         ['copy', 'NIVHA testing clients get a discounted rate — there is a code box at review. Payment is taken at the end, once you have seen exactly what the document contains.'],
         ['flag', '"Delivered as a Word and PDF document" — the builder currently generates a Word document only. The same promise appears in the summary card, the email field hint at step 4, and this needs a decision: add PDF output, or change the copy.'],
       ]},
@@ -345,16 +345,15 @@ const REVIEW_PARTS = [
       ]},
       { ref: 'W5-2', title: 'Supporting documents upsell', blocks: [
         ['copy', 'Add the supporting documents'],
-        ['copy', 'A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation\'s name and choices. £55 + VAT each, or all five for £220 + VAT.'],
+        ['copy', 'A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation\'s name and choices, with a "what\u2019s included" list under each one. £10 to £45 + VAT each, or all three for £75 + VAT (£90 individually).'],
         ['opts', [
-          ['Employee awareness leaflet', 'A plain-language summary of the policy for all staff — what it means for them, in one page.'],
-          ['Manager guidance', 'Recognising possible impairment, holding the conversation, and arranging for-cause testing without getting it wrong.'],
-          ['Toolbox talk', 'A ten-minute team briefing with a sign-off sheet — evidence the policy was communicated.'],
-          ['Collection records and declarations', 'Collection record and medication declaration templates for use on collection day.'],
-          ['Contract clause wording', 'Wording for employment contracts and contractor engagement terms referencing the policy.'],
+          ['Employee awareness leaflet — £10 + VAT', 'A plain-language summary of the policy for all staff — what it means for them, in one page.'],
+          ['Manager guidance — £35 + VAT', 'The document that stops a well-meaning supervisor creating a tribunal claim — recognising possible impairment, holding the conversation, and arranging for-cause testing without getting it wrong.'],
+          ['Toolbox talk — £45 + VAT', 'A ready-to-deliver briefing presentation with speaker notes and a sign-off sheet — evidence the policy was communicated.'],
         ]],
-        ['copy', 'Full pack selected — bundle price applied, saving £55.'],
-        ['flag', 'The five supporting documents themselves do not exist yet — only the policy is generated. Selecting them adds them to appendix B and the price. They need to be written before launch, or the upsell held back.'],
+        ['note', 'Two former pack items were removed on 4 August 2026: collection records and declarations are supplied by the testing provider on collection day, and the contract clause wording is now included with every policy purchase at no charge, listed in the accompanying-documents appendix.'],
+        ['copy', 'Full pack selected — bundle price applied, saving £15.'],
+        ['flag', 'Content drafts for all three pack documents plus the contract clause wording exist (4 August 2026) and are with the owner for review — generation is not yet wired into the builder, so the documents must be signed off and wired up before launch, or the upsell held back.'],
       ]},
       { ref: 'W5-3', title: 'NIVHA client code', blocks: [
         ['copy', 'Testing clients get the client rate — the code is on your latest fee note or from your case manager.'],
@@ -860,16 +859,15 @@ const REVIEW_PARTS = [
           '9. You will be given a copy of the privacy information explaining how your data is used, and you can ask for a copy of your own results.',
         ]],
       ]},
-      { ref: 'APP-B', title: 'Appendix B — document pack', badges: ['only when pack items bought'], blocks: [
-        ['copy', 'The following supporting documents accompany this policy:'],
+      { ref: 'APP-B', title: 'Appendix B — accompanying documents', badges: ['all builds'], blocks: [
+        ['copy', 'The following documents accompany this policy:'],
         ['bullets', [
-          'Employee awareness leaflet — a plain-language summary of this policy for all staff.',
-          'Manager guidance — recognising possible impairment, holding the conversation, and arranging for-cause testing.',
-          'Toolbox talk — a 10-minute team briefing with sign-off sheet.',
-          'Collection records and declarations — collection record and medication declaration templates.',
-          'Contract clause — wording for employment contracts and contractor engagement terms referencing this policy.',
+          'Contract clause wording — wording for employment contracts and contractor engagement terms referencing this policy (included with every policy).',
+          'Employee awareness leaflet — a plain-language summary of this policy for all staff (when bought).',
+          'Manager guidance — recognising possible impairment, holding the conversation, and arranging for-cause testing (when bought).',
+          'Toolbox talk — a briefing presentation with speaker notes and sign-off sheet (when bought).',
         ]],
-        ['note', 'Lettered A when there is no appendix A (reserve builds).'],
+        ['note', 'The appendix renders on every build because the contract clause wording is always included. Lettered A when there is no appendix A (reserve builds).'],
       ]},
       { ref: 'CLOSE', title: 'Closing note', badges: ['all builds'], blocks: [
         ['copy', 'Confirmation cut-off levels and related scientific figures are those in ⟨the current laboratory schedule of the organisation\u2019s testing provider, NIVHA Laboratory Services / the current laboratory schedule of the organisation\u2019s appointed testing provider⟩, which is available to the organisation on request. This document is a template for the organisation to review and adopt — it is not legal advice.'],
