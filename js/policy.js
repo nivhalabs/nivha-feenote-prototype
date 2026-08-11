@@ -788,7 +788,7 @@
         ${PACK_ITEMS.map(p => `
           <label class="check-row">
             <input type="checkbox" data-pack="${p.id}" ${state.packItems.includes(p.id) ? 'checked' : ''}>
-            <div><strong>${p.name}</strong><p>${p.sub}</p><ul class="pack-includes">${p.includes.map(i => `<li>${i}</li>`).join('')}</ul></div>
+            <div><strong>${p.name}</strong><p>${p.sub}</p><ul class="pack-includes">${p.includes.map(i => `<li>${i}</li>`).join('')}</ul>${p.link ? `<a class="pack-peek" href="${p.link}" target="_blank" rel="noopener">${p.linkLabel} →</a>` : ''}</div>
             <span class="pack-price">${gbp(p.price)}</span>
           </label>`).join('')}
       </div>
