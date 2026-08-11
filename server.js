@@ -31,6 +31,7 @@ const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
 const { uploadFeeNote } = require('./lib/dropbox');
 const { buildPolicyDoc } = require('./lib/policy-doc');
+const policyOrders = require('./lib/policy-orders');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
@@ -203,8 +204,14 @@ const round2 = n => (typeof n === 'number' && isFinite(n) ? Math.round(n * 100) 
 const escapeFormula = s => String(s).replace(/'/g, "\\'");
 
 /* ---------------- routes ---------------- */
+/* Direct document generation. Open while the commerce flow beds in; once an
+   ADMIN_TOKEN is configured it becomes an office-only tool for regenerating a
+   document, because by then buyers go through /api/policy/orders. */
 app.post('/api/policy/generate', async (req, res) => {
   try {
+    if (policyOrders.ADMIN_TOKEN && !policyOrders.adminOk(req)) {
+      return res.status(404).json({ error: 'Not found' });
+    }
     const a = req.body || {};
     if (!a.details || !String(a.details.company || '').trim()) {
       return res.status(400).json({ error: 'Organisation name is required.' });
@@ -544,8 +551,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
       const session = (event.data && event.data.object) || {};
       if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
         const meta = session.metadata || {};
-        await markPaid(meta.recordId, session.payment_intent || session.id);
-        console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent || session.id})`);
+        /* Two products share this endpoint: fee notes and policy orders. */
+        if (meta.kind === 'policy') {
+          const out = await policyOrders.markPolicyPaid({ baseUrl: BASE_URL, session });
+          console.log(`stripe: policy order ${out.orderRef || meta.orderRef || '?'} paid${out.alreadyPaid ? ' (already recorded)' : ''}`);
+        } else {
+          await markPaid(meta.recordId, session.payment_intent || session.id);
+          console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent || session.id})`);
+        }
       }
     }
     res.json({ received: true });
@@ -645,7 +658,13 @@ app.get('/api/dropbox/health', async (req, res) => {
 });
 
 app.get('/api/version', (req, res) => {
-  res.json({ sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown' });
+  res.json({
+    sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown',
+    policyCommerce: true,
+    stripeMode: stripe.MODE,
+    emailDryRun: EMAIL_DRY_RUN,
+    airtableDryRun: DRY_RUN
+  });
 });
 
 app.get('/api/booking/forms', async (req, res) => {
@@ -857,12 +876,26 @@ app.post('/api/policy-review/comments', async (req, res) => {
   }
 });
 
+/* Policy builder commerce: orders, payment confirmation, fulfilment and the
+   office approval gate. Mounted before the static handler so its pages win. */
+policyOrders.mount(app, { baseUrl: BASE_URL });
+
 /* ---------------- static site ---------------- */
 /* Serve only the public web assets. Server code, libraries, internal
    documents and tooling must never be reachable over HTTP. */
 app.use((req, res, next) => {
   if (/\.(html|js|css)$/.test(req.path) || req.path === '/') {
     res.set('Cache-Control', 'no-cache');
+  }
+  next();
+});
+
+/* Sold documents and internal notes sit inside the served directory. This
+   guard runs before the allowlist below, which lets all of /assets/ through. */
+app.use((req, res, next) => {
+  const p = req.path.toLowerCase();
+  if (p.startsWith('/assets/fulfilment') || p.startsWith('/docs/') || p === '/docs') {
+    return res.status(404).send('Not found');
   }
   next();
 });

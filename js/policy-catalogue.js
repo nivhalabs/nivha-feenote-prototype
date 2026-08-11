@@ -225,3 +225,14 @@ const DOC_SECTIONS = [
   { num: 'A', title: 'Appendix A — testing procedure summary for donors' },
   { num: 'B', title: 'Appendix B — accompanying documents' }
 ];
+
+/* Shared with the server: lib/policy-pricing.js requires this file so the
+   prices the browser shows and the prices Stripe charges cannot drift.
+   `module` is undefined in the browser, so this is a no-op there. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    POLICY_PRICE, PACK_BUNDLE_PRICE, REVIEW_PRICE, CLIENT_DISCOUNT,
+    CARD_PROMPT_DISCOUNT, DEMO_CLIENT_CODE, VAT_RATE, PACK_ITEMS, PACK_FULL_PRICE,
+    QUIZ, JURISDICTIONS, SECTOR_NOTES, SC_TYPES, TESTING_TYPES, SAMPLE_TYPES, DOC_SECTIONS
+  };
+}
