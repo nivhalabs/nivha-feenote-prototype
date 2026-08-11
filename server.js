@@ -662,6 +662,8 @@ app.get('/api/version', (req, res) => {
     sha: process.env.RAILWAY_GIT_COMMIT_SHA || 'unknown',
     policyCommerce: true,
     stripeMode: stripe.MODE,
+    cardPayments: policyOrders.cardPaymentsEnabled(),
+    fulfilmentGate: !!policyOrders.ADMIN_TOKEN,
     emailDryRun: EMAIL_DRY_RUN,
     airtableDryRun: DRY_RUN
   });

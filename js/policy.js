@@ -43,10 +43,10 @@
 
   /* Environment, read from the server at start-up. The fill helpers below only
      appear with ?dev=1 on an environment that is not wired to live services. */
-  const env = { stripeMode: 'simulated', emailDryRun: true, airtableDryRun: true, ready: false };
+  const env = { stripeMode: 'simulated', cardPayments: false, emailDryRun: true, airtableDryRun: true, ready: false };
   const devRequested = /(^|[?&])dev=1(&|$)/.test(location.search);
   const devTools = () => devRequested && env.ready && env.emailDryRun && env.airtableDryRun;
-  const cardAvailable = () => env.stripeMode !== 'simulated';
+  const cardAvailable = () => env.cardPayments === true;
   state.details.reviewCycle = '12';
 
   const LEAD_KEY = 'nivha-policy-lead';
@@ -1013,7 +1013,7 @@
         return;
       }
       if (data.cardUnavailable) {
-        env.stripeMode = 'simulated';
+        env.cardPayments = false;
         state.payMethod = 'invoice';
         state.orderError = data.error || 'Card payments are available shortly \u2014 choose invoice to place your order.';
       } else {
@@ -1105,6 +1105,7 @@
       const res = await fetch('/api/version');
       const v = await res.json();
       env.stripeMode = v.stripeMode || 'simulated';
+      env.cardPayments = v.cardPayments === true;
       env.emailDryRun = !!v.emailDryRun;
       env.airtableDryRun = !!v.airtableDryRun;
     } catch (e) { /* the wizard works either way; invoice is offered instead */ }
