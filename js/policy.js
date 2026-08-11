@@ -50,6 +50,9 @@
   state.details.reviewCycle = '12';
 
   const LEAD_KEY = 'nivha-policy-lead';
+  /* The wizard answers survive the round trip to Stripe, so the confirmation
+     page can show what was bought when the buyer comes back. */
+  const ORDER_KEY = 'nivha-policy-order';
 
   const gbp = n => '\u00a3' + (n % 1 === 0
     ? n.toLocaleString('en-GB')
@@ -988,7 +991,19 @@
         body: JSON.stringify(orderPayload())
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.ok && data.url) { window.location.href = data.url; return; }
+      if (res.ok && data.ok && data.url) {
+        try {
+          localStorage.setItem(ORDER_KEY, JSON.stringify({
+            details: state.details, quiz: state.quiz, lead: state.lead,
+            packItems: state.packItems, reviewService: state.reviewService,
+            provider: state.provider, testingEnabled: state.testingEnabled,
+            clientApplied: state.clientApplied, clientCode: state.clientCode,
+            payMethod: 'card', refNumber: data.orderRef || ''
+          }));
+        } catch (e) { /* the confirmation still works with less detail */ }
+        window.location.href = data.url;
+        return;
+      }
       if (res.ok && data.ok && data.invoice) {
         state.refNumber = data.orderRef;
         state.recordId = data.recordId || '';
@@ -1099,8 +1114,17 @@
     const params = new URLSearchParams(location.search);
     const sid = params.get('sid');
     if (params.get('paid') === '1' && sid) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(ORDER_KEY) || 'null');
+        if (saved) {
+          Object.assign(state, saved);
+          state.details = saved.details || {};
+          if (!state.details.reviewCycle) state.details.reviewCycle = '12';
+        }
+      } catch (e) { /* fall back to a plain confirmation */ }
       const paid = await confirmFromStripe(sid);
       if (paid) {
+        try { localStorage.removeItem(ORDER_KEY); } catch (e) {}
         history.replaceState({}, '', '/policy');
         renderConfirmation();
         goTo(7);
