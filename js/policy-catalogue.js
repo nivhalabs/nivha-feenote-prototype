@@ -1,4 +1,4 @@
-/* NIVHA drug and alcohol policy builder — catalogue (prototype)
+/* NIVHA drug and alcohol policy builder — catalogue
    Quiz questions, jurisdiction content, snapshot logic and pricing.
    All prices are indicative and for NIVHA review. */
 
