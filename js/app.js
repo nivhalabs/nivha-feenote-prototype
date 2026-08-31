@@ -3,6 +3,9 @@
 (function () {
   'use strict';
 
+  /* Test helpers only appear when the page is opened with ?dev=1 */
+  const DEV = /(^|[?&])dev=1(&|$)/.test(location.search);
+
   /* ---------------- API (fee note service) ---------------- */
   async function apiCall(method, path, body) {
     const ctrl = new AbortController();
@@ -724,10 +727,10 @@
     const onsite = state.collection === 'onsite';
 
     form.innerHTML = `
-      <div class="dev-fill-bar">
-        <span>Prototype helper</span>
+      ${DEV ? `<div class="dev-fill-bar">
+        <span>Test helper</span>
         <button type="button" class="btn small ghost" id="dev-fill">Fill with sample data</button>
-      </div>
+      </div>` : ''}
       ${!isPrivate ? `
       <fieldset>
         <legend>Instructing organisation</legend>
@@ -809,7 +812,8 @@
       });
     });
 
-    form.querySelector('#dev-fill').addEventListener('click', () => {
+    const devFillBtn = form.querySelector('#dev-fill');
+    if (devFillBtn) devFillBtn.addEventListener('click', () => {
       const sample = {
         contactName: 'Test Contact',
         contactEmail: 'test@example.com',
@@ -1723,10 +1727,10 @@
         <div class="bk-cal-card">
           <div class="bk-arrange">
             <h2>Arrange the visit</h2>
-            <div class="dev-fill-bar">
-              <span>Prototype helper</span>
+            ${DEV ? `<div class="dev-fill-bar">
+              <span>Test helper</span>
               <button type="button" class="btn small ghost" id="dev-fill-req">Fill with sample data</button>
-            </div>
+            </div>` : ''}
             <div class="req-field">
               <p class="req-label">Collection address</p>
               ${!isPrivate ? `<p class="req-hint" style="margin-top:0; margin-bottom: var(--space-2);">We have prefilled your organisation address — change it if the collection happens somewhere else.</p>` : ''}
@@ -1839,7 +1843,8 @@
       refresh();
     });
     riskDetail.addEventListener('input', refresh);
-    document.getElementById('dev-fill-req').addEventListener('click', () => {
+    const devFillReq = document.getElementById('dev-fill-req');
+    if (devFillReq) devFillReq.addEventListener('click', () => {
       const sample = {
         name: 'Example Workplace Ltd', address: '10 Example Road', town: 'Belfast',
         postcode: 'BT2 2BB', notes: 'Ask for reception',
@@ -2017,11 +2022,11 @@
         <p class="gate-small">We use your email address to send your secure link and to follow up about your fee note. How we handle personal information for medico-legal testing — including donor details — is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
         <p class="gate-small">Used NIVHA before? Use the same email and we prefill your organisation and contact details — never donor information.</p>
       </div>
-      <div class="dev-fill-bar gate-dev">
-        <span>Prototype helper — skip the email step</span>
+      ${DEV ? `<div class="dev-fill-bar gate-dev">
+        <span>Test helper — skip the email step</span>
         <button type="button" class="btn small ghost" id="dev-gate-new">Enter as new visitor</button>
         <button type="button" class="btn small ghost" id="dev-gate-return">Enter as returning client</button>
-      </div>`;
+      </div>` : ''}`;
 
     gate.querySelector('#gate-send').addEventListener('click', async () => {
       const email = gate.querySelector('#gate-email').value.trim();
@@ -2044,8 +2049,10 @@
     gate.querySelector('#gate-email').addEventListener('keydown', e => {
       if (e.key === 'Enter') gate.querySelector('#gate-send').click();
     });
-    gate.querySelector('#dev-gate-new').addEventListener('click', () => unlock('test@example.com'));
-    gate.querySelector('#dev-gate-return').addEventListener('click', () => unlock('returning@example.com'));
+    const devGateNew = gate.querySelector('#dev-gate-new');
+    if (devGateNew) devGateNew.addEventListener('click', () => unlock('test@example.com'));
+    const devGateReturn = gate.querySelector('#dev-gate-return');
+    if (devGateReturn) devGateReturn.addEventListener('click', () => unlock('returning@example.com'));
   }
 
   function showGateCode(email, resp) {

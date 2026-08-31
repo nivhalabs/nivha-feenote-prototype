@@ -5,6 +5,9 @@
 (function () {
   'use strict';
 
+  /* Test helpers only appear when the page is opened with ?dev=1 */
+  const DEV = /(^|[?&])dev=1(&|$)/.test(location.search);
+
   /* ---------------- state ---------------- */
   const state = {
     step: 0,
@@ -667,9 +670,9 @@
         ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your fee note, payment receipt and each participant\u2019s checklist are sent here.' })}
         ${field('contactPhone', 'Phone number', { type: 'tel' })}`;
     }
-    html += `
+    if (DEV) html += `
       <div class="dev-fill-bar">
-        <span>Prototype helper</span>
+        <span>Test helper</span>
         <button type="button" class="btn small ghost" id="dev-fill">Fill sample details</button>
       </div>`;
     form.innerHTML = html;
@@ -1008,10 +1011,10 @@
         <p class="gate-error" id="gate-error" hidden>Enter a valid email address to receive your link.</p>
         <p class="gate-small">We use your email address to send your secure link and to follow up about your fee note. How we handle personal information for medico-legal testing is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
       </div>
-      <div class="dev-fill-bar gate-dev">
-        <span>Prototype helper \u2014 skip the email step</span>
+      ${DEV ? `<div class="dev-fill-bar gate-dev">
+        <span>Test helper \u2014 skip the email step</span>
         <button type="button" class="btn small ghost" id="dev-gate-new">Enter the DNA fee note tool</button>
-      </div>`;
+      </div>` : ''}`;
     gate.querySelector('#gate-send').addEventListener('click', () => {
       const email = gate.querySelector('#gate-email').value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1020,7 +1023,8 @@
       }
       unlock(email);
     });
-    gate.querySelector('#dev-gate-new').addEventListener('click', () => unlock('test@example.com'));
+    const devGateNew = gate.querySelector('#dev-gate-new');
+    if (devGateNew) devGateNew.addEventListener('click', () => unlock('test@example.com'));
   }
 
   function unlock(email) {
