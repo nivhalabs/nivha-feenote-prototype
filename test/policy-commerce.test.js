@@ -279,40 +279,50 @@ test('the order routes: validation, invoice order, admin gate, approval and deli
     r = await req(port, 'GET', `/api/admin/policy/orders/${recordId}/documents/9`, null, { 'x-admin-token': TOKEN });
     assert.strictEqual(r.status, 404);
 
-    /* the sign-off gate: clause wording is still stamped as a draft */
+    /* the sign-off gate: nothing ships until each pack document is signed off */
     r = await req(port, 'POST', `/api/admin/policy/orders/${recordId}/approve`, { approvedBy: 'Tester' }, { 'x-admin-token': TOKEN });
     assert.strictEqual(r.status, 409);
     assert.strictEqual(r.json.awaitingSignoff, true);
-    assert.ok(/awaiting final sign-off/i.test(r.json.error));
+    assert.ok(/awaiting sign-off/i.test(r.json.error));
+    assert.ok(/not yet signed off/.test(r.json.error), 'the reason names the missing sign-off');
     assert.strictEqual((await register.getOrder(recordId)).fields['Fulfilment status'], register.FULFILMENT.AWAITING,
       'a blocked order stays where it was');
 
-    /* once the pack is signed off, approval delivers */
-    const realDraftCheck = fulfilment.draftStamped;
-    fulfilment.draftStamped = () => [];
-    policyOrders.draftStampedShipped.cache = null;
-    try {
-      /* the module caches its scan, so clear it through a fresh require */
-      delete require.cache[require.resolve('../lib/policy-orders')];
-      const fresh = require('../lib/policy-orders');
-      const app2 = express();
-      app2.use(express.json());
-      fresh.mount(app2, { baseUrl: 'http://127.0.0.1:0' });
-      const s2 = await new Promise(res2 => { const s = app2.listen(0, '127.0.0.1', () => res2(s)); });
-      const p2 = s2.address().port;
-      const r2 = await req(p2, 'POST', `/api/admin/policy/orders/${recordId}/approve`, { approvedBy: 'Tester' }, { 'x-admin-token': TOKEN });
-      s2.close();
-      assert.strictEqual(r2.status, 200);
-      assert.strictEqual(r2.json.delivered, true);
-      assert.strictEqual(r2.json.files, 2);
-      const done = await register.getOrder(recordId);
-      assert.strictEqual(done.fields['Fulfilment status'], register.FULFILMENT.DELIVERED);
-      assert.strictEqual(done.fields['Approved by'], 'Tester');
-      assert.ok(done.fields['Delivered at']);
-      assert.ok(done.fields['Postmark message IDs']);
-    } finally {
-      fulfilment.draftStamped = realDraftCheck;
+    /* the sign-off page and its API */
+    r = await req(port, 'GET', '/admin/signoff');
+    assert.strictEqual(r.status, 404, 'no token, no sign-off page');
+    r = await req(port, 'GET', '/api/admin/signoff/docs', null, { 'x-admin-token': TOKEN });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.json.docs.length, 6, 'every shipped pack file has a card');
+    const clauses = r.json.docs.find(d => d.file === 'nivha_pack_05_contract_clauses.docx');
+    assert.ok(clauses && !clauses.signedOff && clauses.draftStamped, 'clauses start unsigned with a draft stamp');
+    assert.ok(clauses.notes && clauses.notes.title, 'reviewer notes ship with the document');
+
+    /* a sign-off needs a name, and an unknown file is refused */
+    r = await req(port, 'POST', '/api/admin/signoff', { filename: 'nivha_pack_05_contract_clauses.docx' }, { 'x-admin-token': TOKEN });
+    assert.strictEqual(r.status, 400);
+    r = await req(port, 'POST', '/api/admin/signoff', { filename: 'nope.docx', signedOffBy: 'Tester' }, { 'x-admin-token': TOKEN });
+    assert.strictEqual(r.status, 400);
+
+    /* sign off every pack document, as the office would */
+    for (const d of (await req(port, 'GET', '/api/admin/signoff/docs', null, { 'x-admin-token': TOKEN })).json.docs) {
+      r = await req(port, 'POST', '/api/admin/signoff', { filename: d.file, signedOffBy: 'Tester' }, { 'x-admin-token': TOKEN });
+      assert.strictEqual(r.status, 200, `sign-off recorded for ${d.file}`);
     }
+    r = await req(port, 'GET', '/api/admin/signoff/docs', null, { 'x-admin-token': TOKEN });
+    assert.ok(r.json.docs.every(d => d.signedOff), 'all documents show as signed off');
+    assert.ok(r.json.docs.every(d => !d.draftStamped), 'the effective files are the stamp-free finals');
+
+    /* once the pack is signed off, approval delivers the final files */
+    const r2 = await req(port, 'POST', `/api/admin/policy/orders/${recordId}/approve`, { approvedBy: 'Tester' }, { 'x-admin-token': TOKEN });
+    assert.strictEqual(r2.status, 200);
+    assert.strictEqual(r2.json.delivered, true);
+    assert.strictEqual(r2.json.files, 2);
+    const done = await register.getOrder(recordId);
+    assert.strictEqual(done.fields['Fulfilment status'], register.FULFILMENT.DELIVERED);
+    assert.strictEqual(done.fields['Approved by'], 'Tester');
+    assert.ok(done.fields['Delivered at']);
+    assert.ok(done.fields['Postmark message IDs']);
 
     /* hold writes to the register notes */
     r = await req(port, 'POST', `/api/admin/policy/orders/${recordId}/hold`, { note: 'Checking the wording' }, { 'x-admin-token': TOKEN });
