@@ -28,5 +28,6 @@ This defines exactly what the annual review service (£60 + VAT per year, ROI re
 
 - The review runs on a fixed twelve-month cycle from the order date.
 - About 30 days before the review date the office sends a renewal payment link from the admin reviews queue. Nothing is charged automatically.
+- The renewal email asks the buyer to confirm the policy owner and data protection contact we hold (quoted back from the order), and to flag any material change — new locations, jurisdictions or testing arrangements — which is a separate order rather than a refresh. Paying without a reply confirms the details are unchanged.
 - Payment extends the cycle twelve months from the previous due date, not the payment date.
 - Unpaid by the review date, the service lapses without notice or charge; existing documents remain licensed but receive no further updates.

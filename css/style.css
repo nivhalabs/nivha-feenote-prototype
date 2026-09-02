@@ -1102,6 +1102,7 @@ a, button, input, [role='button'] {
 /* pack upsell — what's included bullets */
 .pack-includes { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }
 .pack-includes li { font-size: var(--text-xs, 0.8rem); color: var(--color-text-muted, #6b6b66); line-height: 1.45; }
+.pack-note { margin: 8px 0 0; font-size: var(--text-xs, 0.8rem); color: var(--color-text-muted, #6b6b66); line-height: 1.45; }
 .pack-peek { display: inline-block; margin-top: 8px; font-size: var(--text-xs, 0.8rem); font-weight: 600; color: var(--color-accent, #2a8ba3); text-decoration: none; }
 .pack-peek:hover { text-decoration: underline; }
 

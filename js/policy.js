@@ -819,7 +819,7 @@
       <div class="check-items">
         <label class="check-row">
           <input type="checkbox" data-review ${state.reviewService ? 'checked' : ''}>
-          <div><strong>Annual review service</strong><p>A full refresh of your policy every year on the latest NIVHA master, automatic re-issues when the law materially changes, and a plain-English change note with every update. Covers the policy document. Renewal is by payment link each year — nothing is charged automatically.</p></div>
+          <div><strong>Annual review service</strong><p>Keeps your policy on the latest legal position, year after year. Renewal is by payment link each year — nothing is charged automatically.</p><ul class="pack-includes"><li>A yearly check of employment, safety and data protection law and regulator guidance across your policy's jurisdictions</li><li>Re-issue on the latest NIVHA master with a new version stamp and review date</li><li>A plain-English change note with every update — or confirmation that nothing material changed</li><li>Re-issues between reviews when the law materially changes, at no extra charge</li></ul><p class="pack-note">Covers the policy document only. Changes to your organisation or your original answers are handled as a separate order.</p></div>
           <span class="pack-price">${gbp(REVIEW_PRICE)}/yr</span>
         </label>
       </div>`;
