@@ -26,7 +26,7 @@ const PACK_ITEMS = [
   ] },
   { id: 'toolbox_talk', name: 'Toolbox talk pack', price: 45, sub: 'A 25 to 35 minute talk your own supervisor delivers — and proof it happened.', includes: [
     'Fourteen-slide deck, with Northern Ireland, Republic of Ireland and Great Britain versions of the statistics and support slides',
-    'Word-for-word delivery script booklet — no clinical knowledge needed to deliver it',
+    'Word-for-word delivery script in the speaker notes — no clinical knowledge needed to deliver it',
     'Knowledge check on the slides, and a crib sheet for the questions teams ask',
     'Print-ready sign-off sheet — your evidence the policy was communicated'
   ], link: 'https://nivha-website-production.up.railway.app/toolbox-talk', linkLabel: 'See what is inside the toolbox talk' }

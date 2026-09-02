@@ -349,7 +349,7 @@ const REVIEW_PARTS = [
         ['opts', [
           ['Employee awareness leaflet — £10 + VAT', 'A plain-language summary of the policy for all staff — what it means for them, in one page.'],
           ['Manager guidance — £35 + VAT', 'The document that stops a well-meaning supervisor creating a tribunal claim — recognising possible impairment, holding the conversation, and arranging for-cause testing without getting it wrong.'],
-          ['Toolbox talk — £45 + VAT', 'A ready-to-deliver 25 to 35 minute briefing — fourteen-slide deck with NI, ROI and GB versions of the statistics and support slides, a word-for-word delivery script booklet, and a sign-off sheet as evidence the policy was communicated.'],
+          ['Toolbox talk — £45 + VAT', 'A ready-to-deliver 25 to 35 minute briefing — fourteen-slide deck with NI, ROI and GB versions of the statistics and support slides, the word-for-word delivery script in the speaker notes, and a sign-off sheet as evidence the policy was communicated.'],
         ]],
         ['note', 'Two former pack items were removed on 4 August 2026: collection records and declarations are supplied by the testing provider on collection day, and the contract clause wording is now included with every policy purchase at no charge, listed in the accompanying-documents appendix.'],
         ['copy', 'Full pack selected — bundle price applied, saving £15.'],
@@ -865,7 +865,7 @@ const REVIEW_PARTS = [
           'Contract clause wording — wording for employment contracts and contractor engagement terms referencing this policy (included with every policy).',
           'Employee awareness leaflet — a plain-language summary of this policy for all staff (when bought).',
           'Manager guidance — recognising possible impairment, holding the conversation, and arranging for-cause testing (when bought).',
-          'Toolbox talk pack — a briefing presentation with delivery script booklet and sign-off sheet (when bought).',
+          'Toolbox talk pack — a briefing presentation with the delivery script in its speaker notes and a sign-off sheet (when bought).',
         ]],
         ['note', 'The appendix renders on every build because the contract clause wording is always included. Lettered A when there is no appendix A (reserve builds).'],
       ]},

@@ -551,10 +551,15 @@ app.post('/api/stripe/webhook', async (req, res) => {
       const session = (event.data && event.data.object) || {};
       if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
         const meta = session.metadata || {};
-        /* Two products share this endpoint: fee notes and policy orders. */
+        /* Three payments share this endpoint: fee notes, policy orders and
+           annual review renewals (payment links carry their metadata through
+           to the Checkout session). */
         if (meta.kind === 'policy') {
           const out = await policyOrders.markPolicyPaid({ baseUrl: BASE_URL, session });
           console.log(`stripe: policy order ${out.orderRef || meta.orderRef || '?'} paid${out.alreadyPaid ? ' (already recorded)' : ''}`);
+        } else if (meta.kind === 'policy_review_renewal') {
+          const out = await policyOrders.markReviewRenewalPaid({ baseUrl: BASE_URL, session });
+          console.log(`stripe: review renewal ${out.orderRef || meta.orderRef || '?'} paid${out.alreadyRecorded ? ' (already recorded)' : ` — due ${out.newDue}`}`);
         } else {
           await markPaid(meta.recordId, session.payment_intent || session.id);
           console.log(`stripe: fee note ${meta.reference || '?'} paid (${session.payment_intent || session.id})`);

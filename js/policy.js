@@ -618,7 +618,7 @@
       <h2 class="form-section-head">Review cycle</h2>
       <div class="radio-cards">
         <button type="button" class="radio-card ${state.details.reviewCycle === '12' ? 'selected' : ''}" data-cycle="12"><span class="radio-title">Every 12 months</span><span class="radio-sub">Recommended — testing practice and case law move quickly.</span></button>
-        <button type="button" class="radio-card ${state.details.reviewCycle === '24' ? 'selected' : ''}" data-cycle="24"><span class="radio-title">Every 24 months</span><span class="radio-sub">The longest interval we suggest between reviews.</span></button>
+        <button type="button" class="radio-card ${state.details.reviewCycle === '24' ? 'selected' : ''}${state.reviewService ? ' disabled' : ''}" data-cycle="24" ${state.reviewService ? 'disabled' : ''}><span class="radio-title">Every 24 months</span><span class="radio-sub">${state.reviewService ? 'Reviews run every 12 months with the annual review service.' : 'The longest interval we suggest between reviews.'}</span></button>
       </div>
       <h2 class="form-section-head">Billing</h2>
       <div class="radio-cards">
@@ -647,7 +647,10 @@
       inp.addEventListener('input', () => { state.details[inp.id] = inp.value; }));
     form.addEventListener('submit', e => e.preventDefault());
     form.querySelectorAll('[data-cycle]').forEach(el =>
-      el.addEventListener('click', () => { state.details.reviewCycle = el.dataset.cycle; renderGovForm(); }));
+      el.addEventListener('click', () => {
+        if (el.disabled) return;
+        state.details.reviewCycle = el.dataset.cycle; renderGovForm();
+      }));
     form.querySelectorAll('[data-billing]').forEach(el =>
       el.addEventListener('click', () => { state.details.billingCountry = el.dataset.billing; renderGovForm(); renderSummary(4); updateMobileBar(); }));
     form.querySelector('[data-back-4]').addEventListener('click', () => goTo(3));
@@ -816,7 +819,7 @@
       <div class="check-items">
         <label class="check-row">
           <input type="checkbox" data-review ${state.reviewService ? 'checked' : ''}>
-          <div><strong>Annual review service</strong><p>A full refresh of your policy every year on the latest NIVHA master, automatic re-issues when the law materially changes, and a plain-English change note with every update. Covers the policy document. Renews annually — cancel any time.</p></div>
+          <div><strong>Annual review service</strong><p>A full refresh of your policy every year on the latest NIVHA master, automatic re-issues when the law materially changes, and a plain-English change note with every update. Covers the policy document. Renewal is by payment link each year — nothing is charged automatically.</p></div>
           <span class="pack-price">${gbp(REVIEW_PRICE)}/yr</span>
         </label>
       </div>`;
@@ -833,6 +836,9 @@
       }));
     document.querySelector('[data-review]').addEventListener('change', e => {
       state.reviewService = e.target.checked;
+      /* The review service runs on a twelve-month cycle, so the policy's own
+         review date is pinned to match. */
+      if (state.reviewService) state.details.reviewCycle = '12';
       renderPackUpsell(); renderClientCode(); renderDeclaration();
     });
   }
@@ -883,7 +889,7 @@
         <div class="sum-row grand"><span>Total to pay</span><span>${gbp(tot.total)}</span></div>
       </div>
       ${tot.promptDiscount ? `<p class="sum-note">The pay-now discount applies when paying by card — you can choose an invoice instead at payment.</p>` : ''}
-      ${tot.reviewNet ? `<p class="sum-note">The review service renews at ${gbp(REVIEW_PRICE)}${tot.reverseCharge ? '' : ' + VAT'} each year — cancel any time with effect from the next renewal.</p>` : ''}
+      ${tot.reviewNet ? `<p class="sum-note">The review service runs for twelve months. About 30 days before your review date we email a payment link to renew at ${gbp(REVIEW_PRICE)}${tot.reverseCharge ? '' : ' + VAT'} for the following year — nothing is charged automatically, and if you choose not to renew the service simply lapses.</p>` : ''}
       <p class="sum-note">${gbp(tot.policy)}${tot.reverseCharge ? '' : ' + VAT'} buys a tailored starter template for your advisers to check and your organisation to adopt. It is not a legal opinion and it is not a substitute for advice on your own circumstances.</p>
       <label class="check-row declaration-row">
         <input type="checkbox" id="accept" ${state.accepted ? 'checked' : ''}>

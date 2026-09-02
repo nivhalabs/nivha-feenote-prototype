@@ -119,20 +119,22 @@ test('checkout parameters: gross amounts, policy metadata and return URLs', () =
   assert.ok(!p.line_items.some(li => li.price_data && li.price_data.unit_amount === 0), 'free lines are not sent to Stripe');
 });
 
-test('with the annual review the card is saved so the subscription can start later', () => {
+test('with the annual review the first year is charged today — no card is saved, no subscription is created', () => {
   const order = pricing.computeOrder({ reviewService: true, payMethod: 'card' });
   const p = stripe.policySessionParams({
     baseUrl: 'https://example.test', orderRef: 'POL-ABCD', recordId: 'recABC1234567890',
-    order, reviewPriceId: 'price_test123'
+    order
   });
   assert.strictEqual(p.mode, 'payment');
-  assert.strictEqual(p.customer_creation, 'always');
-  assert.strictEqual(p.payment_intent_data.setup_future_usage, 'off_session');
-  assert.strictEqual(p.metadata.reviewMode, 'setup');
-  assert.strictEqual(p.metadata.reviewPriceId, 'price_test123');
-  const oneOff = order.lines.filter(l => !l.recurring && l.grossPence > 0).reduce((s, l) => s + l.grossPence, 0);
-  assert.strictEqual(p.line_items.reduce((s, li) => s + li.price_data.unit_amount, 0), oneOff,
-    'the review is not charged today');
+  assert.strictEqual(p.customer_creation, undefined, 'no customer is created for a one-off payment');
+  assert.strictEqual(p.payment_intent_data, undefined, 'the card is not saved for off-session reuse');
+  assert.strictEqual(p.metadata.reviewMode, undefined);
+  assert.strictEqual(p.metadata.reviewPriceId, undefined);
+  const gross = order.lines.filter(l => l.grossPence > 0).reduce((s, l) => s + l.grossPence, 0);
+  assert.strictEqual(p.line_items.reduce((s, li) => s + li.price_data.unit_amount, 0), gross,
+    'the review first year is charged with the order');
+  assert.strictEqual(p.line_items.reduce((s, li) => s + li.price_data.unit_amount, 0), order.totalPence,
+    'Stripe is asked for exactly the order total, review included');
 });
 
 test('webhook signatures: a good one verifies, a tampered one does not', () => {
@@ -166,7 +168,7 @@ test('a two-jurisdiction order with the full pack produces one file set, no dupl
   assert.ok(names.includes('Drug-and-alcohol-policy-Test-Org-Ltd-Great-Britain.docx'));
   assert.ok(names.includes('nivha_pack_03_toolbox_talk_condensed.pptx'));
   assert.ok(names.includes('nivha_pack_05_contract_clauses.docx'), 'clause wording rides with the policy');
-  assert.strictEqual(files.length, 8);
+  assert.strictEqual(files.length, 7);
 });
 
 test('a pack-only order gets no policy document and no clause wording', async () => {
@@ -293,7 +295,7 @@ test('the order routes: validation, invoice order, admin gate, approval and deli
     assert.strictEqual(r.status, 404, 'no token, no sign-off page');
     r = await req(port, 'GET', '/api/admin/signoff/docs', null, { 'x-admin-token': TOKEN });
     assert.strictEqual(r.status, 200);
-    assert.strictEqual(r.json.docs.length, 6, 'every shipped pack file has a card');
+    assert.strictEqual(r.json.docs.length, 5, 'every shipped pack file has a card');
     const clauses = r.json.docs.find(d => d.file === 'nivha_pack_05_contract_clauses.docx');
     assert.ok(clauses && !clauses.signedOff && clauses.draftStamped, 'clauses start unsigned with a draft stamp');
     assert.ok(clauses.notes && clauses.notes.title, 'reviewer notes ship with the document');

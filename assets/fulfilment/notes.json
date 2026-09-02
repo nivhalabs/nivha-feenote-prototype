@@ -1,111 +1,98 @@
 {
-  "nivha_pack_01_employee_leaflet.docx": {
-    "title": "Employee awareness leaflet",
-    "role": "One-page plain-language summary of the buyer's policy, for every member of staff. Sold as the £10 pack item and inside the £75 bundle.",
-    "issued": "v1.0 — issued 1 September 2026",
-    "summary": [
-      "Opens by naming the full policy as the document that applies — the leaflet never overrides it.",
-      "Rules in brief: never work while affected; no alcohol, illegal drugs or 'legal highs' in working hours including breaks; premises and vehicles covered at all times.",
-      "Medication section: check the patient leaflet, ask the pharmacist, tell occupational health or the line manager if fitness for work could be affected — and the employee never has to say what condition is being treated. Prescribed medicinal cannabis is treated like any other prescription.",
-      "Testing section (shown when a testing programme is active): always told why, samples sealed in front of the donor, sent to an accredited laboratory, a screening result is never treated as positive on its own, and a confirmed result is medically reviewed before anything else happens.",
-      "Support-first framing throughout: 'a safety measure, not a judgement about anyone's private life'."
-    ],
-    "decisions": [
-      "No detection windows and no numeric cut-offs anywhere — figures live only with the analysing laboratory's published cut-off schedule (workshop rule D7).",
-      "Conditional passages are labelled 'Shown when…' with ⟨angle-bracket⟩ placeholders. The buyer receives this master and adopts the variant matching their policy answers — a future enhancement could tailor it automatically from the questionnaire, the way the policy itself is generated.",
-      "Sentence case, no exclamation marks, plain English readable at every level — NIVHA house style.",
-      "Footer disclaimer: a template for the organisation to review and adopt — not legal advice."
-    ],
-    "checks": [
-      "Is the tone right for a staff noticeboard?",
-      "Are you happy for buyers to receive the master with the 'Shown when…' labels visible, until tailoring is automated?",
-      "Does the medication privacy line match what NIVHA tells clients in practice?"
-    ]
-  },
-  "nivha_pack_02_manager_guidance.docx": {
-    "title": "Manager guidance",
-    "role": "Three pages for anyone who supervises people. Supports sections 5, 9 and 10 of the policy; the policy prevails on any conflict. Sold as the £35 pack item and inside the bundle.",
-    "issued": "v1.1 — issued 1 September 2026",
-    "summary": [
-      "The manager's role is limited to exactly three parts: notice, act on safety, escalate. Testing, medical review and disciplinary decisions belong to others under the policy.",
-      "Signs of possible impairment are listed with the explicit warning that none is proof — every sign has innocent explanations (medication, fatigue, illness, diabetes, stress, neurological conditions).",
-      "Safety first: remove the person calmly and privately, no driving, help arrange transport home as a duty of care, frame the stand-down as precautionary.",
-      "Conversation guidance: private, second manager or HR present where possible, describe rather than accuse — 'I've noticed X and Y this morning', never 'you've been drinking'."
-    ],
-    "decisions": [
-      "Managers never diagnose — 'your observation starts the process; it never concludes it'. This keeps them inside defensible boundaries and protects the employer from decisions made on opinion rather than testing and medical review.",
-      "The safety-critical wording adapts to whether the buyer selected safety-critical categories, mirroring the policy's own logic.",
-      "No detection windows or figures, same as every pack document (D7)."
-    ],
-    "checks": [
-      "Does the escalation path match how you advise clients to run it?",
-      "Is the signs-of-impairment list one NIVHA can stand over?",
-      "Is the suggested stand-down script wording right?"
-    ]
-  },
-  "nivha_pack_03_toolbox_talk_condensed.pptx": {
-    "title": "Toolbox talk — slide deck",
-    "role": "The condensed briefing deck for a team talk. Sold as the £45 pack item and inside the bundle, together with the delivery script and sign-off sheet.",
-    "issued": "issued 11 August 2026",
-    "summary": [
-      "Short deck covering why the policy exists, the rules in brief, medication, what testing involves and where to get support — designed to be delivered by a non-specialist in about ten minutes."
-    ],
-    "decisions": [
-      "Brand-checked: Open Sans, sentence case, no exclamation marks, no client names.",
-      "No detection windows or numeric cut-offs on any slide (D7)."
-    ],
-    "checks": [
-      "Watch the deck through once — is anything missing for the audiences your clients brief?"
-    ]
-  },
-  "nivha_pack_03b_signoff_sheet.docx": {
-    "title": "Toolbox talk — sign-off sheet",
-    "role": "Print-ready attendance sheet: the employer's record that the policy was briefed. Ships with the toolbox talk.",
-    "issued": "issued 11 August 2026",
-    "summary": [
-      "Attendees sign to confirm they received and understood the briefing — the paper trail an employer needs if the policy is ever challenged."
-    ],
-    "decisions": [
-      "Kept to a single sheet so it survives real site conditions."
-    ],
-    "checks": [
-      "Are the columns what you would want back from a client's briefing?"
-    ]
-  },
-  "nivha_pack_03c_delivery_script.docx": {
-    "title": "Toolbox talk — delivery script",
-    "role": "The word-for-word script for whoever gives the talk. Ships with the toolbox talk.",
-    "issued": "v1.1 — issued 1 September 2026",
-    "summary": [
-      "Written to be read verbatim by a supervisor with no specialist knowledge, with stage directions separated from the spoken words."
-    ],
-    "decisions": [
-      "Verbatim design means the message is consistent no matter who delivers it — the same reason airline briefings are scripted.",
-      "No detection windows or figures (D7)."
-    ],
-    "checks": [
-      "Read one section aloud — does it sound like a person, not a policy?"
-    ]
-  },
-  "nivha_pack_05_contract_clauses.docx": {
-    "title": "Contract clause wording",
-    "role": "Included free with every policy, so this document blocks ALL policy orders until signed off. Referenced in the policy's accompanying-documents appendix.",
-    "issued": "v1.1 — issued 1 September 2026",
-    "summary": [
-      "Clause 1 — new starters: policy compliance clause where the policy does not form part of the contract save for the impairment prohibition, the testing limb, and the disciplinary consequence. The testing limb has two variants: programme active (unreasonable refusal or sample interference may be gross misconduct) or testing reserved for the future (introduced after consultation).",
-      "Republic of Ireland variant extends limb (a) with the section 13 Safety, Health and Welfare at Work Act 2005 intoxicant wording.",
-      "Clause 2 — existing staff: variation by consultation and agreement, not by reissuing contracts, with suggested letter wording. Reflects section 1.3 of the policy.",
-      "Clause 3 — contractor and agency terms: flow-down compliance, right to remove anyone who appears under the influence, termination for material breach, and evidence of equivalent standards on request."
-    ],
-    "decisions": [
-      "Rationale stated in the document itself: a policy without contractual authority is not safely enforceable — which is why this wording ships free with every policy rather than being sold separately.",
-      "The consultation route for existing staff is deliberately the only route offered — imposing testing by reissued contract is the indefensible path.",
-      "Every clause is framed as a template for review by the buyer's own adviser before use; 'this is not legal advice' appears in both the how-to-use note and the footer."
-    ],
-    "checks": [
-      "The ROI statutory reference (s.13 SHWW Act 2005) — confirm you are happy to cite it.",
-      "The gross-misconduct wording for refusal and sample interference.",
-      "This is the highest-stakes document in the pack — it touches employment contracts. Read it in full."
-    ]
-  }
+ "nivha_pack_01_employee_leaflet.docx": {
+  "title": "Employee awareness leaflet",
+  "role": "One-page plain-language summary of the buyer's policy, for every member of staff. Sold as the £10 pack item and inside the £75 bundle.",
+  "issued": "v1.0 — issued 1 September 2026",
+  "summary": [
+   "Opens by naming the full policy as the document that applies — the leaflet never overrides it.",
+   "Rules in brief: never work while affected; no alcohol, illegal drugs or 'legal highs' in working hours including breaks; premises and vehicles covered at all times.",
+   "Medication section: check the patient leaflet, ask the pharmacist, tell occupational health or the line manager if fitness for work could be affected — and the employee never has to say what condition is being treated. Prescribed medicinal cannabis is treated like any other prescription.",
+   "Testing section (shown when a testing programme is active): always told why, samples sealed in front of the donor, sent to an accredited laboratory, a screening result is never treated as positive on its own, and a confirmed result is medically reviewed before anything else happens.",
+   "Support-first framing throughout: 'a safety measure, not a judgement about anyone's private life'."
+  ],
+  "decisions": [
+   "No detection windows and no numeric cut-offs anywhere — figures live only with the analysing laboratory's published cut-off schedule (workshop rule D7).",
+   "Conditional passages are labelled 'Shown when…' with ⟨angle-bracket⟩ placeholders. The buyer receives this master and adopts the variant matching their policy answers — a future enhancement could tailor it automatically from the questionnaire, the way the policy itself is generated.",
+   "Sentence case, no exclamation marks, plain English readable at every level — NIVHA house style.",
+   "Footer disclaimer: a template for the organisation to review and adopt — not legal advice."
+  ],
+  "checks": [
+   "Is the tone right for a staff noticeboard?",
+   "Are you happy for buyers to receive the master with the 'Shown when…' labels visible, until tailoring is automated?",
+   "Does the medication privacy line match what NIVHA tells clients in practice?"
+  ]
+ },
+ "nivha_pack_02_manager_guidance.docx": {
+  "title": "Manager guidance",
+  "role": "Three pages for anyone who supervises people. Supports sections 5, 9 and 10 of the policy; the policy prevails on any conflict. Sold as the £35 pack item and inside the bundle.",
+  "issued": "v1.1 — issued 1 September 2026",
+  "summary": [
+   "The manager's role is limited to exactly three parts: notice, act on safety, escalate. Testing, medical review and disciplinary decisions belong to others under the policy.",
+   "Signs of possible impairment are listed with the explicit warning that none is proof — every sign has innocent explanations (medication, fatigue, illness, diabetes, stress, neurological conditions).",
+   "Safety first: remove the person calmly and privately, no driving, help arrange transport home as a duty of care, frame the stand-down as precautionary.",
+   "Conversation guidance: private, second manager or HR present where possible, describe rather than accuse — 'I've noticed X and Y this morning', never 'you've been drinking'."
+  ],
+  "decisions": [
+   "Managers never diagnose — 'your observation starts the process; it never concludes it'. This keeps them inside defensible boundaries and protects the employer from decisions made on opinion rather than testing and medical review.",
+   "The safety-critical wording adapts to whether the buyer selected safety-critical categories, mirroring the policy's own logic.",
+   "No detection windows or figures, same as every pack document (D7)."
+  ],
+  "checks": [
+   "Does the escalation path match how you advise clients to run it?",
+   "Is the signs-of-impairment list one NIVHA can stand over?",
+   "Is the suggested stand-down script wording right?"
+  ]
+ },
+ "nivha_pack_03_toolbox_talk_condensed.pptx": {
+  "title": "Toolbox talk — slide deck",
+  "role": "The condensed briefing deck for a team talk, with the full word-for-word delivery script in the speaker notes. Sold as the £45 pack item and inside the bundle, together with the sign-off sheet.",
+  "issued": "v1.1 — issued 2 September 2026",
+  "summary": [
+   "Short deck covering why the policy exists, the rules in brief, medication, what testing involves and where to get support — designed to be delivered by a non-specialist in about 25 to 35 minutes.",
+   "Each slide's speaker notes carry the full script for that slide, including preparation guidance, a crib sheet for the five questions teams ask, and what to do after the talk. The separate script booklet is retired from v1.1."
+  ],
+  "decisions": [
+   "Brand-checked: Open Sans, sentence case, no exclamation marks, no client names.",
+   "No detection windows or numeric cut-offs on any slide (D7).",
+   "v1.1: full delivery script moved into the speaker notes; the separate 03c script booklet is retired."
+  ],
+  "checks": [
+   "Watch the deck through once with presenter view on — do the notes read naturally against each slide?"
+  ]
+ },
+ "nivha_pack_03b_signoff_sheet.docx": {
+  "title": "Toolbox talk — sign-off sheet",
+  "role": "Print-ready attendance sheet: the employer's record that the policy was briefed. Ships with the toolbox talk.",
+  "issued": "issued 11 August 2026",
+  "summary": [
+   "Attendees sign to confirm they received and understood the briefing — the paper trail an employer needs if the policy is ever challenged."
+  ],
+  "decisions": [
+   "Kept to a single sheet so it survives real site conditions."
+  ],
+  "checks": [
+   "Are the columns what you would want back from a client's briefing?"
+  ]
+ },
+ "nivha_pack_05_contract_clauses.docx": {
+  "title": "Contract clause wording",
+  "role": "Included free with every policy, so this document blocks ALL policy orders until signed off. Referenced in the policy's accompanying-documents appendix.",
+  "issued": "v1.1 — issued 1 September 2026",
+  "summary": [
+   "Clause 1 — new starters: policy compliance clause where the policy does not form part of the contract save for the impairment prohibition, the testing limb, and the disciplinary consequence. The testing limb has two variants: programme active (unreasonable refusal or sample interference may be gross misconduct) or testing reserved for the future (introduced after consultation).",
+   "Republic of Ireland variant extends limb (a) with the section 13 Safety, Health and Welfare at Work Act 2005 intoxicant wording.",
+   "Clause 2 — existing staff: variation by consultation and agreement, not by reissuing contracts, with suggested letter wording. Reflects section 1.3 of the policy.",
+   "Clause 3 — contractor and agency terms: flow-down compliance, right to remove anyone who appears under the influence, termination for material breach, and evidence of equivalent standards on request."
+  ],
+  "decisions": [
+   "Rationale stated in the document itself: a policy without contractual authority is not safely enforceable — which is why this wording ships free with every policy rather than being sold separately.",
+   "The consultation route for existing staff is deliberately the only route offered — imposing testing by reissued contract is the indefensible path.",
+   "Every clause is framed as a template for review by the buyer's own adviser before use; 'this is not legal advice' appears in both the how-to-use note and the footer."
+  ],
+  "checks": [
+   "The ROI statutory reference (s.13 SHWW Act 2005) — confirm you are happy to cite it.",
+   "The gross-misconduct wording for refusal and sample interference.",
+   "This is the highest-stakes document in the pack — it touches employment contracts. Read it in full."
+  ]
+ }
 }
