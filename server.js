@@ -192,6 +192,9 @@ function feeNoteFields(p, reference) {
     if (a.explicitConsent) {
       bits.push('Explicit consent given to processing of personal information, including special category (health) data — UK/EU GDPR Art 9(2)(a). Withdrawal possible before analysis begins.');
     }
+    if (a.hairLengthCm) {
+      bits.push(`Hair length confirmed — at least ${Number(a.hairLengthCm)} cm of head hair is available for the segments ordered. Segments that cannot be collected are not analysed${p.route === 'private' ? '; refunds for unused segments are at NIVHA discretion.' : ' or invoiced.'}`);
+    }
     bits.push(`Accepted by: ${d.contactName || 'unknown'} <${d.contactEmail || ''}>`);
     if (a.acceptedAt) bits.push(`Accepted at (client): ${a.acceptedAt}`);
     bits.push(`Recorded at (server): ${new Date().toISOString()}`);
@@ -427,6 +430,21 @@ app.post('/api/fee-notes', async (req, res) => {
       p.totals = { net: serverTotals.net, vat: serverTotals.vat, total: serverTotals.total };
     } else if (p.route === 'private') {
       return res.status(400).json({ ok: false, error: 'Could not price the fee note' });
+    }
+
+    /* Extra hair segments are only accepted once the client confirms the donor has enough hair. */
+    const needCm = Math.max(0, ...(Array.isArray(p.basket) ? p.basket : []).map(l => (Number(l && l.segs) > 0 ? (1 + Number(l.segs)) * 3 : 0)));
+    const catalogue = require('./js/catalogue');
+    const badSegs = (Array.isArray(p.basket) ? p.basket : []).some(l => {
+      const panel = catalogue.CATALOGUE.find(c => c.code === (l && l.code));
+      return panel && catalogue.normSegs(panel, l.segs) === null;
+    });
+    if (badSegs) return res.status(400).json({ ok: false, error: 'That number of hair segments is not available for this panel.' });
+    if (needCm) {
+      const a = p.acceptance || {};
+      if (!a.hairLengthCm || Number(a.hairLengthCm) < needCm) {
+        return res.status(400).json({ ok: false, error: `Please confirm the donor has at least ${needCm} cm of head hair.` });
+      }
     }
 
     const reference = await nextReference(p.route);

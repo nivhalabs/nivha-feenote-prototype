@@ -7,6 +7,19 @@ const FAST_TRACK_FEE = 80;            /* per panel, + VAT */
 const DERRY_COLLECTION_FEE = 75;      /* Derry~Londonderry office collection, + VAT */
 const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — priced on request, + VAT */
 
+/* ---------- Additional hair segments ----------
+   A segment is a 3 cm length of head hair counted from the scalp. The first segment is the panel itself;
+   every additional segment adds the same price again (the panel's price at its selected variant).
+   Drug panels: up to three additional segments (12 cm). Alcohol: one additional segment (6 cm) — the
+   scientist is confirming this. EtG and FAEE: the additional alcohol segment is charged at the EtG price,
+   because FAEE is read as one overview and is not segmented.
+   Fast track is charged per segment (each is a separate test) — flip FAST_TRACK_PER_SEGMENT if the lab says otherwise. */
+const SEGMENT_CM = 3;
+const SEGMENT_MAX_DRUG = 3;
+const SEGMENT_MAX_ALCOHOL = 1;
+const FAST_TRACK_PER_SEGMENT = true;
+const ALCOHOL_CODES = ['H-EtG', 'H-EtG-FAEE'];
+
 /* No combined panel rates. The live form's H-DP1 + H-DP3 price field is hidden and not offered, so every panel is charged at list price.
    Kept as an empty list so the pricing code does not change if a rate is ever agreed. */
 const COMBINED_RATES = [];
@@ -92,7 +105,7 @@ const CATALOGUE = [
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
+    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. Longer hair can be analysed in further 3 cm segments.'
   },
   {
     code: 'H-DP2', group: 'hair', price: 450, fastTrack: true, includes: ['H-DP1'],
@@ -102,7 +115,7 @@ const CATALOGUE = [
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Includes the full standard panel. Additional hair segments can be analysed — priced on application.'
+    help: 'Includes the full standard panel. Longer hair can be analysed in further 3 cm segments.'
   },
   {
     code: 'H-DP3', group: 'hair', price: 330, fastTrack: true,
@@ -330,8 +343,8 @@ const INCLUSION_RULES = [
 
 const GROUP_META = {
   hair:  { label: 'Hair', icon: 'calendar', windowShort: 'Around 3 months',
-           note: 'Around 3 months of history. Collected at either office. Additional segments priced on application.',
-           typical: 'The default evidence for most court instructions — a month-by-month picture of drug or alcohol use. Collected at both offices.',
+           note: 'Around 3 months of history. Collected at either office. Further 3 cm segments can be added to each hair panel.',
+           typical: 'The default evidence for most court instructions — an overview of drug or alcohol use over about three months, with further 3 cm segments for longer hair. Collected at both offices.',
            compare: '<strong>Standard or extended?</strong> The standard panel covers the drugs most often raised in proceedings. The extended panel is everything in the standard panel plus ketamine, methadone, buprenorphine and prescription sleep medicines — add it only when those drugs are relevant to the case. It is the standard panel plus the additions, not a second panel.' },
   nail:  { label: 'Nail', icon: 'history', windowShort: '6 to 12 months',
            note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.',
@@ -438,8 +451,33 @@ const COURT_RATES = {
   note: "Where the instruction is legally aided, the applicable legal aid authority's rates are observed."
 };
 
+
+/* ---------- Segment helpers (shared by the browser and the server) ---------- */
+const SEG_BY_CODE = Object.fromEntries(CATALOGUE.map(p => [p.code, p]));
+/* Rule for a panel, or null where segments do not apply (urine, blood, nail). */
+function segmentRule(p) {
+  if (!p || p.group !== 'hair') return null;
+  return ALCOHOL_CODES.includes(p.code)
+    ? { kind: 'alcohol', max: SEGMENT_MAX_ALCOHOL }
+    : { kind: 'drug', max: SEGMENT_MAX_DRUG };
+}
+/* Whole number of additional segments, or null when not allowed for this panel. */
+function normSegs(p, n) {
+  const k = Math.floor(Number(n) || 0);
+  const r = segmentRule(p);
+  if (!r) return k === 0 ? 0 : null;
+  return k < 0 || k > r.max ? null : k;
+}
+/* Price of one additional segment. The combined alcohol test adds an EtG-only segment. */
+function segmentUnitPrice(p, unit) {
+  return p.code === 'H-EtG-FAEE' ? SEG_BY_CODE['H-EtG'].price : unit;
+}
+/* Hair length (cm) a donor needs for the segments ordered. */
+const segmentCm = segs => (1 + segs) * SEGMENT_CM;
+
 /* Node export so the server prices fee notes from the same catalogue.
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
+  module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
+    SEGMENT_CM, FAST_TRACK_PER_SEGMENT, segmentRule, normSegs, segmentUnitPrice, segmentCm };
 }

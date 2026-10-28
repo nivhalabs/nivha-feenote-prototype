@@ -66,11 +66,17 @@
     : '';
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
 
-  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1 };
+  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1, segs: 0 };
   const unitPrice = (p, o) => p.variants ? p.variants[o.variant].price : p.price;
-  const lineTotal = (p, o) => unitPrice(p, o) * (o.qty || 1);
+  const segsOf = (p, o) => (segmentRule(p) && o && o.segs) || 0;
+  const lineTotal = (p, o) => unitPrice(p, o) * (o.qty || 1) + segsOf(p, o) * segmentUnitPrice(p, unitPrice(p, o));
+  /* Fast track is charged on each segment as well as each panel (flag in catalogue.js) */
+  const ftUnits = (p, o) => FAST_TRACK_PER_SEGMENT ? 1 + segsOf(p, o) : 1;
+  /* Longest hair needed (cm) across the basket; 0 when no extra segments are ordered */
+  const hairNeededCm = () => Math.max(0, ...[...state.basket.entries()].map(([c, o]) => segsOf(byCode[c], o) ? segmentCm(segsOf(byCode[c], o)) : 0));
   const lineLabel = (p, o) => {
     let s = p.name;
+    if (segsOf(p, o)) s += ` — ${segsOf(p, o)} additional ${segsOf(p, o) === 1 ? 'segment' : 'segments'} (${segmentCm(segsOf(p, o))} cm)`;
     if (p.variants && o.variant > 0) s += ' — ' + p.variants[o.variant].short.toLowerCase();
     if (p.series && o.qty > 1) s += ' — series of ' + (o.qty === 2 ? 'two' : 'three');
     return s;
@@ -469,6 +475,13 @@
       if (state.basket.has(code)) state.basket.get(code).variant = v;
       renderCatalogue(); renderSummary(); updateMobileBar();
     }));
+    wrap.querySelectorAll('[data-segs]').forEach(b => b.addEventListener('click', () => {
+      const [code, n] = b.dataset.segs.split(':'), k = +n;
+      state.opts.set(code, { ...getOpts(code), segs: k });
+      if (state.basket.has(code)) state.basket.get(code).segs = k;
+      state.acceptance = null; /* the hair-length confirmation must be given again */
+      renderCatalogue(); renderSummary(); updateMobileBar();
+    }));
     wrap.querySelectorAll('[data-qty]').forEach(sel => sel.addEventListener('change', () => {
       const code = sel.dataset.qty, q = +sel.value;
       state.opts.set(code, { ...getOpts(code), qty: q });
@@ -695,7 +708,7 @@
     const ftToggle = p.fastTrack
       ? `<label class="ft-toggle">
            <input type="checkbox" data-ft="${p.code}" ${state.fastTrack ? 'checked' : ''}>
-           <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel</small></span>
+           <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and segment' : ''}</small></span>
          </label>`
       : '<span class="ft-na">Fast track not available for this panel</span>';
     const upgradeToggle = upg ? `
@@ -734,11 +747,12 @@
         ${drugListHtml(p0, p, upg, isUp)}
         ${upgradeToggle}
         ${options}
+        ${segmentHtml(p, item)}
         <dl class="panel-facts">
-          <div><dt>Covers</dt><dd>${p.window}</dd></div>
+          <div><dt>Covers</dt><dd>${segsOf(p, item) ? `Around 3 months of history in each 3 cm segment. ${segsOf(p, item) + 1} segments: ${segmentCm(segsOf(p, item))} cm of head hair. ${p.window.replace(/^[^.]*\.\s*/, '')}` : p.window}</dd></div>
           <div><dt>Standard</dt><dd>${p.turnaround}</dd></div>
           <div><dt>Fast track</dt><dd>${p.fastTrack
-            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel, applied to the whole instruction.`
+            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and per hair segment' : ''}, applied to the whole instruction.`
             : 'Not available for this panel.'}</dd></div>
         </dl>
         <details class="panel-help"><summary>When to choose this</summary><p>${p.help}</p></details>
@@ -754,12 +768,51 @@
       </article>`;
   }
 
+  /* ---------------- additional hair segments ---------------- */
+  /* Scalp on the left, then one block per 3 cm of hair. The first block is the panel itself;
+     tapping a later block orders every segment up to it, tapping the last chosen block takes it off again. */
+  function segmentHtml(p, item) {
+    const rule = segmentRule(p);
+    if (!rule) return '';
+    const segs = item.segs || 0;
+    const unit = unitPrice(p, item), add = segmentUnitPrice(p, unit);
+    const blocks = [];
+    for (let i = 0; i <= rule.max; i++) {
+      const range = `${i * SEGMENT_CM}–${(i + 1) * SEGMENT_CM} cm`;
+      if (i === 0) {
+        blocks.push(`<span class="seg-block on first"><b>${range}</b><small>Included</small></span>`);
+      } else {
+        const on = i <= segs;
+        blocks.push(`<button type="button" class="seg-block ${on ? 'on' : ''}" data-segs="${p.code}:${i === segs ? i - 1 : i}" aria-pressed="${on}" aria-label="${on && i === segs ? 'Remove' : 'Add'} segment ${i + 1}, ${range} from the scalp, ${gbp(add)} plus VAT"><b>${range}</b><small>${on ? 'Added' : '+ ' + gbp(add)}</small></button>`);
+      }
+    }
+    const sumLine = segs
+      ? `${gbp(unit)} + ${segs} ${segs === 1 ? 'additional segment' : 'additional segments'} at ${gbp(add)} = <strong>${gbp(unit + segs * add)} + VAT</strong>. The donor needs at least ${segmentCm(segs)} cm of head hair; we ask you to confirm this when you review the fee note.`
+      : `One 3 cm segment, about the last three months. Tap a block to add a ${rule.kind === 'alcohol' ? 'second segment' : 'further segment'} at ${gbp(add)} + VAT.`;
+    const help = rule.kind === 'alcohol'
+      ? `<p>Alcohol markers are read over 3 cm lengths of head hair, counted from the scalp. A second segment, 3 to 6 cm from the scalp, gives a separate result for the earlier three months, so a change in drinking can be seen.</p>
+         <p>${p.code === 'H-EtG-FAEE' ? 'The second segment is tested for EtG only, because FAEE is read as one overview. It is charged at the EtG price. ' : ''}Hair is not split month by month for alcohol. A hair test cannot give the order of events within a segment and cannot show that someone has not drunk alcohol.</p>`
+      : `<p>Head hair grows about 1 cm a month, so a 3 cm segment reflects roughly three months of exposure. The newest hair is nearest the scalp. Each additional 3 cm segment is tested and reported separately, at the same price as the panel, so a change over time can be seen. Up to four segments (12 cm, about a year) can be ordered.</p>
+         <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Each segment gives one result for its own period, not a month by month account. Body hair is analysed whole and cannot be segmented.</p>`;
+    return `
+      <div class="seg-box">
+        <p class="seg-title">Hair length analysed</p>
+        <div class="seg-ruler" role="group" aria-label="Hair segments, counted from the scalp">
+          <span class="seg-scalp" aria-hidden="true">Scalp</span>
+          ${blocks.join('')}
+        </div>
+        <p class="seg-sum" aria-live="polite">${sumLine}</p>
+        <details class="panel-help seg-help"><summary>How segments work</summary>${help}
+          <p class="seg-flag">The time periods shown are indicative and awaiting scientific sign-off.</p></details>
+      </div>`;
+  }
+
   /* ---------------- totals & summary ---------------- */
   function computeTotals() {
     let panels = 0, ftCount = 0, saving = 0;
     state.basket.forEach((item, code) => {
       panels += lineTotal(byCode[code], item);
-      if (byCode[code].fastTrack) ftCount++;
+      if (byCode[code].fastTrack) ftCount += ftUnits(byCode[code], item);
     });
     COMBINED_RATES.forEach(rule => {
       if (rule.codes.every(c => state.basket.has(c))) saving += rule.saving;
@@ -779,7 +832,7 @@
       const rm = (state.step === 3 || state.step === 4)
         ? ` <button type="button" class="sum-remove" data-sum-remove="${code}" aria-label="Remove ${disp(p.code)} from your fee note">Remove</button>` : '';
       return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}${rm}</span><span>${gbp(lineTotal(p, item))}</span></div>
-        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
+        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track${ftUnits(p, item) > 1 ? ` × ${ftUnits(p, item)}` : ''}</span><span>${gbp(FAST_TRACK_FEE * ftUnits(p, item))}</span></div>` : ''}`;
     }).join('');
 
     const empty = state.basket.size === 0;
@@ -1139,7 +1192,7 @@
         </tr>
         ${state.fastTrack && p.fastTrack ? `
         <tr class="doc-subline">
-          <td></td><td>Fast track analysis</td><td class="num">${gbp(FAST_TRACK_FEE)}</td>
+          <td></td><td>Fast track analysis${ftUnits(p, item) > 1 ? ` — ${ftUnits(p, item)} segments` : ''}</td><td class="num">${gbp(FAST_TRACK_FEE * ftUnits(p, item))}</td>
         </tr>` : ''}`;
     }).join('');
 
@@ -1225,8 +1278,17 @@
     if (!state.acceptance) state.acceptance = { declaration: false, consent: false };
     const a = state.acceptance;
 
+    const needCm = hairNeededCm();
+    const hairRow = needCm ? `
+        <label class="check-row">
+          <input type="checkbox" id="hair-check" ${a.hairLength ? 'checked' : ''}>
+          <span>I confirm the donor has at least ${needCm} cm of head hair, enough for every segment ordered.</span>
+        </label>
+        <p class="data-note hair-note">${isPrivate
+          ? 'Segments are paid for in full in advance. We collect every segment the hair allows. A segment we cannot collect is not analysed, and any refund for it is at the discretion of NIVHA. This does not affect your legal rights.'
+          : 'We collect every segment the hair allows and invoice only for the segments collected.'}</p>` : '';
     if (isPrivate) {
-      box.innerHTML = `
+      box.innerHTML = hairRow + `
         <label class="check-row">
           <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
           <span>I confirm the details above are correct and that I am authorised to instruct this testing.</span>
@@ -1238,7 +1300,7 @@
         <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net — collection and cancellation fees already incurred remain payable. ${d.selfDonor ? '' : 'The person being tested confirms their own agreement at the collection appointment. '}Your consent is recorded against this fee note with the date and time.</p>`;
     } else {
       const org = d.org ? d.org : 'my organisation';
-      box.innerHTML = `
+      box.innerHTML = hairRow + `
         <label class="check-row">
           <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
           <span>I confirm the details above are correct, that I am authorised to instruct this testing on behalf of ${org}, and that I accept NIVHA's <a href="/data-sharing-terms" target="_blank" rel="noopener">Data Sharing Terms</a> for medico-legal instructions.</span>
@@ -1249,6 +1311,7 @@
     const checks = [...box.querySelectorAll('input[type="checkbox"]')];
     const sync = () => {
       a.declaration = !!document.getElementById('declaration-check')?.checked;
+      a.hairLength = !!document.getElementById('hair-check')?.checked;
       a.consent = isPrivate ? !!document.getElementById('consent-check')?.checked : false;
       document.getElementById('submit-btn').disabled = !checks.every(c => c.checked);
     };
@@ -1261,7 +1324,7 @@
     const d = state.details;
     const lines = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
-      return { code: disp(p.code), label: lineLabel(p, item), amount: lineTotal(p, item) };
+      return { code: disp(p.code), label: lineLabel(p, item), amount: lineTotal(p, item), segments: segsOf(p, item) };
     });
     const summary = lines.map(l => `${l.code} · ${l.label} — £${l.amount.toFixed(2)}`);
     if (t.saving) summary.push(`Combined rate — H-DP1 + H-DP3 — −£${t.saving.toFixed(2)}`);
@@ -1296,6 +1359,7 @@
         declaration: true,
         dataSharingTermsVersion: state.route !== 'private' ? DST_VERSION : null,
         explicitConsent: state.route === 'private',
+        hairLengthCm: hairNeededCm() && state.acceptance && state.acceptance.hairLength ? hairNeededCm() : null,
         acceptedAt: new Date().toISOString()
       }
     };
@@ -1326,7 +1390,7 @@
   const PAY_STATE_KEY = 'nivha-pay-state';
 
   function rawBasket() {
-    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1 }));
+    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1, segs: (o && o.segs) || 0 }));
   }
 
   /* The wizard state lives in memory, so it is parked in sessionStorage for
@@ -1371,7 +1435,7 @@
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
       return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
-        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
+        ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track${ftUnits(p, item) > 1 ? ` × ${ftUnits(p, item)}` : ''}</span><span>${gbp(FAST_TRACK_FEE * ftUnits(p, item))}</span></div>` : ''}`;
     }).join('');
 
     document.getElementById('checkout').innerHTML = `
