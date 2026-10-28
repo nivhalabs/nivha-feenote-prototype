@@ -7,10 +7,9 @@ const FAST_TRACK_FEE = 80;            /* per panel, + VAT */
 const DERRY_COLLECTION_FEE = 75;      /* Derry~Londonderry office collection, + VAT */
 const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — priced on request, + VAT */
 
-/* Combined panel rates from the form — applied automatically when both panels are chosen */
-const COMBINED_RATES = [
-  { codes: ['H-DP1', 'H-DP3'], price: 600, saving: 60, label: 'Combined rate — H-DP1 + H-DP3' }
-];
+/* No combined panel rates. The live form's H-DP1 + H-DP3 price field is hidden and not offered, so every panel is charged at list price.
+   Kept as an empty list so the pricing code does not change if a rate is ever agreed. */
+const COMBINED_RATES = [];
 
 const CATALOGUE = [
   /* ---------- HAIR ---------- */
@@ -40,7 +39,7 @@ const CATALOGUE = [
     drugs: ['Tramadol', 'Oxycodone', 'Dihydrocodeine', 'Hydrocodone', 'Hydromorphone', 'Pregabalin', 'Gabapentin'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Choose this where misuse of prescribed painkillers is a concern. Ordered together with the standard panel, the combined rate of £600 + VAT applies automatically — a £60 saving.'
+    help: 'Choose this where misuse of prescribed painkillers is a concern. It can be added to the standard or extended panel, or ordered on its own.'
   },
   {
     code: 'H-DP4', group: 'hair', price: 350, fastTrack: false,
