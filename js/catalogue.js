@@ -92,14 +92,14 @@ const CATALOGUE = [
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'The panel most courts ask for. If you need ketamine, methadone or the wider benzodiazepine and sleep-medicine range as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
+    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
   },
   {
     code: 'H-DP2', group: 'hair', price: 450, fastTrack: true, includes: ['H-DP1'],
     name: 'Extended drug panel',
-    detects: 'Everything in the standard panel, plus ketamine, methadone, buprenorphine and a wider benzodiazepine range including sleep medicines such as zopiclone and zolpidem.',
+    detects: 'Everything in the standard panel, plus ketamine, methadone, buprenorphine and seven further benzodiazepines and sleep medicines: chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem.',
     base: 'H-DP1',
-    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
+    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard panel. Additional hair segments can be analysed — priced on application.'
@@ -190,9 +190,9 @@ const CATALOGUE = [
   {
     code: 'N-DP2', group: 'nail', price: 475, fastTrack: true, includes: ['N-DP1'],
     name: 'Extended drug panel',
-    detects: 'Everything in the standard nail panel, plus ketamine, methadone, buprenorphine and a wider benzodiazepine range including sleep medicines such as zopiclone and zolpidem.',
+    detects: 'Everything in the standard nail panel, plus ketamine, methadone, buprenorphine and seven further benzodiazepines and sleep medicines: chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem.',
     base: 'N-DP1',
-    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
+    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: '6 to 12 months of history.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard nail panel.'
@@ -410,9 +410,9 @@ const CONCERNS = [
   },
   {
     id: 'not-sure', icon: 'help',
-    title: 'Not sure — recommend for me',
-    sub: 'We will start you with the most common instruction',
-    recommends: ['H-DP1', 'H-EtG']
+    title: "Unsure \u2014 I'll browse the panels",
+    sub: 'Nothing is added for you. Read about each panel and choose what you need.',
+    recommends: []
   }
 ];
 

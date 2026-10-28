@@ -319,8 +319,8 @@ a, button, input, [role='button'] {
 .sum-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
 .sum-rows { display: grid; gap: var(--space-2); }
 .sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: var(--text-sm); }
-.sum-row span:first-child { color: var(--color-text-muted); flex-shrink: 0; }
-.sum-row span:last-child { font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.sum-row span:first-child { color: var(--color-text-muted); flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
+.sum-row span:last-child { font-weight: 600; text-align: right; flex-shrink: 0; white-space: nowrap; }
 .sum-row.sub { padding-left: var(--space-3); }
 .sum-row.sub span:first-child { color: var(--color-text-faint); }
 .sum-row.saving span { color: var(--color-primary-active, #1d6274); }

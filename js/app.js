@@ -152,6 +152,16 @@
   /* ---------------- navigation ---------------- */
   const sections = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5', 'step-pay', 'step-book', 'step-done'];
 
+  let step3LedeDefault = null;
+  function setStep3Lede() {
+    const el = document.getElementById('step3-lede');
+    if (!el) return;
+    if (step3LedeDefault === null) step3LedeDefault = el.innerHTML;
+    el.innerHTML = state.concerns.has('not-sure') && !state.basket.size
+      ? 'Nothing has been added for you. Read about each panel below, or search for a drug, and add what you need. A panel is a set of related drugs analysed together on one sample.'
+      : step3LedeDefault;
+  }
+
   function goTo(step) {
     state.step = step;
     if (step <= 5) state.maxVisited = Math.max(state.maxVisited, step);
@@ -159,7 +169,7 @@
       document.getElementById(id).hidden = (i + 1 !== step);
     });
     renderStepper();
-    if (step === 3) { renderDrugSearch(); renderSampleStrip(); renderCatalogue(); renderNotices(); renderSummary(); }
+    if (step === 3) { setStep3Lede(); renderDrugSearch(); renderSampleStrip(); renderCatalogue(); renderNotices(); renderSummary(); }
     if (step === 4) { renderDetailsForm(); renderSummary(); }
     if (step === 5) renderFeeNote();
     if (step === 6) renderCheckout();
@@ -295,13 +305,15 @@
     grid.querySelectorAll('.concern-card').forEach(card =>
       card.addEventListener('click', () => {
         const id = card.dataset.concern;
-        state.concerns.has(id) ? state.concerns.delete(id) : state.concerns.add(id);
+        if (state.concerns.has(id)) state.concerns.delete(id);
+        else if (id === 'not-sure') { state.concerns.clear(); state.concerns.add(id); }
+        else { state.concerns.delete('not-sure'); state.concerns.add(id); }
         renderConcerns();
         updateComboHint();
-        document.getElementById('to-step-3').disabled = state.concerns.size === 0;
       }));
     updateComboHint();
     document.getElementById('to-step-3').disabled = state.concerns.size === 0;
+    document.getElementById('to-step-3').textContent = state.concerns.has('not-sure') ? 'Browse panels' : 'See recommended panels';
   }
 
   function updateComboHint() {
@@ -689,7 +701,7 @@
     const upgradeToggle = upg ? `
       <label class="ft-toggle upgrade-toggle">
         <input type="checkbox" data-upgrade="${p0.code}" ${isUp ? 'checked' : ''}>
-        <span>Extend to the ${upg.name.toLowerCase()} <small>+ ${gbp(upg.price - p0.price)} + VAT · adds ketamine, methadone, buprenorphine, sleep medicines and a wider benzodiazepine range</small></span>
+        <span>Extend to the ${upg.name.toLowerCase()} <small>+ ${gbp(upg.price - p0.price)} + VAT · adds ketamine, methadone, buprenorphine, chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem</small></span>
       </label>` : '';
     const options = (p.variants || p.series) ? `
       <div class="panel-options">
@@ -816,7 +828,7 @@
         <h2>Your fee note</h2>
         <p class="sum-loc">Collection: ${locLabel()}</p>
         ${empty
-          ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — if you are unsure, the standard drug panel and alcohol abstinence assessment cover most instructions.</p>`
+          ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — each panel card explains what it tests for and when to choose it.</p>`
           : `<div class="sum-rows">${rows}
               ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
               ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
