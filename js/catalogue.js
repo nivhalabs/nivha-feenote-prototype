@@ -14,13 +14,13 @@ const COMBINED_RATES = [];
 const CATALOGUE = [
   /* ---------- HAIR ---------- */
   {
-    code: 'H-DP1', group: 'hair', price: 330, fastTrack: true, popular: true,
+    code: 'H-DP1', group: 'hair', price: 330, fastTrack: true, popular: true, upgradeTo: 'H-DP2',
     name: 'Standard drug panel',
     detects: 'Cannabis, cocaine and metabolites, ecstasy drugs, amphetamine and methamphetamine, opiates including heroin, and common benzodiazepines such as diazepam, temazepam and alprazolam.',
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'The panel most courts ask for. If you need ketamine, methadone or the wider benzodiazepine and sleep-medicine range as well, choose the extended panel instead — it already includes everything in this one. Additional hair segments can be analysed — priced on application.'
+    help: 'The panel most courts ask for. If you need ketamine, methadone or the wider benzodiazepine and sleep-medicine range as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
   },
   {
     code: 'H-DP2', group: 'hair', price: 450, fastTrack: true, includes: ['H-DP1'],
@@ -30,7 +30,7 @@ const CATALOGUE = [
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Includes the full standard panel — you do not need to order both. Additional hair segments can be analysed — priced on application.'
+    help: 'Includes the full standard panel. Additional hair segments can be analysed — priced on application.'
   },
   {
     code: 'H-DP3', group: 'hair', price: 330, fastTrack: true,
@@ -107,7 +107,7 @@ const CATALOGUE = [
 
   /* ---------- NAIL ---------- */
   {
-    code: 'N-DP1', group: 'nail', price: 355, fastTrack: true,
+    code: 'N-DP1', group: 'nail', price: 355, fastTrack: true, upgradeTo: 'N-DP2',
     name: 'Standard drug panel',
     detects: 'Cannabis, cocaine and metabolites, ecstasy drugs, amphetamine and methamphetamine, opiates including heroin, and common benzodiazepines such as diazepam, temazepam and alprazolam.',
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
@@ -123,7 +123,7 @@ const CATALOGUE = [
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
     window: '6 to 12 months of history.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Includes the full standard nail panel — you do not need to order both.'
+    help: 'Includes the full standard nail panel.'
   },
   {
     code: 'N-DP3', group: 'nail', price: 355, fastTrack: true,
@@ -256,7 +256,13 @@ const CATALOGUE = [
   }
 ];
 
-/* Panels that already include another panel — used for automatic conflict resolution */
+/* Panels that cannot be ordered on the same fee note. The extended drug panels are offered as an
+   option on the standard panel (upgradeTo), so DP1/DP2 can never be chosen together. */
+const BLOCK_RULES = [
+  { codes: ['H-DP4', 'H-EtG-FAEE'], reason: 'H-DP4 and H-EtG/FAEE cannot be ordered together. H-EtG (EtG only) can be ordered with H-DP4.' }
+];
+
+/* Panels that already include another panel — safety net for automatic conflict resolution */
 const INCLUSION_RULES = [
   { superset: 'H-DP2', subset: 'H-DP1' },
   { superset: 'N-DP2', subset: 'N-DP1' },
@@ -267,11 +273,11 @@ const GROUP_META = {
   hair:  { label: 'Hair', icon: 'calendar', windowShort: 'Around 3 months',
            note: 'Around 3 months of history. Collected at either office. Additional segments priced on application.',
            typical: 'The default evidence for most court instructions — a month-by-month picture of drug or alcohol use. Collected at both offices.',
-           compare: '<strong>Standard or extended?</strong> The standard panel covers the drugs most often raised in proceedings. The extended panel is everything in the standard panel plus ketamine, methadone, buprenorphine and prescription sleep medicines — choose it only when those drugs are relevant to the case. It includes the standard panel in full, so you never need both.' },
+           compare: '<strong>Standard or extended?</strong> The standard panel covers the drugs most often raised in proceedings. The extended panel is everything in the standard panel plus ketamine, methadone, buprenorphine and prescription sleep medicines — add it only when those drugs are relevant to the case. It is the standard panel plus the additions, not a second panel.' },
   nail:  { label: 'Nail', icon: 'history', windowShort: '6 to 12 months',
            note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.',
            typical: 'For when hair is too short, treated or unavailable — or when the court needs a longer pattern of sustained use. Belfast office only.',
-           compare: '<strong>Standard or extended?</strong> Exactly as with hair — the extended nail panel is the standard panel plus ketamine, methadone, buprenorphine and sleep medicines. It includes the standard panel in full, so you never need both.' },
+           compare: '<strong>Standard or extended?</strong> Exactly as with hair — the extended nail panel is the standard panel plus ketamine, methadone, buprenorphine and sleep medicines. It is the standard panel plus the additions, not a second panel.' },
   urine: { label: 'Urine', icon: 'clock', windowShort: 'The last few days',
            note: 'Recent use — the last few days. Alcohol checked by breath test. Unannounced series of two or three collections available.',
            typical: 'Shows very recent use that hair cannot yet — often ordered alongside hair, or as an unannounced series to monitor ongoing abstention.' },
@@ -376,5 +382,5 @@ const COURT_RATES = {
 /* Node export so the server prices fee notes from the same catalogue.
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CATALOGUE, COMBINED_RATES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
+  module.exports = { CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
 }

@@ -42,6 +42,8 @@
     privateAck: false,           // private clients acknowledge the legal-representation note
     concerns: new Set(),
     basket: new Map(),           // code -> { variant: int, qty: int }
+    upgrades: new Set(),         // standard panels the client chose to extend (H-DP1 -> H-DP2)
+    upgrades: new Set(),         // standard panels the client has chosen to extend (H-DP1 -> H-DP2)
     opts: new Map(),             // code -> { variant, qty } chosen before adding
     expanded: new Set(),         // panel cards opened for detail on step 3
     fastTrack: false,            // fast track applies to the whole instruction
@@ -408,7 +410,7 @@
     const groups = ['hair', 'urine', 'blood', 'nail'];
     wrap.innerHTML = groups.map(g => {
       const meta = GROUP_META[g];
-      const items = CATALOGUE.filter(p => p.group === g);
+      const items = CATALOGUE.filter(p => p.group === g && !isUpgradeOnly(p));
       return `
         <div class="cat-group" id="group-${g}">
           <div class="cat-group-head"><h2>${meta.label}</h2><p>${meta.note}</p></div>
@@ -432,7 +434,15 @@
     }));
     wrap.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => {
       state.basket.delete(b.dataset.remove);
-      state.expanded.add(b.dataset.remove); /* keep the card open after removing */
+      state.expanded.add(baseOf(b.dataset.remove)); /* keep the card open after removing */
+      resolveConflicts(true);
+      renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
+    }));
+    wrap.querySelectorAll('[data-upgrade]').forEach(t => t.addEventListener('change', () => {
+      const base = byCode[t.dataset.upgrade], up = upgradeTarget(base);
+      const from = t.checked ? base.code : up.code, to = t.checked ? up.code : base.code;
+      if (t.checked) state.upgrades.add(base.code); else state.upgrades.delete(base.code);
+      if (state.basket.has(from)) { state.basket.set(to, { ...state.basket.get(from) }); state.basket.delete(from); }
       resolveConflicts(true);
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
@@ -491,11 +501,33 @@
     return names.join(', ');
   }
 
-  function renderPanelCard(p) {
+  /* The extended drug panels are an option on the standard panel, so the client never holds both. */
+  const upgradeTarget = p => p.upgradeTo ? byCode[p.upgradeTo] : null;
+  const isUpgradeOnly = p => CATALOGUE.some(x => x.upgradeTo === p.code);
+  const baseOf = code => { const b = CATALOGUE.find(x => x.upgradeTo === code); return b ? b.code : code; };
+  const effectivePanel = p => {
+    const t = upgradeTarget(p);
+    return t && (state.basket.has(t.code) || state.upgrades.has(p.code)) ? t : p;
+  };
+  /* Reason a panel cannot be added right now, or null. */
+  function blockedReason(p) {
+    for (const r of BLOCK_RULES) {
+      if (!r.codes.includes(p.code)) continue;
+      const others = r.codes.filter(c => c !== p.code);
+      if (others.some(c => state.basket.has(c))) return r.reason;
+    }
+    return null;
+  }
+
+  function renderPanelCard(p0) {
+    const upg = upgradeTarget(p0);
+    const p = effectivePanel(p0);
+    const isUp = p !== p0;
+    const blocked = !state.basket.has(p.code) ? blockedReason(p) : null;
     const inBasket = state.basket.has(p.code);
     const item = state.basket.get(p.code) || getOpts(p.code);
     const unavailable = nailUnavailable() && p.group === 'nail';
-    const expanded = (inBasket || state.expanded.has(p.code)) && !unavailable;
+    const expanded = (inBasket || state.expanded.has(p0.code)) && !unavailable && !blocked;
 
     /* collapsed row — basic info with expand / add */
     if (!expanded) {
@@ -514,11 +546,13 @@
             <span class="panel-price">${gbp(unitPrice(p, item))} <small>+ VAT</small></span>
             ${unavailable ? '' : `
             <div class="pc-actions">
-              <button class="btn small ghost" data-expand="${p.code}">Details</button>
-              <button class="btn small outline" data-add="${p.code}">Add</button>
+              <button class="btn small ghost" data-expand="${p0.code}">Details</button>
+              <button class="btn small outline" data-add="${p.code}" ${blocked ? 'disabled' : ''}>Add</button>
             </div>`}
           </div>
         </div>
+        ${blocked ? `<p class="ft-na">${blocked}</p>` : ''}
+        ${upg && !unavailable ? `<p class="ft-na">An extended version is available on the details view (+ ${gbp(upg.price - p0.price)} + VAT).</p>` : ''}
         ${unavailable ? `<p class="ft-na">Not collected at our Derry~Londonderry office — go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>` : ''}
       </article>`;
     }
@@ -529,6 +563,11 @@
            <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel</small></span>
          </label>`
       : '<span class="ft-na">Fast track not available for this panel</span>';
+    const upgradeToggle = upg ? `
+      <label class="ft-toggle upgrade-toggle">
+        <input type="checkbox" data-upgrade="${p0.code}" ${isUp ? 'checked' : ''}>
+        <span>Extend to the ${upg.name.toLowerCase()} <small>+ ${gbp(upg.price - p0.price)} + VAT · adds ketamine, methadone, buprenorphine, sleep medicines and a wider benzodiazepine range</small></span>
+      </label>` : '';
     const options = (p.variants || p.series) ? `
       <div class="panel-options">
         ${p.variants ? `
@@ -557,6 +596,7 @@
         </div>
         <h3>${p.name}</h3>
         ${renderDrugChips(p)}
+        ${upgradeToggle}
         ${options}
         <dl class="panel-facts">
           <div><dt>Covers</dt><dd>${p.window}</dd></div>
@@ -573,7 +613,7 @@
                <span class="added-flag">${icon('check', 15)} On your fee note</span>`
             : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>
                ${ftToggle}
-               <button class="btn small ghost" data-collapse="${p.code}">Hide details</button>`}
+               <button class="btn small ghost" data-collapse="${p0.code}">Hide details</button>`}
         </div>
       </article>`;
   }
