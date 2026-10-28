@@ -776,7 +776,9 @@
     const t = computeTotals();
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
-      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
+      const rm = (state.step === 3 || state.step === 4)
+        ? ` <button type="button" class="sum-remove" data-sum-remove="${code}" aria-label="Remove ${disp(p.code)} from your fee note">Remove</button>` : '';
+      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}${rm}</span><span>${gbp(lineTotal(p, item))}</span></div>
         ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
     }).join('');
 
@@ -851,6 +853,12 @@
     const el3 = document.getElementById('summary-3'), el4 = document.getElementById('summary-4');
     if (state.step === 3) el3.innerHTML = html;
     if (state.step === 4) el4.innerHTML = html;
+    document.querySelectorAll('[data-sum-remove]').forEach(b => b.addEventListener('click', () => {
+      state.basket.delete(b.dataset.sumRemove);
+      resolveConflicts(true);
+      if (state.step === 3) { renderCatalogue(); renderNotices(); }
+      renderSummary(); updateMobileBar();
+    }));
     const c = document.getElementById('sum-continue');
     if (c) c.addEventListener('click', () => goTo(4));
     const r = document.getElementById('sum-review');
