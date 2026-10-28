@@ -207,19 +207,6 @@ const CATALOGUE = [
     help: 'The nail equivalent of the hair analgesics panel.'
   },
   {
-    code: 'N-DNPS', group: 'nail', price: 475, fastTrack: true,
-    name: 'Novel psychoactive substances',
-    detects: 'Synthetic cannabinoid receptor agonists, cathinones, tryptamines, phenethylamines and fentanyls. Drugs already covered by the standard panels are not included.',
-    drugs: ['Synthetic cannabinoids', 'Cathinones', 'Tryptamines', 'Phenethylamines', 'Fentanyls'],
-    window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Only needed where specific novel substances are suspected — our team can advise if unsure.',
-    variants: [
-      { short: 'Qualitative', label: 'Qualitative', price: 475 },
-      { short: 'Quantitative', label: 'Quantitative estimation (if reference standard available)', price: 535 }
-    ]
-  },
-  {
     code: 'N-DAS', group: 'nail', price: 475, fastTrack: true,
     name: 'Anabolic steroids panel',
     detects: 'Synthetic anabolic steroids and steroid esters.',
