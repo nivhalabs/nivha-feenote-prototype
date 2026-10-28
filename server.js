@@ -29,10 +29,14 @@ const { generateFeeNote } = require('./lib/pdf');
 const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
+const { createBookingSync } = require('./lib/booking-sync');
 const { uploadFeeNote } = require('./lib/dropbox');
 const { buildPolicyDoc } = require('./lib/policy-doc');
 const policyOrders = require('./lib/policy-orders');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
+/* The public website hosts the booking page (/book), which embeds the Acuity
+   scheduler. Set SITE_BASE_URL to https://www.nivha.net at cutover. */
+const SITE_URL = (process.env.SITE_BASE_URL || 'https://nivha-website-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
 
 /* ---------------- airtable helper ---------------- */
@@ -347,26 +351,49 @@ app.get('/api/gate/session/:token', (req, res) => {
   res.json({ ok: true, email });
 });
 
+const bookingSync = createBookingSync({ acuity, at, feeTable: FEE_TABLE, escapeFormula });
+const SYNC_MS = Number(process.env.BOOKING_SYNC_MS || 5 * 60 * 1000);
+if (!DRY_RUN && !acuity.SIMULATED && SYNC_MS > 0) {
+  setTimeout(function tick() {
+    bookingSync.run()
+      .catch(err => console.error('booking sync failed:', err.message))
+      .finally(() => setTimeout(tick, SYNC_MS).unref());
+  }, 60 * 1000).unref();
+}
+/* Run the sync on demand (office use and testing). Needs ADMIN_TOKEN. */
+app.post('/api/admin/sync-bookings', async (req, res) => {
+  if (!policyOrders.adminOk || !policyOrders.adminOk(req)) return res.status(404).end();
+  try { res.json({ ok: true, result: await bookingSync.run() }); }
+  catch (err) { console.error('manual booking sync failed:', err.message); res.status(502).json({ ok: false, error: 'Sync failed' }); }
+});
+
 /* Book-later nudge: after a delay, if the fee note still has no booking,
    email a secure link so the appointment can be made later. */
 function scheduleBookLater(recordId) {
   if (DRY_RUN || !recordId) return;
   setTimeout(async () => {
     try {
+      /* Pick up anything booked on the embedded scheduler before deciding. */
+      await bookingSync.run().catch(err => console.error('booking sync before nudge failed:', err.message));
       const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
       const f = rec.fields || {};
       const status = f['Status'] || '';
       if (['Booked', 'On-site requested', 'Booking requested'].includes(status)) return;
       if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
+      /* Derry~Londonderry and on-site collections are arranged by NIVHA, never
+         through the self-service calendar, so they get no booking link. */
+      if (f['Location'] && f['Location'] !== 'Belfast') {
+        console.log(`book-later skipped for ${f['Reference']} — ${f['Location']} is arranged by the team`);
+        return;
+      }
       const email = (f['Contact email'] || '').trim().toLowerCase();
       if (!email) return;
-      const entry = issueGate(email);
       await bookLaterEmail({
         baseUrl: BASE_URL,
         to: email,
         reference: f['Reference'] || '',
         isPrivate: f['Route'] === 'Private',
-        link: `${BASE_URL}/?gate=${entry.token}`
+        link: `${SITE_URL}/book?ref=${encodeURIComponent(f['Reference'] || '')}`
       });
       await at('PATCH', FEE_TABLE, {
         records: [{ id: recordId, fields: { 'Chase emails sent': (f['Chase emails sent'] || 0) + 1 } }],
