@@ -395,6 +395,8 @@ app.post('/api/fee-notes', async (req, res) => {
     /* Authoritative pricing — recompute from the raw basket and overwrite
        whatever totals the browser sent. Private fee notes are charged by
        card, so they must be priceable server-side. */
+    const clash = pricing.basketConflict(p.basket);
+    if (clash) return res.status(400).json({ ok: false, error: clash });
     const serverTotals = pricing.computeTotals({ basket: p.basket, fastTrack: !!p.fastTrack, location: p.location });
     if (serverTotals) {
       if (p.totals && Math.abs((Number(p.totals.total) || 0) - serverTotals.total) > 0.01) {

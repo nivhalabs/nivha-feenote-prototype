@@ -1108,3 +1108,8 @@ a, button, input, [role='button'] {
 
 /* payment method choice */
 .pay-methods { margin-bottom: var(--space-5, 20px); }
+
+/* Extended drug panel option on the standard panel card */
+.upgrade-toggle { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 6px; padding: 12px 14px; border: 1px solid var(--color-border, #d6e3e8); border-radius: 8px; background: var(--color-callout, #eef5f7); }
+.upgrade-toggle input { margin-top: 3px; }
+.upgrade-toggle small { display: block; margin-top: 2px; }
