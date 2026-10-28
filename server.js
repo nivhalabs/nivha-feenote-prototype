@@ -347,6 +347,27 @@ app.get('/api/gate/session/:token', (req, res) => {
   res.json({ ok: true, email });
 });
 
+/* Book-later links. A signed, expiring token for one fee note: it reopens the
+   booking step for that fee note and nothing else. Stateless, so links still
+   work after a restart. Secret: BOOK_LINK_SECRET, else ADMIN_TOKEN. */
+const BOOK_LINK_SECRET = process.env.BOOK_LINK_SECRET || process.env.ADMIN_TOKEN || crypto.randomBytes(24).toString('hex');
+const BOOK_LINK_DAYS = 60;
+function signBookToken(recordId) {
+  const body = Buffer.from(`${recordId}.${Date.now() + BOOK_LINK_DAYS * 864e5}`).toString('base64url');
+  const sig = crypto.createHmac('sha256', BOOK_LINK_SECRET).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+function readBookToken(token) {
+  const [body, sig] = String(token || '').split('.');
+  if (!body || !sig) return null;
+  const want = crypto.createHmac('sha256', BOOK_LINK_SECRET).update(body).digest('base64url');
+  const a = Buffer.from(sig), b = Buffer.from(want);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  const [recordId, exp] = Buffer.from(body, 'base64url').toString().split('.');
+  if (!/^rec[A-Za-z0-9]{14}$/.test(recordId) || Date.now() > Number(exp)) return null;
+  return recordId;
+}
+
 /* Book-later nudge: after a delay, if the fee note still has no booking,
    email a secure link so the appointment can be made later. */
 function scheduleBookLater(recordId) {
@@ -358,15 +379,15 @@ function scheduleBookLater(recordId) {
       const status = f['Status'] || '';
       if (['Booked', 'On-site requested', 'Booking requested'].includes(status)) return;
       if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
+      if (f['Location'] !== 'Belfast') return; // Derry~Londonderry and on-site visits are arranged by the team
       const email = (f['Contact email'] || '').trim().toLowerCase();
       if (!email) return;
-      const entry = issueGate(email);
       await bookLaterEmail({
         baseUrl: BASE_URL,
         to: email,
         reference: f['Reference'] || '',
         isPrivate: f['Route'] === 'Private',
-        link: `${BASE_URL}/?gate=${entry.token}`
+        link: `${BASE_URL}/?book=${encodeURIComponent(signBookToken(recordId))}`
       });
       await at('PATCH', FEE_TABLE, {
         records: [{ id: recordId, fields: { 'Chase emails sent': (f['Chase emails sent'] || 0) + 1 } }],
@@ -715,6 +736,40 @@ app.get('/api/booking/times', async (req, res) => {
 
 /* Confirm a Belfast appointment. Live mode creates it in Acuity; simulated
    mode records the choice against the fee note exactly as before. */
+/* Reopen the booking step from the emailed link. Returns only what the
+   booking screen needs — no email, phone or address. */
+app.get('/api/booking/resume', async (req, res) => {
+  try {
+    const recordId = readBookToken(req.query.t);
+    if (!recordId) return res.status(410).json({ ok: false, error: 'expired' });
+    if (DRY_RUN) return res.status(404).json({ ok: false, error: 'No records in dry run' });
+    const rec = await at('GET', `${FEE_TABLE}/${recordId}`);
+    const f = rec.fields || {};
+    const route = ROUTE_KEY[f['Route']] || 'trust';
+    const location = LOCATION_KEY[f['Location']] || 'belfast';
+    let panels = [];
+    try { panels = JSON.parse(f['Panels JSON'] || '[]'); } catch (e) { /* leave empty */ }
+    let mode = 'open';
+    if (location !== 'belfast') mode = 'team';
+    else if (f['Status'] === 'Booked') mode = 'booked';
+    else if (route === 'private' && !f['Paid at']) mode = 'unpaid';
+    res.json({
+      ok: true, mode, recordId, route, location,
+      reference: f['Reference'] || '',
+      fastTrack: f['Turnaround'] === 'Fast track',
+      codes: panels.map(l => l.code).filter(Boolean),
+      contactName: f['Contact name'] || '',
+      donorName: f['Donor name'] || '',
+      total: Number(f['Total']) || 0,
+      receipt: f['Stripe payment ID'] || '',
+      appointmentAt: f['Appointment at'] || ''
+    });
+  } catch (err) {
+    console.error('GET /api/booking/resume failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not load the fee note' });
+  }
+});
+
 app.post('/api/booking/confirm', async (req, res) => {
   try {
     const { recordId, datetime, label } = req.body || {};

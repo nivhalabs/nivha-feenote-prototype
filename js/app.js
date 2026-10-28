@@ -1468,10 +1468,10 @@
       <div class="success-banner">
         ${icon('check', 20)}
         <div>
-          <strong>${isPrivate && state.payment
+          <strong>${state.resumed ? `Fee note ${state.refNumber}` : isPrivate && state.payment
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
             : `Fee note ${state.refNumber} submitted`}</strong>
-          <span>${isPrivate && state.payment
+          <span>${state.resumed ? 'Choose a time that suits the donor. We confirm the appointment by email.' : isPrivate && state.payment
             ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now choose the appointment.`
             : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now choose the appointment.`}</span>
         </div>
@@ -2119,6 +2119,66 @@
     goTo(1);
   }
 
+  /* ---------------- emailed booking link ---------------- */
+  /* /?book=TOKEN reopens the booking step for one fee note. */
+  function showNotice(marker, heading, body) {
+    document.getElementById('gate').hidden = true;
+    document.querySelector('.stepper').hidden = true;
+    sections.forEach(id => { document.getElementById(id).hidden = id !== 'step-pay'; });
+    document.getElementById('checkout').innerHTML = `
+      <div class="panel-head">
+        <p class="marker">${marker}</p>
+        <h1>${heading}</h1>
+        <p class="lede">${body}</p>
+      </div>`;
+  }
+
+  async function initBookingResume() {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('book');
+    if (!token) return false;
+    history.replaceState(null, '', location.pathname);
+    const help = 'Email info@nivha.net or call 02890 737942 and we will help.';
+    let r;
+    try {
+      r = await API.get('/api/booking/resume?t=' + encodeURIComponent(token));
+    } catch (e) {
+      showNotice('Appointment', 'This booking link has expired', 'Booking links stay valid for 60 days. ' + help);
+      return true;
+    }
+    if (r.mode === 'booked') {
+      const when = r.appointmentAt ? new Date(r.appointmentAt) : null;
+      const label = when && !isNaN(when) ? ' for ' + when.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + ' at ' + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+      showNotice('Fee note ' + r.reference, 'An appointment is already booked', 'This fee note already has a collection appointment' + label + '. To change it, ' + help.charAt(0).toLowerCase() + help.slice(1));
+      return true;
+    }
+    if (r.mode === 'team') {
+      showNotice('Fee note ' + r.reference, 'Our team arranges this appointment', 'Appointments for this collection location are arranged by our team, who will contact you. ' + help);
+      return true;
+    }
+    if (r.mode === 'unpaid') {
+      showNotice('Fee note ' + r.reference, 'Payment is needed first', 'This fee note is paid by card before an appointment can be booked. ' + help);
+      return true;
+    }
+    state.route = r.route;
+    state.privateAck = true;
+    state.collection = r.location;
+    state.fastTrack = !!r.fastTrack;
+    state.basket = new Map();
+    r.codes.map(c => c.replace('H-EtG/FAEE', 'H-EtG-FAEE')).filter(c => byCode[c]).forEach(c => state.basket.set(c, { variant: 0, qty: 1 }));
+    const self = r.route === 'private' && (!r.donorName || r.donorName === r.contactName);
+    state.details = { contactName: r.contactName, donorName: r.donorName, selfDonor: self };
+    state.refNumber = r.reference;
+    state.recordId = r.recordId;
+    if (r.route === 'private') state.payment = { receipt: r.receipt || r.reference, amount: r.total };
+    state.maxVisited = 5;
+    state.resumed = true;
+    document.getElementById('gate').hidden = true;
+    document.querySelector('.stepper').hidden = false;
+    goTo(7);
+    return true;
+  }
+
   async function initGate() {
     seedDemoClient();
     renderGate();
@@ -2143,7 +2203,8 @@
   renderPrivateAdvice();
   renderLocations();
   renderConcerns();
-  initPaymentReturn()
+  initBookingResume()
+    .then(handled => handled || initPaymentReturn())
     .then(handled => { if (!handled) initGate(); })
     .catch(() => initGate());
 })();
