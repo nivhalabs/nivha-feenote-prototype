@@ -10,12 +10,12 @@ const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — pric
 /* ---------- Additional hair segments ----------
    A segment is a 3 cm length of head hair counted from the scalp. The first segment is the panel itself;
    every additional segment adds the same price again (the panel's price at its selected variant).
-   Drug panels: up to three additional segments (12 cm). Alcohol: one additional segment (6 cm) — the
-   scientist is confirming this. EtG and FAEE: the additional alcohol segment is charged at the EtG price,
+   Online booking is capped at 6 months (6 cm) for drugs and alcohol: one additional segment. Longer hair, or
+   month by month segments, are special requests handled by NIVHA. EtG and FAEE: the additional alcohol segment is charged at the EtG price,
    because FAEE is read as one overview and is not segmented.
    Fast track is charged per segment (each is a separate test) — flip FAST_TRACK_PER_SEGMENT if the lab says otherwise. */
 const SEGMENT_CM = 3;
-const SEGMENT_MAX_DRUG = 3;
+const SEGMENT_MAX_DRUG = 1;
 const SEGMENT_MAX_ALCOHOL = 1;
 const FAST_TRACK_PER_SEGMENT = true;
 const ALCOHOL_CODES = ['H-EtG', 'H-EtG-FAEE'];

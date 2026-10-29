@@ -4,17 +4,17 @@ const t = (basket, o = {}) => computeTotals({ basket, fastTrack: !!o.ft, locatio
 
 /* each additional segment adds the same price again */
 assert.strictEqual(t([{ code: 'H-DP1', segs: 0 }]).panels, 330);
-assert.strictEqual(t([{ code: 'H-DP1', segs: 3 }]).panels, 1320);
-assert.strictEqual(t([{ code: 'H-DP2', segs: 2 }]).panels, 1350);
+assert.strictEqual(t([{ code: 'H-DP1', segs: 1 }]).panels, 660);
+assert.strictEqual(t([{ code: 'H-DP2', segs: 1 }]).panels, 900);
 /* the combined alcohol test adds an EtG-only segment */
 assert.strictEqual(t([{ code: 'H-EtG-FAEE', segs: 1 }]).panels, 830);
 assert.strictEqual(t([{ code: 'H-EtG', segs: 1 }]).panels, 660);
 /* limits: four drug segments in all, two alcohol, none on urine or nail */
-assert.strictEqual(t([{ code: 'H-DP1', segs: 4 }]), null);
+assert.strictEqual(t([{ code: "H-DP1", segs: 2 }]), null);
 assert.strictEqual(t([{ code: 'H-EtG', segs: 2 }]), null);
 assert.strictEqual(t([{ code: 'U-MUI-1', segs: 1 }]), null);
 assert.strictEqual(t([{ code: 'N-DP1', segs: 1 }]), null);
 assert.strictEqual(t([{ code: 'H-DP1', segs: -1 }]), null);
 /* fast track is charged on every segment */
-assert.strictEqual(t([{ code: 'H-DP1', segs: 2 }], { ft: true }).fastTrack, 240);
+assert.strictEqual(t([{ code: 'H-DP1', segs: 1 }], { ft: true }).fastTrack, 160);
 console.log('segments: ok');

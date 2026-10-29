@@ -791,9 +791,10 @@
       : `One 3 cm segment, about the last three months. Tap a block to add a ${rule.kind === 'alcohol' ? 'second segment' : 'further segment'} at ${gbp(add)} + VAT.`;
     const help = rule.kind === 'alcohol'
       ? `<p>Alcohol markers are read over 3 cm lengths of head hair, counted from the scalp. A second segment, 3 to 6 cm from the scalp, gives a separate result for the earlier three months, so a change in drinking can be seen.</p>
+         <p>Without the second segment, EtG can be reported as one result over up to 6 cm of hair.</p>
          <p>${p.code === 'H-EtG-FAEE' ? 'The second segment is tested for EtG only, because FAEE is read as one overview. It is charged at the EtG price. ' : ''}Hair is not split month by month for alcohol. A hair test cannot give the order of events within a segment and cannot show that someone has not drunk alcohol.</p>`
-      : `<p>Head hair grows about 1 cm a month, so a 3 cm segment reflects roughly three months of exposure. The newest hair is nearest the scalp. Each additional 3 cm segment is tested and reported separately, at the same price as the panel, so a change over time can be seen. Up to four segments (12 cm, about a year) can be ordered.</p>
-         <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Each segment gives one result for its own period, not a month by month account. Body hair is analysed whole and cannot be segmented.</p>`;
+      : `<p>Head hair grows about 1 cm a month, so a 3 cm segment reflects roughly three months of exposure. The newest hair is nearest the scalp. The additional segment, 3 to 6 cm from the scalp, is tested and reported separately at the same price as the panel, so a change over time can be seen.</p>
+         <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
     return `
       <div class="seg-box">
         <p class="seg-title">Hair length analysed</p>
@@ -802,6 +803,7 @@
           ${blocks.join('')}
         </div>
         <p class="seg-sum" aria-live="polite">${sumLine}</p>
+        <p class="seg-more">Longer hair, or month by month segments? <a href="mailto:info@nivha.net">Email us</a> or call 02890 737942 and we will arrange it.</p>
         <details class="panel-help seg-help"><summary>How segments work</summary>${help}
           <p class="seg-flag">The time periods shown are indicative and awaiting scientific sign-off.</p></details>
       </div>`;
