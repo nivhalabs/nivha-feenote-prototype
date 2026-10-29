@@ -9,15 +9,16 @@ const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — pric
 
 /* ---------- Hair period and segments ----------
    Head hair grows about 1 cm a month, so the period asked for is also the length of hair needed (1 month = 1 cm).
-   The default is 3 months (3 cm) reported as one result, which is the panel price. The booker can shorten it to 1 or 2 months,
+   The default is 3 months (3 cm) reported as one result, which is the panel price. A drug result covers at most 3 cm, so 4 to 6 months is always at least two results. The booker can shorten it to 1 or 2 months,
    or lengthen it to 6 months (6 cm), the most we take online. Drugs can also be cut into segments: each segment is a
    separate test reported separately, charged at the panel price again. Month by month is up to six segments; 3 cm blocks
-   are two. Alcohol online is one result over 3 or 6 months at one price. Anything else (longer hair, alcohol cut into
+   at 6 months are two. Alcohol online is one result over 3 or 6 months at one price. Anything else (longer hair, alcohol cut into
    segments or matched to drug segments) is a special request handled by NIVHA.
    EtG and FAEE: any additional alcohol segment is charged at the EtG price, because FAEE is read as one overview.
    Fast track is charged per segment (each is a separate test) — flip FAST_TRACK_PER_SEGMENT if the lab says otherwise. */
 const HAIR_DEFAULT_CM = 3;
 const HAIR_MAX_CM = 6;
+const HAIR_SEGMENT_MAX_CM = 3; // one drug result covers at most 3 cm
 const ALCOHOL_PERIODS = [3, 6];
 const FAST_TRACK_PER_SEGMENT = true;
 const ALCOHOL_CODES = ['H-EtG', 'H-EtG-FAEE'];
@@ -480,11 +481,13 @@ function hairLayout(p, cm, cuts) {
   pts.sort((a, b) => a - b);
   const bounds = [0, ...pts, period];
   const segments = bounds.slice(0, -1).map((v, i) => [v, bounds[i + 1]]);
+  if (segments.some(([a, b]) => b - a > HAIR_SEGMENT_MAX_CM)) return null; // a drug result is at most 3 cm
   return { cm: period, cuts: pts, segs: pts.length, segments };
 }
 /* Cut points for the quick choices: one result, month by month, 3 cm blocks. */
 function presetCuts(preset, cm) {
   const out = [];
+  if (preset === 'one' && cm > HAIR_SEGMENT_MAX_CM) preset = 'blocks'; // one result only up to 3 cm
   if (preset === 'monthly') for (let i = 1; i < cm; i++) out.push(i);
   if (preset === 'blocks') for (let i = 3; i < cm; i += 3) out.push(i);
   return out;
@@ -498,5 +501,5 @@ function segmentUnitPrice(p, unit) {
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
-    HAIR_DEFAULT_CM, HAIR_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice };
+    HAIR_DEFAULT_CM, HAIR_MAX_CM, HAIR_SEGMENT_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice };
 }

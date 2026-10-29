@@ -7,13 +7,19 @@ const P = c => cat.CATALOGUE.find(p => p.code === c);
 /* default: 3 months, one result, panel price. Period alone does not change the price. */
 assert.strictEqual(t([{ code: 'H-DP1' }]).panels, 330);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 1 }]).panels, 330);
-assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [] }]).panels, 330);
 /* each extra segment is the panel price again */
 assert.strictEqual(t([{ code: 'H-DP1', cm: 3, cuts: [1, 2] }]).panels, 990);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [3] }]).panels, 660);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [1, 2, 3, 4, 5] }]).panels, 1980); // month by month: initial plus 5
 assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [1, 2, 3] }]).panels, 1320);      // 1, 1, 1 then 3 cm
 assert.strictEqual(t([{ code: 'H-DP2', cm: 6, cuts: [3] }]).panels, 900);
+/* a drug result covers at most 3 cm, so 4 to 6 months is always two or more results */
+assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [] }]), null);
+assert.strictEqual(t([{ code: 'H-DP1', cm: 4, cuts: [] }]), null);
+assert.strictEqual(t([{ code: 'H-DP1', cm: 4, cuts: [3] }]).panels, 660);
+assert.strictEqual(t([{ code: 'H-DP2', cm: 6, cuts: [3] }]).panels, 900); // extended panel, 6 months = 2 x 450
+assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [1, 2] }]), null);    // last part would be 4 cm
+assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [4] }]), null);
 /* limits: 6 cm at most, cuts inside the period, no repeats */
 assert.strictEqual(t([{ code: 'H-DP1', cm: 7 }]), null);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 0 }]), null);
@@ -21,6 +27,7 @@ assert.strictEqual(t([{ code: 'H-DP1', cm: 2.5 }]), null);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 3, cuts: [3] }]), null);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 3, cuts: [0] }]), null);
 assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [2, 2] }]), null);
+assert.strictEqual(t([{ code: 'H-DP1', cm: 6, cuts: [1, 2, 3, 4, 5] }]).panels, 1980);
 /* alcohol online: 3 or 6 months, one result, one price, never split */
 assert.strictEqual(t([{ code: 'H-EtG', cm: 3 }]).panels, 330);
 assert.strictEqual(t([{ code: 'H-EtG', cm: 6 }]).panels, 330);
@@ -41,4 +48,6 @@ assert.deepStrictEqual(l.segments, [[0, 1], [1, 2], [2, 3], [3, 6]]);
 assert.deepStrictEqual(cat.presetCuts('monthly', 6), [1, 2, 3, 4, 5]);
 assert.deepStrictEqual(cat.presetCuts('blocks', 6), [3]);
 assert.deepStrictEqual(cat.presetCuts('blocks', 3), []);
+assert.deepStrictEqual(cat.presetCuts('one', 6), [3]); // one result is only possible up to 3 cm
+assert.deepStrictEqual(cat.presetCuts('one', 3), []);
 console.log('segments: ok');

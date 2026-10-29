@@ -94,7 +94,7 @@ function view(){
    h+=`<fieldset><legend>How far back should the drug test go?</legend><p class="hint">About 1 cm of head hair for each month. The newest hair is closest to the scalp.</p>${chips('months',[['1','1 month'],['2','2 months'],['3','3 months'],['4','4 months'],['5','5 months'],['6','6 months'],['9','9 months'],['12','12 months'],['other','Other']],v=>String(S.months)===v)}
    ${S.months==='other'?field('monthsOther','Tell us the period',S.monthsOther,{ph:'For example, 18 months or the date range in the order'}):''}</fieldset>`;
    if(S.months!=='other'){
-    h+=`<fieldset><legend>How should the hair be cut?</legend><p class="hint">Each segment is tested and reported separately. Tap a line to cut the hair there.</p>${chips('preset',[['one','One result'],['monthly','Month by month'],['three','3 cm blocks'],['unsure','Not sure']],v=>S.preset===v)}<div style="height:.75rem"></div>${S.preset==='unsure'?'<div class="sub"><p style="margin:0"><strong>That is fine.</strong> We will contact you to agree how the hair should be cut before the sample is sent. Nothing is cut until you confirm, and you can send us the order or letter of instruction to work from.</p></div>':rulerHtml()}${S.preset==='custom'?'<p class="hint">Your own layout. Tap lines to change it.</p>':''}</fieldset>`;
+    h+=`<fieldset><legend>How should the hair be cut?</legend><p class="hint">Each segment is tested and reported separately and covers up to 3 cm. Tap a line to cut the hair there.</p>${chips('preset',(per()<=3?[['one','One result']]:[]).concat([['monthly','Month by month'],['three','3 cm blocks'],['unsure','Not sure']]),v=>S.preset===v)}<div style="height:.75rem"></div>${S.preset==='unsure'?'<div class="sub"><p style="margin:0"><strong>That is fine.</strong> We will contact you to agree how the hair should be cut before the sample is sent. Nothing is cut until you confirm, and you can send us the order or letter of instruction to work from.</p></div>':rulerHtml()}${S.preset==='custom'?'<p class="hint">Your own layout. Tap lines to change it.</p>':''}</fieldset>`;
    }
   }
   if(hasAlc){
@@ -201,7 +201,7 @@ document.addEventListener('change',e=>{
  if(t.id==='consent'){S.consent=t.checked;return}
 });
 document.addEventListener('input',e=>{const t=e.target;if(t.id&&t.id in S&&typeof S[t.id]==='string'){S[t.id]=t.value}});
-function setPreset(p){S.preset=p;const P=per();S.cuts=new Set();
+function setPreset(p){if(p==='one'&&per()>3)p='three';S.preset=p;const P=per();S.cuts=new Set();
  if(p==='monthly')for(let i=1;i<P;i++)S.cuts.add(i);
  if(p==='three')for(let i=3;i<P;i+=3)S.cuts.add(i);}
 
