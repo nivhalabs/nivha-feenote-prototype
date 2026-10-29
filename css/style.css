@@ -1184,6 +1184,8 @@ a, button, input, [role='button'] {
 .seg-cut { flex: 0 0 22px; min-height: 44px; position: relative; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .seg-cut::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 0; border-left: 2px dotted var(--color-text-muted); transform: translateX(-50%); }
 .seg-cut.on::before { border-left: 3px solid var(--color-primary-active, #1d6274); }
+.seg-cut.locked { cursor: not-allowed; }
+.seg-cut.locked::before { opacity: 0.55; }
 .seg-cut:hover::before { border-left-color: var(--color-primary); }
 .seg-parts { display: flex; gap: 4px; margin-top: var(--space-2); padding-left: 26px; }
 .seg-parts span { min-width: 0; text-align: center; font-size: 0.6875rem; color: var(--color-text-muted); border-top: 3px solid var(--color-primary); padding-top: 3px; white-space: nowrap; }

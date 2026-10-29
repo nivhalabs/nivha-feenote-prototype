@@ -494,9 +494,12 @@
     };
     wrap.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => {
       const [code, v] = b.dataset.period.split(':'), cm = +v, cur = getOpts(code);
-      const preset = cur.preset || 'one';
-      const cuts = preset === 'monthly' || preset === 'blocks' ? presetCuts(preset, cm) : (preset === 'custom' ? (cur.cuts || []).filter(c => c < cm) : []);
-      setHair(code, { cm, cuts, preset: preset === 'custom' && !cuts.length ? 'one' : preset });
+      if (segmentRule(byCode[code]).kind === 'alcohol') return setHair(code, { cm, cuts: [], preset: 'one' }); // alcohol is always one result
+      let preset = cur.preset || 'one';
+      let cuts = preset === 'custom' ? (cur.cuts || []).filter(c => c < cm) : presetCuts(preset, cm);
+      if (preset === 'custom' && !hairLayout(byCode[code], cm, cuts)) { preset = 'blocks'; cuts = presetCuts('blocks', cm); }
+      if (preset === 'one' && cm > HAIR_SEGMENT_MAX_CM) preset = 'blocks';
+      setHair(code, { cm, cuts, preset });
     }));
     wrap.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
       const [code, preset] = b.dataset.preset.split(':'), cur = getOpts(code);
@@ -505,6 +508,7 @@
     wrap.querySelectorAll('[data-cut]').forEach(b => b.addEventListener('click', () => {
       const [code, v] = b.dataset.cut.split(':'), at = +v, cur = getOpts(code);
       const cuts = (cur.cuts || []).includes(at) ? cur.cuts.filter(c => c !== at) : [...(cur.cuts || []), at].sort((x, y) => x - y);
+      if (!hairLayout(byCode[code], cur.cm || HAIR_DEFAULT_CM, cuts)) return; // each part can be at most 3 cm
       setHair(code, { cuts, preset: 'custom' });
     }));
     wrap.querySelectorAll('[data-special]').forEach(b => b.addEventListener('click', () => openSpecialRequest()));
@@ -834,12 +838,15 @@
 
     let layout = '';
     if (!isAlc && lay.cm > 1) {
-      const cur = item.preset || 'one';
-      const presets = [['one', 'One result'], ['monthly', 'Month by month']].concat(lay.cm > 3 ? [['blocks', '3 cm blocks']] : []).concat(cur === 'custom' ? [['custom', 'Your own']] : []);
+      const cur = item.preset === 'one' && lay.cm > HAIR_SEGMENT_MAX_CM ? 'blocks' : (item.preset || 'one');
+      const presets = (lay.cm <= HAIR_SEGMENT_MAX_CM ? [['one', 'One result']] : [['blocks', 'Standard (3 cm results)']]).concat([['monthly', 'Month by month']]).concat(cur === 'custom' ? [['custom', 'Your own']] : []);
       const cells = [];
       for (let i = 1; i <= lay.cm; i++) {
         cells.push(`<span class="seg-cell">${i - 1}–${i}</span>`);
-        if (i < lay.cm) cells.push(`<button type="button" class="seg-cut ${lay.cuts.includes(i) ? 'on' : ''}" data-cut="${p.code}:${i}" aria-pressed="${lay.cuts.includes(i)}" aria-label="Cut the hair after ${i} cm from the scalp"></button>`);
+        if (i < lay.cm) {
+          const on = lay.cuts.includes(i), locked = on && !hairLayout(p, lay.cm, lay.cuts.filter(c => c !== i));
+          cells.push(`<button type="button" class="seg-cut ${on ? 'on' : ''} ${locked ? 'locked' : ''}" data-cut="${p.code}:${i}" aria-pressed="${on}" ${locked ? 'aria-disabled="true"' : ''} aria-label="Cut the hair after ${i} cm from the scalp${locked ? '. This cut is needed because a result can cover at most 3 cm' : ''}"></button>`);
+        }
       }
       layout = `
         <p class="seg-title">One result or several?</p>
@@ -848,7 +855,7 @@
           <span class="seg-scalp" aria-hidden="true">Scalp</span>${cells.join('')}
         </div>
         <div class="seg-parts" aria-hidden="true">${lay.segments.map(([a, b2], i) => `<span style="flex:${b2 - a}"><b>${i + 1}</b></span>`).join('')}</div>
-        <p class="seg-more">Tap the line between two centimetres to cut or join the hair there. Each numbered part is a separate test and result.</p>`;
+        <p class="seg-more">Tap the line between two centimetres to cut or join the hair there. Each numbered part is a separate test and result, and covers up to 3 cm.</p>`;
     }
 
     const need = lay.cm > HAIR_DEFAULT_CM || lay.segs > 0
@@ -861,13 +868,13 @@
     const help = isAlc
       ? `<p>Alcohol markers are read over the length of hair chosen and reported as one result: 3 months needs about 3 cm of hair and 6 months needs at least 6 cm. If the donor has less, we test what we can collect and state the length of hair taken.</p>
          <p>${p.code === 'H-EtG-FAEE' ? 'Any further EtG result is charged at the EtG price, because FAEE is read as one overview. ' : ''}A hair test cannot give the order of events within a result and cannot show that someone has not drunk alcohol. To split the alcohol result, or match it to drug segments, make a special request.</p>`
-      : `<p>Head hair grows about 1 cm a month, so each centimetre is roughly one month of exposure and the newest hair is nearest the scalp. Cutting the hair into parts gives a separate result for each part, so a change over time can be seen. Each part is tested and reported separately and is charged at the panel price.</p>
+      : `<p>Head hair grows about 1 cm a month, so each centimetre is roughly one month of exposure and the newest hair is nearest the scalp. One drug result covers at most 3 cm of hair. Cutting the hair into parts gives a separate result for each part, so a change over time can be seen. Each part is tested and reported separately and is charged at the panel price.</p>
          <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
     return `
       <div class="seg-box">
         <p class="seg-title">How far back should the test go?</p>
         <div class="seg-chips" role="group" aria-label="Months of hair">${chips}</div>
-        <p class="seg-more">About 1 cm of head hair for each month. Three months is the standard test.</p>
+        <p class="seg-more">About 1 cm of head hair for each month. Three months is the standard test.${isAlc ? '' : ' One result covers up to 3 cm, so 4 to 6 months is reported in two or more results.'}</p>
         ${layout}
         <p class="seg-sum" aria-live="polite">${sumLine}</p>
         <div class="seg-warn" role="note"><strong>If this is for a court</strong>, it is your responsibility to choose the period and the segments the court has requested. We test what you choose and cannot change it afterwards.</div>
