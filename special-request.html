@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Special hair request | NIVHA</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/special-request.css?v=1">
+</head>
+<body>
+<header class="hdr"><div class="hdr-in"><img src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96"><a class="tel" href="tel:+442890737942">+44 (0) 28 9073 7942</a></div></header>
+
+<main class="wrap">
+  <section class="form" id="form" aria-labelledby="ft" hidden>
+    <ol class="steps" id="steps" aria-label="Progress"></ol>
+    <h1 id="ft" tabindex="-1"></h1>
+    <p class="lede" id="lede"></p>
+
+    <div id="panel"></div>
+
+    <div class="summary-bar" id="bar" aria-live="polite"></div>
+    <p class="err-line" id="send-err" role="alert" hidden></p>
+    <div class="nav">
+      <button class="btn ghost" id="back" type="button">Back</button>
+      <button class="btn primary" id="next" type="button">Continue</button>
+    </div>
+    <p class="help">Prefer to talk it through? Call <a href="tel:+442890737942">+44 (0) 28 9073 7942</a> and we will fill this in with you.</p>
+  </section>
+
+  <section class="done" id="done" hidden aria-live="polite" tabindex="-1">
+    <div class="tick" aria-hidden="true">✓</div>
+    <h1>Request sent</h1>
+    <p class="lede">Your reference is <strong id="ref"></strong>. We have the details below and will contact you to confirm the plan and the price before anything is booked.</p>
+    <div class="card" id="done-sum"></div>
+    <h2>What happens next</h2>
+    <ol class="next-list">
+      <li>A member of the team reads your request and checks the hair length, the segments and the laboratory arrangements.</li>
+      <li>We contact you by your chosen method to confirm the plan and the final price.</li>
+      <li>Once you agree, we send the booking link. Nothing is charged until then.</li>
+    </ol>
+    <p class="help">A copy has been sent to <span id="done-mail">you</span>. You can email the order or letter of instruction to <a href="mailto:info@nivha.net">info@nivha.net</a> quoting your reference. You can close this page and carry on with your fee note.</p>
+  </section>
+</main>
+<script src="js/catalogue.js?v=21"></script>
+<script src="js/special-request.js?v=2"></script>
+</body>
+</html>

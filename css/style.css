@@ -1165,3 +1165,33 @@ a, button, input, [role='button'] {
 
 .sum-remove { display: block; margin-top: 2px; background: none; border: 0; padding: 0; font: inherit; font-size: var(--text-xs); color: var(--color-primary); text-decoration: underline; cursor: pointer; white-space: nowrap; }
 .sum-remove:hover { color: var(--color-primary-active, #1d6274); }
+
+/* ---------- Hair period and segments ---------- */
+.seg-box { margin: var(--space-3) 0; padding: var(--space-3); background: var(--color-surface-offset); border-radius: var(--radius-md); }
+.seg-title { font-weight: 600; font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-2); }
+.seg-box > .seg-title:first-child { margin-top: 0; }
+.seg-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.seg-chip { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-height: 44px; padding: 6px 14px; border: 1.5px solid var(--color-border); border-radius: 999px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--text-sm); cursor: pointer; line-height: 1.2; }
+.seg-chip small { font-size: 0.6875rem; color: var(--color-text-muted); }
+.seg-chip:hover:not(:disabled) { border-color: var(--color-primary); }
+.seg-chip:focus-visible, .seg-cut:focus-visible, .seg-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.seg-chip.on { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.seg-chip.on small { color: #fff; }
+.seg-chip:disabled { cursor: default; }
+.seg-ruler { display: flex; align-items: stretch; margin-top: var(--space-3); }
+.seg-scalp { flex: 0 0 auto; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-divider, #dfe6e9); border-radius: var(--radius-sm); padding: var(--space-2) 2px; letter-spacing: 0.04em; margin-right: 4px; }
+.seg-cell { flex: 1 1 0; min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: center; background: var(--color-callout); border: 1px solid var(--color-primary); border-left: 0; border-right: 0; font-size: 0.6875rem; color: var(--color-text); white-space: nowrap; }
+.seg-cut { flex: 0 0 22px; min-height: 44px; position: relative; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.seg-cut::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 0; border-left: 2px dotted var(--color-text-muted); transform: translateX(-50%); }
+.seg-cut.on::before { border-left: 3px solid var(--color-primary-active, #1d6274); }
+.seg-cut:hover::before { border-left-color: var(--color-primary); }
+.seg-parts { display: flex; gap: 4px; margin-top: var(--space-2); padding-left: 26px; }
+.seg-parts span { min-width: 0; text-align: center; font-size: 0.6875rem; color: var(--color-text-muted); border-top: 3px solid var(--color-primary); padding-top: 3px; white-space: nowrap; }
+.seg-parts b { display: block; color: var(--color-text); font-size: var(--text-xs); }
+.seg-sum { font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-2); }
+.seg-warn { margin: var(--space-2) 0; padding: var(--space-2) var(--space-3); background: var(--color-warn-bg); border: 1px solid var(--color-warn-border); border-radius: var(--radius-sm); color: var(--color-warn-text); font-size: var(--text-sm); }
+.seg-link { background: none; border: 0; padding: 0; font: inherit; color: var(--color-primary); text-decoration: underline; cursor: pointer; min-height: 32px; }
+.seg-help { margin: var(--space-2) 0 0; }
+.seg-flag { font-size: var(--text-xs); }
+.seg-more { font-size: var(--text-xs); color: var(--color-text-muted); margin: var(--space-2) 0 0; }
+.hair-note { margin-bottom: var(--space-4); }
