@@ -66,17 +66,27 @@
     : '';
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
 
-  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1, segs: 0 };
+  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1, cm: HAIR_DEFAULT_CM, cuts: [], preset: 'one' };
   const unitPrice = (p, o) => p.variants ? p.variants[o.variant].price : p.price;
-  const segsOf = (p, o) => (segmentRule(p) && o && o.segs) || 0;
+  /* Period and cut points for a hair panel; falls back to the 3 month default if a stored choice is not valid */
+  const layoutOf = (p, o) => hairLayout(p, o && o.cm, o && o.cuts) || hairLayout(p, HAIR_DEFAULT_CM, []);
+  const segsOf = (p, o) => layoutOf(p, o).segs;
   const lineTotal = (p, o) => unitPrice(p, o) * (o.qty || 1) + segsOf(p, o) * segmentUnitPrice(p, unitPrice(p, o));
   /* Fast track is charged on each segment as well as each panel (flag in catalogue.js) */
   const ftUnits = (p, o) => FAST_TRACK_PER_SEGMENT ? 1 + segsOf(p, o) : 1;
-  /* Longest hair needed (cm) across the basket; 0 when no extra segments are ordered */
-  const hairNeededCm = () => Math.max(0, ...[...state.basket.entries()].map(([c, o]) => segsOf(byCode[c], o) ? segmentCm(segsOf(byCode[c], o)) : 0));
+  /* Longest hair needed (cm) across the basket; 0 when every hair panel is the standard 3 months in one piece */
+  const hairNeededCm = () => Math.max(0, ...[...state.basket.entries()].map(([c, o]) => {
+    const lay = byCode[c] && segmentRule(byCode[c]) ? layoutOf(byCode[c], o) : null;
+    return lay && (lay.cm > HAIR_DEFAULT_CM || lay.segs > 0) ? lay.cm : 0;
+  }));
+  const monthsText = cm => cm === 1 ? '1 month' : `${cm} months`;
   const lineLabel = (p, o) => {
     let s = p.name;
-    if (segsOf(p, o)) s += ` — ${segsOf(p, o)} additional ${segsOf(p, o) === 1 ? 'segment' : 'segments'} (${segmentCm(segsOf(p, o))} cm)`;
+    if (segmentRule(p)) {
+      const lay = layoutOf(p, o);
+      if (lay.segs) s += ` — ${monthsText(lay.cm)}, ${lay.segs + 1} separate results (${lay.segments.map(x => x.join('–')).join(', ')} cm)`;
+      else if (lay.cm !== HAIR_DEFAULT_CM) s += ` — ${monthsText(lay.cm)}, one result`;
+    }
     if (p.variants && o.variant > 0) s += ' — ' + p.variants[o.variant].short.toLowerCase();
     if (p.series && o.qty > 1) s += ' — series of ' + (o.qty === 2 ? 'two' : 'three');
     return s;
@@ -475,13 +485,29 @@
       if (state.basket.has(code)) state.basket.get(code).variant = v;
       renderCatalogue(); renderSummary(); updateMobileBar();
     }));
-    wrap.querySelectorAll('[data-segs]').forEach(b => b.addEventListener('click', () => {
-      const [code, n] = b.dataset.segs.split(':'), k = +n;
-      state.opts.set(code, { ...getOpts(code), segs: k });
-      if (state.basket.has(code)) state.basket.get(code).segs = k;
+    /* Hair period, quick layouts and individual cut lines. Arrays are replaced, never changed in place. */
+    const setHair = (code, patch) => {
+      state.opts.set(code, { ...getOpts(code), ...patch });
+      if (state.basket.has(code)) Object.assign(state.basket.get(code), patch);
       state.acceptance = null; /* the hair-length confirmation must be given again */
       renderCatalogue(); renderSummary(); updateMobileBar();
+    };
+    wrap.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => {
+      const [code, v] = b.dataset.period.split(':'), cm = +v, cur = getOpts(code);
+      const preset = cur.preset || 'one';
+      const cuts = preset === 'monthly' || preset === 'blocks' ? presetCuts(preset, cm) : (preset === 'custom' ? (cur.cuts || []).filter(c => c < cm) : []);
+      setHair(code, { cm, cuts, preset: preset === 'custom' && !cuts.length ? 'one' : preset });
     }));
+    wrap.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+      const [code, preset] = b.dataset.preset.split(':'), cur = getOpts(code);
+      setHair(code, { preset, cuts: presetCuts(preset, cur.cm || HAIR_DEFAULT_CM) });
+    }));
+    wrap.querySelectorAll('[data-cut]').forEach(b => b.addEventListener('click', () => {
+      const [code, v] = b.dataset.cut.split(':'), at = +v, cur = getOpts(code);
+      const cuts = (cur.cuts || []).includes(at) ? cur.cuts.filter(c => c !== at) : [...(cur.cuts || []), at].sort((x, y) => x - y);
+      setHair(code, { cuts, preset: 'custom' });
+    }));
+    wrap.querySelectorAll('[data-special]').forEach(b => b.addEventListener('click', () => openSpecialRequest()));
     wrap.querySelectorAll('[data-qty]').forEach(sel => sel.addEventListener('change', () => {
       const code = sel.dataset.qty, q = +sel.value;
       state.opts.set(code, { ...getOpts(code), qty: q });
@@ -708,7 +734,7 @@
     const ftToggle = p.fastTrack
       ? `<label class="ft-toggle">
            <input type="checkbox" data-ft="${p.code}" ${state.fastTrack ? 'checked' : ''}>
-           <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and segment' : ''}</small></span>
+           <span>Fast track <small>whole instruction · + ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and separate result' : ''}</small></span>
          </label>`
       : '<span class="ft-na">Fast track not available for this panel</span>';
     const upgradeToggle = upg ? `
@@ -749,10 +775,10 @@
         ${options}
         ${segmentHtml(p, item)}
         <dl class="panel-facts">
-          <div><dt>Covers</dt><dd>${segsOf(p, item) ? `Around 3 months of history in each 3 cm segment. ${segsOf(p, item) + 1} segments: ${segmentCm(segsOf(p, item))} cm of head hair. ${p.window.replace(/^[^.]*\.\s*/, '')}` : p.window}</dd></div>
+          <div><dt>Covers</dt><dd>${segmentRule(p) ? coversText(p, item) : p.window}</dd></div>
           <div><dt>Standard</dt><dd>${p.turnaround}</dd></div>
           <div><dt>Fast track</dt><dd>${p.fastTrack
-            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and per hair segment' : ''}, applied to the whole instruction.`
+            ? `About 5 working days from the lab receiving the sample — ${gbp(FAST_TRACK_FEE)} + VAT per panel${p.group === 'hair' ? ' and per separate hair result' : ''}, applied to the whole instruction.`
             : 'Not available for this panel.'}</dd></div>
         </dl>
         <details class="panel-help"><summary>When to choose this</summary><p>${p.help}</p></details>
@@ -768,43 +794,85 @@
       </article>`;
   }
 
-  /* ---------------- additional hair segments ---------------- */
-  /* Scalp on the left, then one block per 3 cm of hair. The first block is the panel itself;
-     tapping a later block orders every segment up to it, tapping the last chosen block takes it off again. */
+  /* ---------------- hair period and segments ---------------- */
+  const coversText = (p, item) => {
+    const lay = layoutOf(p, item), rest = p.window.replace(/^[^.]*\.\s*/, '');
+    const isNew = /^Around 3 months/.test(p.window) && rest !== p.window ? rest : '';
+    if (lay.segs) return `${monthsText(lay.cm)} of history, ${lay.cm} cm of head hair, in ${lay.segs + 1} separate results. ${isNew} Indicative, awaiting scientific sign-off.`.trim();
+    if (lay.cm === HAIR_DEFAULT_CM) return p.window + ' Indicative, awaiting scientific sign-off.';
+    return `Around ${monthsText(lay.cm)} of history (${lay.cm} cm of head hair), one result. ${isNew} Indicative, awaiting scientific sign-off.`.trim();
+  };
+
+  function openSpecialRequest() {
+    const tests = [...state.basket.entries()].filter(([c]) => byCode[c] && byCode[c].group === 'hair')
+      .map(([c, o]) => ({ code: c, variant: (o && o.variant) || 0 }));
+    const drug = [...state.basket.entries()].find(([c]) => segmentRule(byCode[c]) && segmentRule(byCode[c]).kind === 'drug');
+    const alc = [...state.basket.entries()].find(([c]) => segmentRule(byCode[c]) && segmentRule(byCode[c]).kind === 'alcohol');
+    let gate = '';
+    try { gate = localStorage.getItem('nivha-gate-email') || ''; } catch (e) {}
+    const d = state.details || {};
+    const data = {
+      t: Date.now(), tests,
+      cm: drug ? layoutOf(byCode[drug[0]], drug[1]).cm : null, cuts: drug ? layoutOf(byCode[drug[0]], drug[1]).cuts : [],
+      alcCm: alc ? layoutOf(byCode[alc[0]], alc[1]).cm : null,
+      speed: state.fastTrack ? 'fast' : '', loc: state.collection || '', email: d.contactEmail || gate, org: d.organisation || ''
+    };
+    try { localStorage.setItem('nivha-sr-prefill', JSON.stringify(data)); } catch (e) {}
+    window.open('/special-request.html', '_blank', 'noopener');
+  }
+
+  /* Hair card control: how far back (months = cm of hair), one result or several, and a ruler where each line is a cut.
+     Scalp on the left; the newest hair is nearest the scalp. */
   function segmentHtml(p, item) {
     const rule = segmentRule(p);
     if (!rule) return '';
-    const segs = item.segs || 0;
+    const lay = layoutOf(p, item);
     const unit = unitPrice(p, item), add = segmentUnitPrice(p, unit);
-    const blocks = [];
-    for (let i = 0; i <= rule.max; i++) {
-      const range = `${i * SEGMENT_CM}–${(i + 1) * SEGMENT_CM} cm`;
-      if (i === 0) {
-        blocks.push(`<span class="seg-block on first"><b>${range}</b><small>Included</small></span>`);
-      } else {
-        const on = i <= segs;
-        blocks.push(`<button type="button" class="seg-block ${on ? 'on' : ''}" data-segs="${p.code}:${i === segs ? i - 1 : i}" aria-pressed="${on}" aria-label="${on && i === segs ? 'Remove' : 'Add'} segment ${i + 1}, ${range} from the scalp, ${gbp(add)} plus VAT"><b>${range}</b><small>${on ? 'Added' : '+ ' + gbp(add)}</small></button>`);
+    const isAlc = rule.kind === 'alcohol';
+    const periods = isAlc ? ALCOHOL_PERIODS : [1, 2, 3, 4, 5, 6];
+    const chips = periods.map(m => `<button type="button" class="seg-chip ${m === lay.cm ? 'on' : ''}" data-period="${p.code}:${m}" aria-pressed="${m === lay.cm}">${m === 1 ? '1 month' : m + ' months'}</button>`).join('');
+
+    let layout = '';
+    if (!isAlc && lay.cm > 1) {
+      const cur = item.preset || 'one';
+      const presets = [['one', 'One result'], ['monthly', 'Month by month']].concat(lay.cm > 3 ? [['blocks', '3 cm blocks']] : []).concat(cur === 'custom' ? [['custom', 'Your own']] : []);
+      const cells = [];
+      for (let i = 1; i <= lay.cm; i++) {
+        cells.push(`<span class="seg-cell">${i - 1}–${i}</span>`);
+        if (i < lay.cm) cells.push(`<button type="button" class="seg-cut ${lay.cuts.includes(i) ? 'on' : ''}" data-cut="${p.code}:${i}" aria-pressed="${lay.cuts.includes(i)}" aria-label="Cut the hair after ${i} cm from the scalp"></button>`);
       }
+      layout = `
+        <p class="seg-title">One result or several?</p>
+        <div class="seg-chips" role="group" aria-label="How the hair is cut">${presets.map(([k, l]) => `<button type="button" class="seg-chip ${k === cur ? 'on' : ''}" ${k === 'custom' ? 'disabled' : `data-preset="${p.code}:${k}"`} aria-pressed="${k === cur}">${l}</button>`).join('')}</div>
+        <div class="seg-ruler" role="group" aria-label="Hair in centimetres from the scalp. Tap a line to cut the hair there.">
+          <span class="seg-scalp" aria-hidden="true">Scalp</span>${cells.join('')}
+        </div>
+        <div class="seg-parts" aria-hidden="true">${lay.segments.map(([a, b2], i) => `<span style="flex:${b2 - a}"><b>${i + 1}</b></span>`).join('')}</div>
+        <p class="seg-more">Tap the line between two centimetres to cut or join the hair there. Each numbered part is a separate test and result.</p>`;
     }
-    const sumLine = segs
-      ? `${gbp(unit)} + ${segs} ${segs === 1 ? 'additional segment' : 'additional segments'} at ${gbp(add)} = <strong>${gbp(unit + segs * add)} + VAT</strong>. The donor needs at least ${segmentCm(segs)} cm of head hair; we ask you to confirm this when you review the fee note.`
-      : `One 3 cm segment, about the last three months. Tap a block to add a ${rule.kind === 'alcohol' ? 'second segment' : 'further segment'} at ${gbp(add)} + VAT.`;
-    const help = rule.kind === 'alcohol'
-      ? `<p>Alcohol markers are read over 3 cm lengths of head hair, counted from the scalp. A second segment, 3 to 6 cm from the scalp, gives a separate result for the earlier three months, so a change in drinking can be seen.</p>
-         <p>Without the second segment, EtG can be reported as one result over up to 6 cm of hair.</p>
-         <p>${p.code === 'H-EtG-FAEE' ? 'The second segment is tested for EtG only, because FAEE is read as one overview. It is charged at the EtG price. ' : ''}Hair is not split month by month for alcohol. A hair test cannot give the order of events within a segment and cannot show that someone has not drunk alcohol.</p>`
-      : `<p>Head hair grows about 1 cm a month, so a 3 cm segment reflects roughly three months of exposure. The newest hair is nearest the scalp. The additional segment, 3 to 6 cm from the scalp, is tested and reported separately at the same price as the panel, so a change over time can be seen.</p>
+
+    const need = lay.cm > HAIR_DEFAULT_CM || lay.segs > 0
+      ? ` The donor needs at least ${lay.cm} cm of head hair; we ask you to confirm this when you review the fee note.` : '';
+    let sumLine;
+    if (isAlc) sumLine = `${monthsText(lay.cm)}, ${lay.cm} cm of hair, one result: <strong>${gbp(unit)} + VAT</strong>.${need}`;
+    else if (lay.segs) sumLine = `${monthsText(lay.cm)}, ${lay.cm} cm of hair, ${lay.segs + 1} results: ${lay.segs + 1} × ${gbp(unit)} = <strong>${gbp(unit * (lay.segs + 1))} + VAT</strong>.${need}`;
+    else sumLine = `${monthsText(lay.cm)}, ${lay.cm} cm of hair, one result: <strong>${gbp(unit)} + VAT</strong>.${need}`;
+
+    const help = isAlc
+      ? `<p>Alcohol markers are read over the length of hair chosen and reported as one result: 3 months needs about 3 cm of hair and 6 months needs at least 6 cm. If the donor has less, we test what we can collect and state the length of hair taken.</p>
+         <p>${p.code === 'H-EtG-FAEE' ? 'Any further EtG result is charged at the EtG price, because FAEE is read as one overview. ' : ''}A hair test cannot give the order of events within a result and cannot show that someone has not drunk alcohol. To split the alcohol result, or match it to drug segments, make a special request.</p>`
+      : `<p>Head hair grows about 1 cm a month, so each centimetre is roughly one month of exposure and the newest hair is nearest the scalp. Cutting the hair into parts gives a separate result for each part, so a change over time can be seen. Each part is tested and reported separately and is charged at the panel price.</p>
          <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
     return `
       <div class="seg-box">
-        <p class="seg-title">Hair length analysed</p>
-        <div class="seg-ruler" role="group" aria-label="Hair segments, counted from the scalp">
-          <span class="seg-scalp" aria-hidden="true">Scalp</span>
-          ${blocks.join('')}
-        </div>
+        <p class="seg-title">How far back should the test go?</p>
+        <div class="seg-chips" role="group" aria-label="Months of hair">${chips}</div>
+        <p class="seg-more">About 1 cm of head hair for each month. Three months is the standard test.</p>
+        ${layout}
         <p class="seg-sum" aria-live="polite">${sumLine}</p>
-        <p class="seg-more">Longer hair, or month by month segments? <a href="mailto:info@nivha.net">Email us</a> or call 02890 737942 and we will arrange it.</p>
-        <details class="panel-help seg-help"><summary>How segments work</summary>${help}
+        <div class="seg-warn" role="note"><strong>If this is for a court</strong>, it is your responsibility to choose the period and the segments the court has requested. We test what you choose and cannot change it afterwards.</div>
+        <p class="seg-more">${isAlc ? 'Need the alcohol result split, matched to drug segments, or longer than 6 months?' : 'Need longer than 6 months, or a different layout?'} <button type="button" class="seg-link" data-special="1">Make a special request</button></p>
+        <details class="panel-help seg-help"><summary>How this works</summary>${help}
           <p class="seg-flag">The time periods shown are indicative and awaiting scientific sign-off.</p></details>
       </div>`;
   }
@@ -1284,11 +1352,11 @@
     const hairRow = needCm ? `
         <label class="check-row">
           <input type="checkbox" id="hair-check" ${a.hairLength ? 'checked' : ''}>
-          <span>I confirm the donor has at least ${needCm} cm of head hair, enough for every segment ordered.</span>
+          <span>I confirm the donor has at least ${needCm} cm of head hair, and that the period and segments I have chosen are the ones I need. If this is for a court, I accept responsibility for choosing the period and segments the court has requested.</span>
         </label>
         <p class="data-note hair-note">${isPrivate
-          ? 'Segments are paid for in full in advance. We collect every segment the hair allows. A segment we cannot collect is not analysed, and any refund for it is at the discretion of NIVHA. This does not affect your legal rights.'
-          : 'We collect every segment the hair allows and invoice only for the segments collected.'}</p>` : '';
+          ? 'Hair tests are paid for in full in advance. If the donor does not have enough hair, we collect what there is, record the length taken and agree the outcome with you at the appointment. We then adjust the amount or refund what is not used, at the discretion of NIVHA. This does not affect your legal rights.'
+          : 'If the donor does not have enough hair, we collect what there is, record the length taken and confirm with the person instructing, for example the solicitor or social worker, at the time. We invoice only for what is collected.'}</p>` : '';
     if (isPrivate) {
       box.innerHTML = hairRow + `
         <label class="check-row">
@@ -1326,7 +1394,8 @@
     const d = state.details;
     const lines = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
-      return { code: disp(p.code), label: lineLabel(p, item), amount: lineTotal(p, item), segments: segsOf(p, item) };
+      const lay = segmentRule(p) ? layoutOf(p, item) : null;
+      return { code: disp(p.code), label: lineLabel(p, item), amount: lineTotal(p, item), segments: segsOf(p, item), cm: lay ? lay.cm : undefined, cuts: lay ? lay.cuts : undefined };
     });
     const summary = lines.map(l => `${l.code} · ${l.label} — £${l.amount.toFixed(2)}`);
     if (t.saving) summary.push(`Combined rate — H-DP1 + H-DP3 — −£${t.saving.toFixed(2)}`);
@@ -1392,7 +1461,7 @@
   const PAY_STATE_KEY = 'nivha-pay-state';
 
   function rawBasket() {
-    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1, segs: (o && o.segs) || 0 }));
+    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1, ...(segmentRule(byCode[code]) ? (({ cm, cuts }) => ({ cm, cuts }))(layoutOf(byCode[code], o)) : {}) }));
   }
 
   /* The wizard state lives in memory, so it is parked in sessionStorage for

@@ -7,16 +7,18 @@ const FAST_TRACK_FEE = 80;            /* per panel, + VAT */
 const DERRY_COLLECTION_FEE = 75;      /* Derry~Londonderry office collection, + VAT */
 const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — priced on request, + VAT */
 
-/* ---------- Additional hair segments ----------
-   A segment is a 3 cm length of head hair counted from the scalp. The first segment is the panel itself;
-   every additional segment adds the same price again (the panel's price at its selected variant).
-   Online booking is capped at 6 months (6 cm) for drugs and alcohol: one additional segment. Longer hair, or
-   month by month segments, are special requests handled by NIVHA. EtG and FAEE: the additional alcohol segment is charged at the EtG price,
-   because FAEE is read as one overview and is not segmented.
+/* ---------- Hair period and segments ----------
+   Head hair grows about 1 cm a month, so the period asked for is also the length of hair needed (1 month = 1 cm).
+   The default is 3 months (3 cm) reported as one result, which is the panel price. The booker can shorten it to 1 or 2 months,
+   or lengthen it to 6 months (6 cm), the most we take online. Drugs can also be cut into segments: each segment is a
+   separate test reported separately, charged at the panel price again. Month by month is up to six segments; 3 cm blocks
+   are two. Alcohol online is one result over 3 or 6 months at one price. Anything else (longer hair, alcohol cut into
+   segments or matched to drug segments) is a special request handled by NIVHA.
+   EtG and FAEE: any additional alcohol segment is charged at the EtG price, because FAEE is read as one overview.
    Fast track is charged per segment (each is a separate test) — flip FAST_TRACK_PER_SEGMENT if the lab says otherwise. */
-const SEGMENT_CM = 3;
-const SEGMENT_MAX_DRUG = 1;
-const SEGMENT_MAX_ALCOHOL = 1;
+const HAIR_DEFAULT_CM = 3;
+const HAIR_MAX_CM = 6;
+const ALCOHOL_PERIODS = [3, 6];
 const FAST_TRACK_PER_SEGMENT = true;
 const ALCOHOL_CODES = ['H-EtG', 'H-EtG-FAEE'];
 
@@ -105,7 +107,7 @@ const CATALOGUE = [
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. Longer hair can be analysed in further 3 cm segments.'
+    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. You can choose a period of 1 to 6 months, and have the hair cut into separate results.'
   },
   {
     code: 'H-DP2', group: 'hair', price: 450, fastTrack: true, includes: ['H-DP1'],
@@ -115,7 +117,7 @@ const CATALOGUE = [
     adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Includes the full standard panel. Longer hair can be analysed in further 3 cm segments.'
+    help: 'Includes the full standard panel. You can choose a period of 1 to 6 months, and have the hair cut into separate results.'
   },
   {
     code: 'H-DP3', group: 'hair', price: 330, fastTrack: true,
@@ -343,8 +345,8 @@ const INCLUSION_RULES = [
 
 const GROUP_META = {
   hair:  { label: 'Hair', icon: 'calendar', windowShort: 'Around 3 months',
-           note: 'Around 3 months of history. Collected at either office. Further 3 cm segments can be added to each hair panel.',
-           typical: 'The default evidence for most court instructions — an overview of drug or alcohol use over about three months, with further 3 cm segments for longer hair. Collected at both offices.',
+           note: 'Around 3 months of history. Collected at either office. You can choose 1 to 6 months, and have the hair cut into separate results.',
+           typical: 'The default evidence for most court instructions — an overview of drug or alcohol use over about three months, with a longer period, or separate results, if the order asks for it. Collected at both offices.',
            compare: '<strong>Standard or extended?</strong> The standard panel covers the drugs most often raised in proceedings. The extended panel is everything in the standard panel plus ketamine, methadone, buprenorphine and prescription sleep medicines — add it only when those drugs are relevant to the case. It is the standard panel plus the additions, not a second panel.' },
   nail:  { label: 'Nail', icon: 'history', windowShort: '6 to 12 months',
            note: '6 to 12 months of history. Belfast office only — polish and false nails must be removed.',
@@ -457,27 +459,44 @@ const SEG_BY_CODE = Object.fromEntries(CATALOGUE.map(p => [p.code, p]));
 /* Rule for a panel, or null where segments do not apply (urine, blood, nail). */
 function segmentRule(p) {
   if (!p || p.group !== 'hair') return null;
-  return ALCOHOL_CODES.includes(p.code)
-    ? { kind: 'alcohol', max: SEGMENT_MAX_ALCOHOL }
-    : { kind: 'drug', max: SEGMENT_MAX_DRUG };
+  return ALCOHOL_CODES.includes(p.code) ? { kind: 'alcohol' } : { kind: 'drug' };
 }
-/* Whole number of additional segments, or null when not allowed for this panel. */
-function normSegs(p, n) {
-  const k = Math.floor(Number(n) || 0);
-  const r = segmentRule(p);
-  if (!r) return k === 0 ? 0 : null;
-  return k < 0 || k > r.max ? null : k;
+/* Validate the period (cm = months of head hair) and the cut points for a panel.
+   cuts are whole cm from the scalp, strictly inside the period. Returns
+   { cm, cuts, segs, segments: [[from, to], ...] } or null when the choice is not available online.
+   segs is the number of additional segments (every segment after the first). */
+function hairLayout(p, cm, cuts) {
+  const list = Array.isArray(cuts) ? cuts : [];
+  const rule = segmentRule(p);
+  if (!rule) return list.length ? null : { cm: 0, cuts: [], segs: 0, segments: [] };
+  const period = cm === undefined || cm === null || cm === '' ? HAIR_DEFAULT_CM : Number(cm);
+  if (!Number.isInteger(period) || period < 1 || period > HAIR_MAX_CM) return null;
+  if (rule.kind === 'alcohol') {
+    if (!ALCOHOL_PERIODS.includes(period) || list.length) return null;
+    return { cm: period, cuts: [], segs: 0, segments: [[0, period]] };
+  }
+  const pts = list.map(Number);
+  if (pts.some(c => !Number.isInteger(c) || c < 1 || c >= period) || new Set(pts).size !== pts.length) return null;
+  pts.sort((a, b) => a - b);
+  const bounds = [0, ...pts, period];
+  const segments = bounds.slice(0, -1).map((v, i) => [v, bounds[i + 1]]);
+  return { cm: period, cuts: pts, segs: pts.length, segments };
+}
+/* Cut points for the quick choices: one result, month by month, 3 cm blocks. */
+function presetCuts(preset, cm) {
+  const out = [];
+  if (preset === 'monthly') for (let i = 1; i < cm; i++) out.push(i);
+  if (preset === 'blocks') for (let i = 3; i < cm; i += 3) out.push(i);
+  return out;
 }
 /* Price of one additional segment. The combined alcohol test adds an EtG-only segment. */
 function segmentUnitPrice(p, unit) {
   return p.code === 'H-EtG-FAEE' ? SEG_BY_CODE['H-EtG'].price : unit;
 }
-/* Hair length (cm) a donor needs for the segments ordered. */
-const segmentCm = segs => (1 + segs) * SEGMENT_CM;
 
 /* Node export so the server prices fee notes from the same catalogue.
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
-    SEGMENT_CM, FAST_TRACK_PER_SEGMENT, segmentRule, normSegs, segmentUnitPrice, segmentCm };
+    HAIR_DEFAULT_CM, HAIR_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice };
 }

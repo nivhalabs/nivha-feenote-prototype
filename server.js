@@ -24,7 +24,7 @@ const dryCounters = { CCN: 999, PCN: 999 }; // dry-run references count up from 
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
-const { gateEmail, bookLaterEmail, feeNoteEmail, EMAIL_DRY_RUN } = require('./lib/email');
+const { gateEmail, bookLaterEmail, feeNoteEmail, specialRequestEmails, EMAIL_DRY_RUN } = require('./lib/email');
 const { generateFeeNote } = require('./lib/pdf');
 const pricing = require('./lib/pricing');
 const stripe = require('./lib/stripe');
@@ -193,7 +193,7 @@ function feeNoteFields(p, reference) {
       bits.push('Explicit consent given to processing of personal information, including special category (health) data — UK/EU GDPR Art 9(2)(a). Withdrawal possible before analysis begins.');
     }
     if (a.hairLengthCm) {
-      bits.push(`Hair length confirmed — at least ${Number(a.hairLengthCm)} cm of head hair is available for the segments ordered. Segments that cannot be collected are not analysed${p.route === 'private' ? '; refunds for unused segments are at NIVHA discretion.' : ' or invoiced.'}`);
+      bits.push(`Hair length confirmed — at least ${Number(a.hairLengthCm)} cm of head hair is available for the period and segments ordered. The booker accepted responsibility for choosing the period and segments, including any the court has requested. Segments that cannot be collected are not analysed${p.route === 'private' ? '; refunds for unused segments are at NIVHA discretion.' : ' or invoiced.'}`);
     }
     bits.push(`Accepted by: ${d.contactName || 'unknown'} <${d.contactEmail || ''}>`);
     if (a.acceptedAt) bits.push(`Accepted at (client): ${a.acceptedAt}`);
@@ -432,19 +432,29 @@ app.post('/api/fee-notes', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'Could not price the fee note' });
     }
 
-    /* Extra hair segments are only accepted once the client confirms the donor has enough hair. */
-    const needCm = Math.max(0, ...(Array.isArray(p.basket) ? p.basket : []).map(l => (Number(l && l.segs) > 0 ? (1 + Number(l.segs)) * 3 : 0)));
+    /* Hair period and segments: checked against the same rules as the browser. A period longer than 3 months,
+       or any extra segment, is only accepted once the client confirms the donor has enough hair. */
     const catalogue = require('./js/catalogue');
-    const badSegs = (Array.isArray(p.basket) ? p.basket : []).some(l => {
+    let needCm = 0, badHair = false;
+    for (const l of (Array.isArray(p.basket) ? p.basket : [])) {
       const panel = catalogue.CATALOGUE.find(c => c.code === (l && l.code));
-      return panel && catalogue.normSegs(panel, l.segs) === null;
-    });
-    if (badSegs) return res.status(400).json({ ok: false, error: 'That number of hair segments is not available for this panel.' });
+      if (!panel) continue;
+      const lay = catalogue.hairLayout(panel, l.cm, l.cuts);
+      if (!lay) { badHair = true; break; }
+      if (lay.cm > 3 || lay.segs > 0) needCm = Math.max(needCm, lay.cm);
+    }
+    if (badHair) return res.status(400).json({ ok: false, error: 'That hair period or those segments are not available online. Please make a special request.' });
     if (needCm) {
       const a = p.acceptance || {};
       if (!a.hairLengthCm || Number(a.hairLengthCm) < needCm) {
         return res.status(400).json({ ok: false, error: `Please confirm the donor has at least ${needCm} cm of head hair.` });
       }
+    }
+
+    /* The PDF describes the period and segments from the validated basket, not from the browser's copy of each line. */
+    for (const line of p.panels) {
+      const src = (p.basket || []).find(l => l && l.code === String(line.code || '').replace('H-EtG/FAEE', 'H-EtG-FAEE'));
+      if (src) { line.cm = src.cm; line.cuts = src.cuts; } else { delete line.cm; delete line.cuts; }
     }
 
     const reference = await nextReference(p.route);
@@ -899,6 +909,50 @@ app.post('/api/booking/request', async (req, res) => {
   }
 });
 
+/* ---------------- special hair requests ----------------
+   Longer hair, alcohol cut or matched to drug segments, or segments not offered online. The request goes to the
+   NIVHA team by email (reply goes to the booker) and a copy goes to the booker. Nothing is booked or charged,
+   and nothing is written to Airtable or JotForm. */
+const SPECIAL_TEAM = process.env.SPECIAL_REQUEST_TO || 'info@nivha.net';
+const srHits = new Map(); // ip -> timestamps
+function srLimited(ip) {
+  const now = Date.now(), hits = (srHits.get(ip) || []).filter(t => now - t < 3600 * 1000);
+  hits.push(now); srHits.set(ip, hits);
+  return hits.length > 6;
+}
+app.post('/api/special-request', async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (b.website) return res.json({ ok: true, reference: 'SR-00000' }); // honeypot
+    const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    if (srLimited(ip)) return res.status(429).json({ ok: false, error: 'Too many requests. Please email info@nivha.net.' });
+    const str = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, n);
+    const name = str(b.name, 120), email = str(b.email, 200).toLowerCase(), phone = str(b.phone, 40), org = str(b.org, 160);
+    if (!name) return res.status(400).json({ ok: false, error: 'Please add your name.' });
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Please enter a valid email address.' });
+    if (phone.replace(/\D/g, '').length < 7) return res.status(400).json({ ok: false, error: 'Please enter a phone number.' });
+    if (b.consent !== true) return res.status(400).json({ ok: false, error: 'Please tick to let us contact you.' });
+    const hair = new Set(require('./js/catalogue').CATALOGUE.filter(c => c.group === 'hair').map(c => c.code));
+    const tests = (Array.isArray(b.tests) ? b.tests : []).filter(c => hair.has(c));
+    if (!tests.length) return res.status(400).json({ ok: false, error: 'Please choose at least one test.' });
+    const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, 40)
+      .map(r => [str(r && r[0], 80), str(r && r[1], 2000)]).filter(r => r[0]);
+    if (!rows.length) return res.status(400).json({ ok: false, error: 'Nothing to send.' });
+    const reference = 'SR-' + crypto.randomInt(10000, 100000);
+    const out = await specialRequestEmails({ baseUrl: BASE_URL, team: SPECIAL_TEAM, reference, rows, requester: { name, email, org } });
+    if (out.team.status !== 'fulfilled') {
+      console.error('special request email to team failed:', out.team.reason && out.team.reason.message);
+      return res.status(502).json({ ok: false, error: 'Could not send the request' });
+    }
+    if (out.booker.status !== 'fulfilled') console.error('special request copy failed:', out.booker.reason && out.booker.reason.message);
+    console.log(`special request ${reference} sent to team`);
+    res.json({ ok: true, reference, copySent: out.booker.status === 'fulfilled' });
+  } catch (err) {
+    console.error('POST /api/special-request failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Could not send the request' });
+  }
+});
+
 /* ---------------- policy review comments (staff) ---------------- */
 const reviewDry = []; // dry-run fallback so the page works locally without a PAT
 
@@ -984,7 +1038,7 @@ app.use((req, res, next) => {
 
 const PUBLIC_PAGES = new Set(['/', '/index', '/index.html', '/dna', '/dna.html',
   '/policy', '/policy.html', '/policy-review', '/policy-review.html', '/policy-terms', '/policy-terms.html',
-  '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html']);
+  '/privacy', '/privacy.html', '/data-sharing-terms', '/data-sharing-terms.html', '/special-request', '/special-request.html']);
 app.use((req, res, next) => {
   const p = req.path;
   if (PUBLIC_PAGES.has(p) || p.startsWith('/css/') || p.startsWith('/js/') || p.startsWith('/assets/') || p === '/favicon.ico') return next();
