@@ -319,8 +319,8 @@ a, button, input, [role='button'] {
 .sum-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
 .sum-rows { display: grid; gap: var(--space-2); }
 .sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: var(--text-sm); }
-.sum-row span:first-child { color: var(--color-text-muted); flex-shrink: 0; }
-.sum-row span:last-child { font-weight: 600; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.sum-row span:first-child { color: var(--color-text-muted); flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
+.sum-row span:last-child { font-weight: 600; text-align: right; flex-shrink: 0; white-space: nowrap; }
 .sum-row.sub { padding-left: var(--space-3); }
 .sum-row.sub span:first-child { color: var(--color-text-faint); }
 .sum-row.saving span { color: var(--color-primary-active, #1d6274); }
@@ -1113,3 +1113,55 @@ a, button, input, [role='button'] {
 .upgrade-toggle { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0 6px; padding: 12px 14px; border: 1px solid var(--color-border, #d6e3e8); border-radius: 8px; background: var(--color-callout, #eef5f7); }
 .upgrade-toggle input { margin-top: 3px; }
 .upgrade-toggle small { display: block; margin-top: 2px; }
+
+/* ---------- full drug list on each card ---------- */
+.druglist .dl-body { margin-top: var(--space-3); }
+.dl-group { margin-bottom: var(--space-3); }
+.dl-name { font-size: var(--text-xs); font-weight: 600; color: var(--color-text); margin-bottom: 6px; }
+.dl-name span { font-weight: 400; color: var(--color-text-faint); }
+.dl-group .drug-chips { margin-bottom: 0; }
+.dl-ext-head {
+  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--color-text-faint); margin: var(--space-4) 0 var(--space-2);
+  padding-top: var(--space-3); border-top: 1px dashed var(--color-border);
+}
+.drug-chip.future { background: var(--color-surface); border: 1px dashed var(--color-border); color: var(--color-text-muted); }
+.drug-chip.hit { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.dl-note { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-2); }
+.dl-note.faint { color: var(--color-text-faint); }
+
+/* ---------- which drug are you looking for ---------- */
+.drug-search {
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px;
+  padding: var(--space-4); margin-bottom: var(--space-5);
+}
+.ds-field { position: relative; }
+.ds-field svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--color-text-faint); pointer-events: none; }
+.ds-field input {
+  width: 100%; font: inherit; font-size: 16px; min-height: 44px;
+  padding: 10px 12px 10px 40px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--color-surface);
+}
+.ds-field input:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.ds-hits { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.ds-hit {
+  width: 100%; display: flex; align-items: center; gap: var(--space-3); text-align: left;
+  font: inherit; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 8px;
+  background: var(--color-surface); cursor: pointer;
+}
+.ds-hit:hover { background: var(--color-callout); }
+.ds-main { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.ds-main strong { font-size: var(--text-sm); }
+.ds-main small { font-size: var(--text-xs); color: var(--color-text-muted); }
+.ds-price { font-weight: 600; font-size: var(--text-sm); white-space: nowrap; }
+.ds-price small { font-weight: 400; color: var(--color-text-faint); }
+.ds-none, .ds-hint { font-size: var(--text-sm); color: var(--color-text-muted); margin-top: var(--space-3); }
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--color-primary); font-weight: 600; text-decoration: underline; cursor: pointer; }
+@media (max-width: 560px) {
+  .ds-hit { flex-wrap: wrap; }
+  .ds-price { width: 100%; }
+}
+.panel-help.druglist .dl-body p { background: none; padding: 0; border-radius: 0; }
+.panel-help.druglist .dl-body .dl-ext-head { padding-top: var(--space-3); }
+
+.sum-remove { display: block; margin-top: 2px; background: none; border: 0; padding: 0; font: inherit; font-size: var(--text-xs); color: var(--color-primary); text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.sum-remove:hover { color: var(--color-primary-active, #1d6274); }

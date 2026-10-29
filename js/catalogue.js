@@ -11,6 +11,78 @@ const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — pric
    Kept as an empty list so the pricing code does not change if a rate is ever agreed. */
 const COMBINED_RATES = [];
 
+/* ---------- Full drug lists ----------
+   Wording follows the live fee note form (form.jotform.com/nivha/FeeNoteDandATesting), group by group.
+   Where the form names only a group, the group is shown as written — no compounds are added.
+   `add: true` marks what the extended panel adds to the standard panel. */
+const LIST_FOOTER = 'The laboratory report lists the specific drugs analysed in each case. Minor variation in the drugs listed is possible.';
+const STD_DRUG_GROUPS = [
+  { name: 'Amphetamine & methylamphetamine' },
+  { name: 'Cannabis' },
+  { name: 'Ecstasy drugs' },
+  { name: 'Cocaine & metabolites' },
+  { name: 'Opiates (1)', drugs: ['Morphine', 'Codeine', 'Heroin metabolite'] },
+  { name: 'Benzodiazepines (1)', note: 'Common benzodiazepines', drugs: ['Diazepam', 'Nordiazepam', 'Oxazepam', 'Bromazepam', 'Lorazepam', 'Temazepam', 'Alprazolam'] }
+];
+const EXT_DRUG_GROUPS = [
+  { name: 'Ketamine', add: true },
+  { name: 'Opiates (2)', add: true, drugs: ['Methadone', 'Buprenorphine'] },
+  { name: 'Benzodiazepines (2)', add: true, drugs: ['Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'] }
+];
+const ANALGESIC_GROUPS = [
+  { name: 'Opiates (3)', drugs: ['Dihydrocodeine', 'Hydromorphone', 'Hydrocodone', 'Oxycodone', 'Tramadol'] },
+  { name: 'Anticonvulsants', drugs: ['Pregabalin', 'Gabapentin'] }
+];
+const STEROID_GROUPS = [{ name: 'Synthetic anabolic steroids & steroid esters' }];
+const NPS_GROUPS = [{ name: 'NPS drugs include', drugs: ['Synthetic cannabinoid receptor agonists', 'Cathinones', 'Tryptamines', 'Phenethylamines', 'Fentanyls'] }];
+const NPS_NOTE = 'Covers a wide range of NPS drugs but excludes common drugs. Drugs already listed in the standard panels are not included in this analysis.';
+const DRUG_LISTS = {
+  'H-DP1': { groups: STD_DRUG_GROUPS },
+  'H-DP2': { groups: [...STD_DRUG_GROUPS, ...EXT_DRUG_GROUPS] },
+  'H-DP3': { groups: ANALGESIC_GROUPS },
+  'H-DP4': { groups: [{ name: 'Non-pharmaceutical benzodiazepines', drugs: ['Clobazam', 'Flubromazolam', 'Flualprazolam', 'Etizolam', 'Meclonazepam', 'Bromazolam', 'Clonazolam'] }] },
+  'H-DNPS': { groups: NPS_GROUPS, note: NPS_NOTE },
+  'H-DAS': { groups: STEROID_GROUPS },
+  'H-DSD': { groups: [], note: 'One drug of your choice. You name the drug when you add this to the fee note.' },
+  'H-EtG': { groups: [{ name: 'Alcohol marker', drugs: ['EtG'] }], note: 'EtG only. Recommended in abstinence assessment.' },
+  'H-EtG-FAEE': { groups: [{ name: 'Alcohol markers', drugs: ['EtG', 'FAEE'] }], note: 'EtG plus FAEE. Recommended in chronic excessive assessment.' },
+  'N-DP1': { groups: STD_DRUG_GROUPS },
+  'N-DP2': { groups: [...STD_DRUG_GROUPS, ...EXT_DRUG_GROUPS] },
+  'N-DP3': { groups: ANALGESIC_GROUPS },
+  'N-DAS': { groups: STEROID_GROUPS },
+  'N-DSD': { groups: [], note: 'One drug of your choice. You name the drug when you add this to the fee note.' },
+  'N-EtG': { groups: [{ name: 'Alcohol marker', drugs: ['EtG'] }], note: 'EtG only. Recommended in abstinence assessment.' },
+  'U-MUI-1': {
+    groups: [
+      { name: 'Amphetamine & methylamphetamine' }, { name: 'Cannabis' }, { name: 'Cocaine' }, { name: 'Ecstasy drugs' }, { name: 'Ketamine' },
+      { name: 'Opiates (1)', drugs: ['Heroin', 'Morphine', 'Codeine', 'Dihydrocodeine'] },
+      { name: 'Opiates (2)', drugs: ['Methadone', 'Tramadol'] },
+      { name: 'Benzodiazepine (1)', note: 'Common benzodiazepines, including', drugs: ['Diazepam', 'Lorazepam', 'Temazepam'] }
+    ],
+    note: 'Alcohol is tested with a breath tester.'
+  },
+  'U-MUI-2': {
+    groups: [
+      { name: 'Analgesics and anticonvulsants', drugs: ['Pregabalin', 'Gabapentin', 'Buprenorphine'] },
+      { name: 'Cathinone', drugs: ['Mephedrone', 'MDPV', 'Methcathinone', 'Cathinone'] }
+    ],
+    note: 'Alcohol is tested with a breath tester.'
+  },
+  'U-AS': { groups: [{ name: 'Synthetic anabolic steroids' }] },
+  'U-NPS': { groups: NPS_GROUPS, note: NPS_NOTE },
+  'U-EtG-EtS': { groups: [{ name: 'Minor alcohol metabolites', drugs: ['Ethyl glucuronide', 'Ethyl sulphate'] }] },
+  'DBS-PEth': { groups: [{ name: 'Direct alcohol marker', drugs: ['Phosphatidylethanol (PEth)'] }] },
+  'B-LFT': { groups: [{ name: 'Clinical alcohol marker', drugs: ['Liver function test'] }] },
+  'B-CDT': { groups: [{ name: 'Clinical alcohol marker', drugs: ['Carbohydrate deficient transferrin'] }] }
+};
+/* Plain text version — used on the fee note PDF. */
+function drugListText(code) {
+  const l = DRUG_LISTS[code];
+  if (!l) return '';
+  const parts = l.groups.map(g => g.drugs ? `${g.name}: ${g.drugs.join(', ')}` : g.name);
+  return parts.join('; ') + (l.note ? '. ' + l.note : '');
+}
+
 const CATALOGUE = [
   /* ---------- HAIR ---------- */
   {
@@ -20,14 +92,14 @@ const CATALOGUE = [
     drugs: ['Cannabis', 'Cocaine', 'Ecstasy (MDMA)', 'Amphetamines', 'Heroin and other opiates', 'Prescribed benzodiazepines — diazepam, temazepam, alprazolam'],
     window: 'Around 3 months of history (3cm of head hair). New use takes about a week to appear in hair.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'The panel most courts ask for. If you need ketamine, methadone or the wider benzodiazepine and sleep-medicine range as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
+    help: 'The panel most courts ask for. If you need ketamine, methadone or the further benzodiazepines and sleep medicines (see the full drug list) as well, tick the extended option on this panel — it includes everything in the standard panel. Additional hair segments can be analysed — priced on application.'
   },
   {
     code: 'H-DP2', group: 'hair', price: 450, fastTrack: true, includes: ['H-DP1'],
     name: 'Extended drug panel',
-    detects: 'Everything in the standard panel, plus ketamine, methadone, buprenorphine and a wider benzodiazepine range including sleep medicines such as zopiclone and zolpidem.',
+    detects: 'Everything in the standard panel, plus ketamine, methadone, buprenorphine and seven further benzodiazepines and sleep medicines: chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem.',
     base: 'H-DP1',
-    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
+    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: 'Around 3 months of history (3cm of head hair).',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard panel. Additional hair segments can be analysed — priced on application.'
@@ -118,9 +190,9 @@ const CATALOGUE = [
   {
     code: 'N-DP2', group: 'nail', price: 475, fastTrack: true, includes: ['N-DP1'],
     name: 'Extended drug panel',
-    detects: 'Everything in the standard nail panel, plus ketamine, methadone, buprenorphine and a wider benzodiazepine range including sleep medicines such as zopiclone and zolpidem.',
+    detects: 'Everything in the standard nail panel, plus ketamine, methadone, buprenorphine and seven further benzodiazepines and sleep medicines: chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem.',
     base: 'N-DP1',
-    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Sleep medicines — zopiclone, zolpidem', 'A wider benzodiazepine range'],
+    adds: ['Ketamine', 'Methadone', 'Buprenorphine', 'Chlordiazepoxide', 'Clonazepam', 'Flunitrazepam', 'Midazolam', 'Zopiclone', 'Zaleplon', 'Zolpidem'],
     window: '6 to 12 months of history.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'Includes the full standard nail panel.'
@@ -133,19 +205,6 @@ const CATALOGUE = [
     window: '6 to 12 months of history.',
     turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
     help: 'The nail equivalent of the hair analgesics panel.'
-  },
-  {
-    code: 'N-DNPS', group: 'nail', price: 475, fastTrack: true,
-    name: 'Novel psychoactive substances',
-    detects: 'Synthetic cannabinoid receptor agonists, cathinones, tryptamines, phenethylamines and fentanyls. Drugs already covered by the standard panels are not included.',
-    drugs: ['Synthetic cannabinoids', 'Cathinones', 'Tryptamines', 'Phenethylamines', 'Fentanyls'],
-    window: '6 to 12 months of history.',
-    turnaround: 'About 15 working days from the lab receiving the sample — allow 2 working days for post.',
-    help: 'Only needed where specific novel substances are suspected — our team can advise if unsure.',
-    variants: [
-      { short: 'Qualitative', label: 'Qualitative', price: 475 },
-      { short: 'Quantitative', label: 'Quantitative estimation (if reference standard available)', price: 535 }
-    ]
   },
   {
     code: 'N-DAS', group: 'nail', price: 475, fastTrack: true,
@@ -338,9 +397,9 @@ const CONCERNS = [
   },
   {
     id: 'not-sure', icon: 'help',
-    title: 'Not sure — recommend for me',
-    sub: 'We will start you with the most common instruction',
-    recommends: ['H-DP1', 'H-EtG']
+    title: "Unsure \u2014 I'll browse the panels",
+    sub: 'Nothing is added for you. Read about each panel and choose what you need.',
+    recommends: []
   }
 ];
 
@@ -382,5 +441,5 @@ const COURT_RATES = {
 /* Node export so the server prices fee notes from the same catalogue.
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
+  module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM };
 }

@@ -42,9 +42,10 @@
     privateAck: false,           // private clients acknowledge the legal-representation note
     concerns: new Set(),
     basket: new Map(),           // code -> { variant: int, qty: int }
-    upgrades: new Set(),         // standard panels the client chose to extend (H-DP1 -> H-DP2)
     upgrades: new Set(),         // standard panels the client has chosen to extend (H-DP1 -> H-DP2)
     opts: new Map(),             // code -> { variant, qty } chosen before adding
+    drugQuery: '',               // 'Which drug are you looking for?' search text
+    listOpen: new Set(),         // full drug lists the client has opened
     expanded: new Set(),         // panel cards opened for detail on step 3
     fastTrack: false,            // fast track applies to the whole instruction
     notices: [],
@@ -127,6 +128,7 @@
 
   /* ---------------- icons ---------------- */
   const ICONS = {
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
     calendar: '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
     layers: '<path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/>',
@@ -150,6 +152,16 @@
   /* ---------------- navigation ---------------- */
   const sections = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5', 'step-pay', 'step-book', 'step-done'];
 
+  let step3LedeDefault = null;
+  function setStep3Lede() {
+    const el = document.getElementById('step3-lede');
+    if (!el) return;
+    if (step3LedeDefault === null) step3LedeDefault = el.innerHTML;
+    el.innerHTML = state.concerns.has('not-sure') && !state.basket.size
+      ? 'Nothing has been added for you. Read about each panel below, or search for a drug, and add what you need. A panel is a set of related drugs analysed together on one sample.'
+      : step3LedeDefault;
+  }
+
   function goTo(step) {
     state.step = step;
     if (step <= 5) state.maxVisited = Math.max(state.maxVisited, step);
@@ -157,7 +169,7 @@
       document.getElementById(id).hidden = (i + 1 !== step);
     });
     renderStepper();
-    if (step === 3) { renderSampleStrip(); renderCatalogue(); renderNotices(); renderSummary(); }
+    if (step === 3) { setStep3Lede(); renderDrugSearch(); renderSampleStrip(); renderCatalogue(); renderNotices(); renderSummary(); }
     if (step === 4) { renderDetailsForm(); renderSummary(); }
     if (step === 5) renderFeeNote();
     if (step === 6) renderCheckout();
@@ -293,13 +305,15 @@
     grid.querySelectorAll('.concern-card').forEach(card =>
       card.addEventListener('click', () => {
         const id = card.dataset.concern;
-        state.concerns.has(id) ? state.concerns.delete(id) : state.concerns.add(id);
+        if (state.concerns.has(id)) state.concerns.delete(id);
+        else if (id === 'not-sure') { state.concerns.clear(); state.concerns.add(id); }
+        else { state.concerns.delete('not-sure'); state.concerns.add(id); }
         renderConcerns();
         updateComboHint();
-        document.getElementById('to-step-3').disabled = state.concerns.size === 0;
       }));
     updateComboHint();
     document.getElementById('to-step-3').disabled = state.concerns.size === 0;
+    document.getElementById('to-step-3').textContent = state.concerns.has('not-sure') ? 'Browse panels' : 'See recommended panels';
   }
 
   function updateComboHint() {
@@ -419,6 +433,9 @@
         </div>`;
     }).join('');
 
+    wrap.querySelectorAll('details[data-list]').forEach(d => d.addEventListener('toggle', () => {
+      if (d.open) state.listOpen.add(d.dataset.list); else state.listOpen.delete(d.dataset.list);
+    }));
     wrap.querySelectorAll('[data-expand]').forEach(b => b.addEventListener('click', () => {
       state.expanded.add(b.dataset.expand);
       renderCatalogue();
@@ -494,6 +511,124 @@
     return `<p class="chips-label">This panel tests for</p><div class="drug-chips">${base}${main}${adds}</div>`;
   }
 
+
+  /* ---------------- full drug lists + drug search ---------------- */
+  const SEARCH_ALIASES = { mdma: 'ecstasy', thc: 'cannabis', benzos: 'benzodiazepine', opioid: 'opiate', opioids: 'opiate', ecstacy: 'ecstasy' };
+  const normQuery = q => {
+    const t = (q || '').trim().toLowerCase();
+    return SEARCH_ALIASES[t] || t;
+  };
+  const textHit = (txt, q) => !!q && q.length >= 3 && txt.toLowerCase().includes(q);
+  const groupHit = (g, q) => textHit(g.name, q) || (g.drugs || []).some(d => textHit(d, q));
+  const chipHit = (txt, g, q) => textHit(txt, q) || (!(g.drugs || []).length && textHit(g.name, q));
+
+  function drugListHtml(p0, p, upg, isUp) {
+    const q = normQuery(state.drugQuery);
+    const list = DRUG_LISTS[p.code];
+    if (!list) return '';
+    let groups = list.groups.map(g => ({ ...g }));
+    let ext = [];
+    if (upg && !isUp && DRUG_LISTS[upg.code]) {
+      ext = DRUG_LISTS[upg.code].groups.filter(g => g.add);
+    }
+    const renderGroup = (g, future) => {
+      const chips = g.drugs && g.drugs.length
+        ? g.drugs.map(d => `<span class="drug-chip ${g.add ? 'add' : ''} ${future ? 'future' : ''} ${chipHit(d, g, q) ? 'hit' : ''}">${d}</span>`).join('')
+        : `<span class="drug-chip ${g.add ? 'add' : ''} ${future ? 'future' : ''} ${textHit(g.name, q) ? 'hit' : ''}">${g.name}</span>`;
+      return `<div class="dl-group">
+        ${g.drugs && g.drugs.length ? `<p class="dl-name">${g.add ? '+ ' : ''}${g.name}${g.note ? ` <span>${g.note.toLowerCase().replace(/^./, c => c)}</span>` : ''}</p>` : ''}
+        <div class="drug-chips">${chips}</div>
+      </div>`;
+    };
+    const anyHit = q && [...groups, ...ext].some(g => groupHit(g, q));
+    const open = state.listOpen.has(p0.code) || anyHit;
+    return `
+      <details class="panel-help druglist" data-list="${p0.code}" ${open ? 'open' : ''}>
+        <summary>Full drug list</summary>
+        <div class="dl-body">
+          ${groups.map(g => renderGroup(g, false)).join('')}
+          ${ext.length ? `<p class="dl-ext-head">Added if you extend (+ ${gbp(upg.price - p0.price)} + VAT)</p>${ext.map(g => renderGroup(g, true)).join('')}` : ''}
+          ${list.note ? `<p class="dl-note">${list.note}</p>` : ''}
+          ${list.groups.length && /^(H-DP|N-DP|U-MUI|H-DNPS|U-NPS)/.test(p.code) ? `<p class="dl-note faint">${LIST_FOOTER}</p>` : ''}
+        </div>
+      </details>`;
+  }
+
+  /* Which panels test for what the client typed? Returns [{ panel, extended, where[] }] */
+  function drugSearchHits(raw) {
+    const q = normQuery(raw);
+    if (!q || q.length < 3) return [];
+    const out = new Map();
+    CATALOGUE.forEach(p => {
+      const list = DRUG_LISTS[p.code];
+      if (!list) return;
+      if (nailUnavailable() && p.group === 'nail') return;
+      const upgOnly = isUpgradeOnly(p);
+      const groups = upgOnly ? list.groups.filter(g => g.add) : list.groups;
+      const where = [];
+      groups.forEach(g => {
+        if (!groupHit(g, q)) return;
+        const hits = (g.drugs || []).filter(d => textHit(d, q));
+        where.push(hits.length && !textHit(g.name, q) ? `${g.name}: ${hits.join(', ')}` : g.name);
+      });
+      if (!where.length) return;
+      const base = upgOnly ? byCode[baseOf(p.code)] : p;
+      const key = base.code + (upgOnly ? '|x' : '');
+      out.set(key, { panel: base, ext: upgOnly ? p : null, where });
+    });
+    return [...out.values()];
+  }
+
+  function renderDrugSearch() {
+    const el = document.getElementById('drug-search');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="drug-search">
+        <label for="drug-q" class="chips-label">Which drug are you looking for?</label>
+        <div class="ds-field">
+          ${icon('search', 18)}
+          <input type="search" id="drug-q" placeholder="For example tramadol, cannabis, etizolam" autocomplete="off" value="${state.drugQuery.replace(/"/g, '&quot;')}">
+        </div>
+        <div id="drug-results" aria-live="polite"></div>
+      </div>`;
+    const input = el.querySelector('#drug-q');
+    let t;
+    input.addEventListener('input', () => {
+      state.drugQuery = input.value;
+      renderDrugResults();
+      clearTimeout(t);
+      t = setTimeout(() => renderCatalogue(), 200);
+    });
+    renderDrugResults();
+  }
+
+  function renderDrugResults() {
+    const box = document.getElementById('drug-results');
+    if (!box) return;
+    const q = state.drugQuery.trim();
+    if (q.length < 3) { box.innerHTML = q ? '<p class="ds-hint">Keep typing — at least three letters.</p>' : ''; return; }
+    const hits = drugSearchHits(q);
+    if (!hits.length) {
+      box.innerHTML = `<p class="ds-none">We could not find <strong>${q.replace(/</g, '&lt;')}</strong> by name in our panel lists. If you need one specific drug tested, the specified single drug option lets you name it
+        (<button class="link-btn" data-goto="H-DSD">hair</button> or <button class="link-btn" data-goto="N-DSD">nail</button>). You can also contact us and we will check with the laboratory.</p>`;
+    } else {
+      box.innerHTML = `<ul class="ds-hits">${hits.map(h => {
+        const p = h.panel;
+        return `<li><button class="ds-hit" data-goto="${p.code}">
+          <span class="code-chip">${disp(p.code)}</span>
+          <span class="ds-main"><strong>${p.name}</strong><small>${h.where.join(' · ')}${h.ext ? ` — in the extended option (+ ${gbp(h.ext.price - p.price)} + VAT)` : ''}</small></span>
+          <span class="ds-price">${gbp(p.price)} <small>+ VAT</small></span>
+        </button></li>`;
+      }).join('')}</ul>`;
+    }
+    box.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => {
+      state.expanded.add(b.dataset.goto);
+      renderCatalogue();
+      const card = document.getElementById('card-' + b.dataset.goto);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+  }
+
   function briefLine(p) {
     if (p.base) return `Everything in ${disp(p.base)} plus ${p.adds.length} addition${p.adds.length === 1 ? '' : 's'}`;
     const names = (p.drugs || []).map(d => d.split(' — ')[0]);
@@ -532,7 +667,7 @@
     /* collapsed row — basic info with expand / add */
     if (!expanded) {
       return `
-      <article class="panel-card collapsed ${unavailable ? 'unavailable' : ''}">
+      <article id="card-${p0.code}" class="panel-card collapsed ${unavailable ? 'unavailable' : ''}">
         <div class="pc-row">
           <div class="pc-main">
             <div class="panel-card-id">
@@ -566,7 +701,7 @@
     const upgradeToggle = upg ? `
       <label class="ft-toggle upgrade-toggle">
         <input type="checkbox" data-upgrade="${p0.code}" ${isUp ? 'checked' : ''}>
-        <span>Extend to the ${upg.name.toLowerCase()} <small>+ ${gbp(upg.price - p0.price)} + VAT · adds ketamine, methadone, buprenorphine, sleep medicines and a wider benzodiazepine range</small></span>
+        <span>Extend to the ${upg.name.toLowerCase()} <small>+ ${gbp(upg.price - p0.price)} + VAT · adds ketamine, methadone, buprenorphine, chlordiazepoxide, clonazepam, flunitrazepam, midazolam, zopiclone, zaleplon and zolpidem</small></span>
       </label>` : '';
     const options = (p.variants || p.series) ? `
       <div class="panel-options">
@@ -586,7 +721,7 @@
           </label>` : ''}
       </div>` : '';
     return `
-      <article class="panel-card ${inBasket ? 'in-basket' : ''}">
+      <article id="card-${p0.code}" class="panel-card ${inBasket ? 'in-basket' : ''}">
         <div class="panel-card-top">
           <div class="panel-card-id">
             <span class="code-chip">${disp(p.code)}</span>
@@ -596,6 +731,7 @@
         </div>
         <h3>${p.name}</h3>
         ${renderDrugChips(p)}
+        ${drugListHtml(p0, p, upg, isUp)}
         ${upgradeToggle}
         ${options}
         <dl class="panel-facts">
@@ -640,7 +776,9 @@
     const t = computeTotals();
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
-      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}</span><span>${gbp(lineTotal(p, item))}</span></div>
+      const rm = (state.step === 3 || state.step === 4)
+        ? ` <button type="button" class="sum-remove" data-sum-remove="${code}" aria-label="Remove ${disp(p.code)} from your fee note">Remove</button>` : '';
+      return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}${rm}</span><span>${gbp(lineTotal(p, item))}</span></div>
         ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track</span><span>${gbp(FAST_TRACK_FEE)}</span></div>` : ''}`;
     }).join('');
 
@@ -692,7 +830,7 @@
         <h2>Your fee note</h2>
         <p class="sum-loc">Collection: ${locLabel()}</p>
         ${empty
-          ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — if you are unsure, the standard drug panel and alcohol abstinence assessment cover most instructions.</p>`
+          ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — each panel card explains what it tests for and when to choose it.</p>`
           : `<div class="sum-rows">${rows}
               ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
               ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
@@ -715,6 +853,12 @@
     const el3 = document.getElementById('summary-3'), el4 = document.getElementById('summary-4');
     if (state.step === 3) el3.innerHTML = html;
     if (state.step === 4) el4.innerHTML = html;
+    document.querySelectorAll('[data-sum-remove]').forEach(b => b.addEventListener('click', () => {
+      state.basket.delete(b.dataset.sumRemove);
+      resolveConflicts(true);
+      if (state.step === 3) { renderCatalogue(); renderNotices(); }
+      renderSummary(); updateMobileBar();
+    }));
     const c = document.getElementById('sum-continue');
     if (c) c.addEventListener('click', () => goTo(4));
     const r = document.getElementById('sum-review');
