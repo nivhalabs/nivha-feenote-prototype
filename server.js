@@ -192,6 +192,9 @@ function feeNoteFields(p, reference) {
     if (a.explicitConsent) {
       bits.push('Explicit consent given to processing of personal information, including special category (health) data — UK/EU GDPR Art 9(2)(a). Withdrawal possible before analysis begins.');
     }
+    if (a.alcoholOneResult) {
+      bits.push('Alcohol hair result confirmed as one result by the booker, although the drug result on this fee note is cut into segments. Cutting the alcohol result at the same points is a special request.');
+    }
     if (a.hairLengthCm) {
       bits.push(`Hair length confirmed — at least ${Number(a.hairLengthCm)} cm of head hair is available for the period and segments ordered. The booker accepted responsibility for choosing the period and segments, including any the court has requested. Segments that cannot be collected are not analysed${p.route === 'private' ? '; refunds for unused segments are at NIVHA discretion.' : ' or invoiced.'}`);
     }
@@ -444,6 +447,14 @@ app.post('/api/fee-notes', async (req, res) => {
       if (lay.cm > 3 || lay.segs > 0) needCm = Math.max(needCm, lay.cm);
     }
     if (badHair) return res.status(400).json({ ok: false, error: 'That hair period or those segments are not available online. Please make a special request.' });
+    /* Drug hair cut into segments plus alcohol on the same fee note: the booker must have confirmed that alcohol stays
+       as one result (matching the drug segments is a special request). */
+    const basketLines = (Array.isArray(p.basket) ? p.basket : []).map(l => ({ l, panel: catalogue.CATALOGUE.find(c => c.code === (l && l.code)) })).filter(x => x.panel && x.panel.group === 'hair');
+    const drugSplit = basketLines.some(x => catalogue.segmentRule(x.panel).kind === 'drug' && (catalogue.hairLayout(x.panel, x.l.cm, x.l.cuts) || { segs: 0 }).segs > 0);
+    const hasAlcohol = basketLines.some(x => catalogue.segmentRule(x.panel).kind === 'alcohol');
+    if (drugSplit && hasAlcohol && !(p.acceptance && p.acceptance.alcoholOneResult === true)) {
+      return res.status(400).json({ ok: false, error: 'Your drug test is cut into segments. Please choose how the alcohol is reported, or make a special request to match the drug segments.' });
+    }
     if (needCm) {
       const a = p.acceptance || {};
       if (!a.hairLengthCm || Number(a.hairLengthCm) < needCm) {
