@@ -45,6 +45,7 @@
     upgrades: new Set(),         // standard panels the client has chosen to extend (H-DP1 -> H-DP2)
     opts: new Map(),             // code -> { variant, qty } chosen before adding
     drugQuery: '',               // 'Which drug are you looking for?' search text
+    alcOneResult: false,         // booker confirmed alcohol is one result although the drug result is cut into segments
     listOpen: new Set(),         // full drug lists the client has opened
     expanded: new Set(),         // panel cards opened for detail on step 3
     fastTrack: false,            // fast track applies to the whole instruction
@@ -79,6 +80,13 @@
     const lay = byCode[c] && segmentRule(byCode[c]) ? layoutOf(byCode[c], o) : null;
     return lay && (lay.cm > HAIR_DEFAULT_CM || lay.segs > 0) ? lay.cm : 0;
   }));
+  /* Drug hair cut into segments + alcohol in the same basket: alcohol must be cut at the same points (a special request)
+     or the booker must confirm it stays as one result. */
+  const isAlcCode = c => ALCOHOL_CODES.includes(c);
+  const splitDrugLines = () => [...state.basket.entries()].filter(([c, o]) => byCode[c] && segmentRule(byCode[c]) && segmentRule(byCode[c]).kind === 'drug' && layoutOf(byCode[c], o).segs > 0);
+  const alcLines = () => [...state.basket.keys()].filter(isAlcCode);
+  const alcMirrorNeeded = () => splitDrugLines().length > 0 && alcLines().length > 0 && !state.alcOneResult;
+  const alcMatchPrice = (p, n) => p.code === 'H-EtG-FAEE' ? p.price + byCode['H-EtG'].price * (n - 1) : p.price * n;
   const monthsText = cm => cm === 1 ? '1 month' : `${cm} months`;
   const lineLabel = (p, o) => {
     let s = p.name;
@@ -179,6 +187,7 @@
   }
 
   function goTo(step) {
+    if (step > 3 && step <= 5 && alcMirrorNeeded()) step = 3; // alcohol layout must be settled first
     state.step = step;
     if (step <= 5) state.maxVisited = Math.max(state.maxVisited, step);
     sections.forEach((id, i) => {
@@ -490,6 +499,7 @@
       state.opts.set(code, { ...getOpts(code), ...patch });
       if (state.basket.has(code)) Object.assign(state.basket.get(code), patch);
       state.acceptance = null; /* the hair-length confirmation must be given again */
+      if (segmentRule(byCode[code]).kind === 'drug') state.alcOneResult = false; /* the alcohol decision depends on the drug layout */
       renderCatalogue(); renderSummary(); updateMobileBar();
     };
     wrap.querySelectorAll('[data-period]').forEach(b => b.addEventListener('click', () => {
@@ -511,7 +521,15 @@
       if (!hairLayout(byCode[code], cur.cm || HAIR_DEFAULT_CM, cuts)) return; // each part can be at most 3 cm
       setHair(code, { cuts, preset: 'custom' });
     }));
-    wrap.querySelectorAll('[data-special]').forEach(b => b.addEventListener('click', () => openSpecialRequest()));
+    wrap.querySelectorAll('[data-special]').forEach(b => b.addEventListener('click', () => openSpecialRequest(b.dataset.special === 'alcmatch' ? 'alcmatch' : '')));
+    wrap.querySelectorAll('[data-alc-one]').forEach(b => b.addEventListener('click', () => {
+      state.alcOneResult = true; state.acceptance = null;
+      renderCatalogue(); renderSummary(); updateMobileBar();
+    }));
+    wrap.querySelectorAll('[data-alc-change]').forEach(b => b.addEventListener('click', () => {
+      state.alcOneResult = false; state.acceptance = null;
+      renderCatalogue(); renderSummary(); updateMobileBar();
+    }));
     wrap.querySelectorAll('[data-qty]').forEach(sel => sel.addEventListener('change', () => {
       const code = sel.dataset.qty, q = +sel.value;
       state.opts.set(code, { ...getOpts(code), qty: q });
@@ -807,7 +825,7 @@
     return `Around ${monthsText(lay.cm)} of history (${lay.cm} cm of head hair), one result. ${isNew} Indicative, awaiting scientific sign-off.`.trim();
   };
 
-  function openSpecialRequest() {
+  function openSpecialRequest(need) {
     const tests = [...state.basket.entries()].filter(([c]) => byCode[c] && byCode[c].group === 'hair')
       .map(([c, o]) => ({ code: c, variant: (o && o.variant) || 0 }));
     const drug = [...state.basket.entries()].find(([c]) => segmentRule(byCode[c]) && segmentRule(byCode[c]).kind === 'drug');
@@ -819,7 +837,7 @@
       t: Date.now(), tests,
       cm: drug ? layoutOf(byCode[drug[0]], drug[1]).cm : null, cuts: drug ? layoutOf(byCode[drug[0]], drug[1]).cuts : [],
       alcCm: alc ? layoutOf(byCode[alc[0]], alc[1]).cm : null,
-      speed: state.fastTrack ? 'fast' : '', loc: state.collection || '', email: d.contactEmail || gate, org: d.organisation || ''
+      need: need || '', speed: state.fastTrack ? 'fast' : '', loc: state.collection || '', email: d.contactEmail || gate, org: d.organisation || ''
     };
     try { localStorage.setItem('nivha-sr-prefill', JSON.stringify(data)); } catch (e) {}
     window.open('/special-request.html', '_blank', 'noopener');
@@ -870,8 +888,25 @@
          <p>${p.code === 'H-EtG-FAEE' ? 'Any further EtG result is charged at the EtG price, because FAEE is read as one overview. ' : ''}A hair test cannot give the order of events within a result and cannot show that someone has not drunk alcohol. To split the alcohol result, or match it to drug segments, make a special request.</p>`
       : `<p>Head hair grows about 1 cm a month, so each centimetre is roughly one month of exposure and the newest hair is nearest the scalp. One drug result covers at most 3 cm of hair. Cutting the hair into parts gives a separate result for each part, so a change over time can be seen. Each part is tested and reported separately and is charged at the panel price.</p>
          <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
+    let mirror = '';
+    const split = splitDrugLines();
+    if (isAlc && split.length) {
+      const [dc, dopt] = split[0], dl = layoutOf(byCode[dc], dopt), n = dl.segs + 1;
+      const ranges = dl.segments.map(x => x.join('–')).join(', ');
+      mirror = state.alcOneResult
+        ? `<div class="seg-mirror ok" role="status"><p><strong>Alcohol will be reported as one result</strong>, although your drug test is cut into ${n} results. <button type="button" class="seg-link" data-alc-change="1">Change</button></p></div>`
+        : `<div class="seg-mirror" role="group" aria-label="Alcohol and drug segments" id="alc-mirror">
+            <p><strong>Your drug test is cut into ${n} results (${ranges} cm).</strong> If the alcohol is for the same case, it needs to be cut the same way. Online, alcohol is one result, so matching is a special request. We confirm the layout and price with you first (about ${gbp(alcMatchPrice(p, n))} + VAT for the alcohol).</p>
+            <div class="seg-mirror-actions">
+              <button type="button" class="btn small primary" data-special="alcmatch">Make a special request to match</button>
+              <button type="button" class="btn small outline" data-alc-one="1">Keep alcohol as one result</button>
+            </div>
+            <p class="seg-more">After you send a special request, remove the alcohol here if you want to carry on with the drug test.</p>
+          </div>`;
+    }
     return `
       <div class="seg-box">
+        ${mirror}
         <p class="seg-title">How far back should the test go?</p>
         <div class="seg-chips" role="group" aria-label="Months of hair">${chips}</div>
         <p class="seg-more">About 1 cm of head hair for each month. Three months is the standard test.${isAlc ? '' : ' One result covers up to 3 cm, so 4 to 6 months is reported in two or more results.'}</p>
@@ -903,6 +938,7 @@
   }
 
   function renderSummary() {
+    if (!splitDrugLines().length) state.alcOneResult = false;
     const t = computeTotals();
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
@@ -976,7 +1012,8 @@
                 ? 'Payment is taken securely in advance by card. Booking opens as soon as payment clears.'
                 : 'We invoice your organisation — results are released on payment of the fee note.'}</p>`}
         ${ftUpsell}
-        ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty ? 'disabled' : ''}>Continue to your details</button>` : ''}
+        ${state.step === 3 && alcMirrorNeeded() ? `<p class="sum-alert" role="alert">Your drug test is cut into segments and your fee note includes alcohol. <button type="button" class="seg-link" id="alc-jump">Choose how the alcohol is reported</button> before you continue.</p>` : ''}
+        ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty || alcMirrorNeeded() ? 'disabled' : ''}>Continue to your details</button>` : ''}
         ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review fee note</button>` : ''}
       </div>`;
 
@@ -991,6 +1028,8 @@
     }));
     const c = document.getElementById('sum-continue');
     if (c) c.addEventListener('click', () => goTo(4));
+    const aj = document.getElementById('alc-jump');
+    if (aj) aj.addEventListener('click', () => { const t = document.getElementById('alc-mirror'); if (t) t.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
     const r = document.getElementById('sum-review');
     if (r) r.addEventListener('click', () => validateDetails() && goTo(5));
     const setFt = on => {
@@ -1016,8 +1055,15 @@
       state.basket.size + (state.basket.size === 1 ? ' panel' : ' panels') + ' · inc. VAT';
     document.getElementById('mt-amount').textContent = gbp(t.total);
     document.getElementById('mt-continue').textContent = state.step === 3 ? 'Continue' : 'Review fee note';
-    document.getElementById('mt-continue').onclick = () =>
+    document.getElementById('mt-continue').disabled = false;
+    document.getElementById('mt-continue').onclick = () => {
+      if (state.step === 3 && alcMirrorNeeded()) { /* explain rather than silently blocking */
+        const t = document.getElementById('alc-mirror');
+        if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.classList.add('flash'); setTimeout(() => t.classList.remove('flash'), 1600); }
+        return;
+      }
       state.step === 3 ? goTo(4) : (validateDetails() && goTo(5));
+    };
   }
 
   /* ---------------- step 4 — details ---------------- */
@@ -1437,6 +1483,7 @@
         declaration: true,
         dataSharingTermsVersion: state.route !== 'private' ? DST_VERSION : null,
         explicitConsent: state.route === 'private',
+        alcoholOneResult: state.alcOneResult && splitDrugLines().length > 0 && alcLines().length > 0 ? true : null,
         hairLengthCm: hairNeededCm() && state.acceptance && state.acceptance.hairLength ? hairNeededCm() : null,
         acceptedAt: new Date().toISOString()
       }
