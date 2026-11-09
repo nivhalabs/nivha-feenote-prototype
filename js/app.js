@@ -152,6 +152,7 @@
     shield: '<path d="M12 3 5 5.5v6c0 4.5 3 7.5 7 9.5 4-2 7-5 7-9.5v-6L12 3z"/><path d="m9 11.5 2.2 2.2L15.5 9"/>',
     wave: '<path d="M3 15c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/>',
     history: '<path d="M4 12a8 8 0 1 1 2.3 5.7"/><path d="M4 12H1.5M4 12l-1.8 2.5"/><path d="M12 8v4l3 2"/>',
+    file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.1 1-1.1 1.8"/><circle cx="12" cy="17" r=".5" fill="currentColor"/>',
     alert: '<path d="M12 4 2.8 19.5h18.4L12 4z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".5" fill="currentColor"/>',
     check: '<path d="m5 13 4.5 4.5L19 7"/>',
@@ -173,7 +174,8 @@
     const el = document.getElementById('step3-lede');
     if (!el) return;
     if (step3LedeDefault === null) step3LedeDefault = el.innerHTML;
-    el.innerHTML = state.concerns.has('not-sure') && !state.basket.size
+    const browse = [...state.concerns].some(id => (CONCERNS.find(c => c.id === id) || {}).exclusive);
+    el.innerHTML = browse
       ? 'Nothing has been added for you. Read about each panel below, or search for a drug, and add what you need. A panel is a set of related drugs analysed together on one sample.'
       : step3LedeDefault;
   }
@@ -322,14 +324,15 @@
       card.addEventListener('click', () => {
         const id = card.dataset.concern;
         if (state.concerns.has(id)) state.concerns.delete(id);
-        else if (id === 'not-sure') { state.concerns.clear(); state.concerns.add(id); }
-        else { state.concerns.delete('not-sure'); state.concerns.add(id); }
+        else if ((CONCERNS.find(c => c.id === id) || {}).exclusive) { state.concerns.clear(); state.concerns.add(id); }
+        else { CONCERNS.filter(c => c.exclusive).forEach(c => state.concerns.delete(c.id)); state.concerns.add(id); }
         renderConcerns();
         updateComboHint();
       }));
     updateComboHint();
     document.getElementById('to-step-3').disabled = state.concerns.size === 0;
-    document.getElementById('to-step-3').textContent = state.concerns.has('not-sure') ? 'Browse panels' : 'See recommended panels';
+    const browseOnly = [...state.concerns].some(id => (CONCERNS.find(c => c.id === id) || {}).exclusive);
+    document.getElementById('to-step-3').textContent = browseOnly ? 'Browse panels' : 'See suggestions';
   }
 
   function updateComboHint() {
@@ -342,31 +345,8 @@
     }
   }
 
-  document.getElementById('to-step-3').addEventListener('click', () => {
-    applyRecommendations();
-    goTo(3);
-  });
-
-  function applyRecommendations() {
-    const recommended = new Set();
-    state.concerns.forEach(id => {
-      const c = CONCERNS.find(x => x.id === id);
-      c.recommends.forEach(code => recommended.add(code));
-    });
-    recommended.forEach(code => {
-      if (nailUnavailable() && byCode[code].group === 'nail') {
-        if (!state.notices.some(n => n.key === 'no-nail')) {
-          state.notices.push({
-            key: 'no-nail', type: 'warn',
-            html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have not added the nail panel — hair panels cover around 3 months, or go back and choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
-          });
-        }
-        return;
-      }
-      if (!state.basket.has(code)) state.basket.set(code, { ...getOpts(code) });
-    });
-    resolveConflicts(true);
-  }
+  /* Nothing is added here. Step 3 shows suggestions and the booker presses Add. */
+  document.getElementById('to-step-3').addEventListener('click', () => goTo(3));
 
   /* ---------------- conflicts ---------------- */
   function resolveConflicts(silent) {
@@ -471,14 +451,7 @@
       resolveConflicts(true);
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
-    wrap.querySelectorAll('[data-upgrade]').forEach(t => t.addEventListener('change', () => {
-      const base = byCode[t.dataset.upgrade], up = upgradeTarget(base);
-      const from = t.checked ? base.code : up.code, to = t.checked ? up.code : base.code;
-      if (t.checked) state.upgrades.add(base.code); else state.upgrades.delete(base.code);
-      if (state.basket.has(from)) { state.basket.set(to, { ...state.basket.get(from) }); state.basket.delete(from); }
-      resolveConflicts(true);
-      renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
-    }));
+    wrap.querySelectorAll('[data-upgrade]').forEach(t => t.addEventListener('change', () => setUpgrade(t.dataset.upgrade, t.checked)));
     wrap.querySelectorAll('[data-variant]').forEach(sel => sel.addEventListener('change', () => {
       const code = sel.dataset.variant, v = +sel.value;
       state.opts.set(code, { ...getOpts(code), variant: v });
@@ -528,6 +501,97 @@
       updateFtNotice();
       renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
     }));
+    renderSuggestions();
+  }
+
+  /* Switch a standard panel to its extended version (or back), keeping it on the fee note if it is there */
+  function setUpgrade(baseCode, on) {
+    const base = byCode[baseCode], up = upgradeTarget(base);
+    const from = on ? base.code : up.code, to = on ? up.code : base.code;
+    if (on) state.upgrades.add(base.code); else state.upgrades.delete(base.code);
+    if (state.basket.has(from)) { state.basket.set(to, { ...state.basket.get(from) }); state.basket.delete(from); }
+    resolveConflicts(true);
+    refreshStep3();
+  }
+  function refreshStep3() { renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar(); }
+
+  /* ---------------- step 3 — suggestions (never pre-added) ---------------- */
+  function renderSuggestions() {
+    const el = document.getElementById('suggestions');
+    if (!el) return;
+    const picked = CONCERNS.filter(c => state.concerns.has(c.id) && !c.exclusive && c.recommends.length);
+    if (!picked.length) { el.innerHTML = ''; return; }
+    const seen = new Set();
+    const cards = [];
+    picked.forEach(c => c.recommends.forEach(code => {
+      if (seen.has(code)) return;
+      seen.add(code);
+      cards.push(suggestionCard(byCode[code], c));
+    }));
+    el.innerHTML = `
+      <section class="suggest" aria-label="Suggested panels">
+        <h2>Suggested for you</h2>
+        <p class="suggest-note">These are suggestions based on what you chose. <strong>Nothing has been added to your fee note.</strong> Check each one against your instruction \u2014 the choice of tests is yours. All panels are listed below.</p>
+        <div class="suggest-list">${cards.join('')}</div>
+      </section>`;
+    el.querySelectorAll('[data-sg-add]').forEach(b => b.addEventListener('click', () => {
+      state.basket.set(b.dataset.sgAdd, { ...getOpts(b.dataset.sgAdd) });
+      resolveConflicts(true);
+      refreshStep3();
+    }));
+    el.querySelectorAll('[data-sg-remove]').forEach(b => b.addEventListener('click', () => {
+      state.basket.delete(b.dataset.sgRemove);
+      resolveConflicts(true);
+      refreshStep3();
+    }));
+    el.querySelectorAll('[data-sg-ext]').forEach(r => r.addEventListener('change', () => {
+      setUpgrade(r.dataset.sgExt, r.value === 'ext');
+    }));
+    el.querySelectorAll('[data-sg-view]').forEach(b => b.addEventListener('click', () => {
+      state.expanded.add(b.dataset.sgView);
+      renderCatalogue();
+      const t = document.getElementById('card-' + b.dataset.sgView);
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  }
+
+  function suggestionCard(p0, concern) {
+    const upg = upgradeTarget(p0);
+    const p = effectivePanel(p0);
+    const isUp = p !== p0;
+    const inBasket = state.basket.has(p.code);
+    const blocked = !inBasket ? blockedReason(p) : null;
+    const unavailable = nailUnavailable() && p.group === 'nail';
+    const item = state.basket.get(p.code) || getOpts(p.code);
+    const extra = upg ? upg.price - p0.price : 0;
+    const choice = upg ? `
+      <fieldset class="sg-choice">
+        <legend>Which list of drugs?</legend>
+        <label><input type="radio" name="sg-ext-${p0.code}" value="std" data-sg-ext="${p0.code}" ${isUp ? '' : 'checked'}>
+          <span><strong>Standard</strong> \u2014 ${gbp(p0.price)} + VAT<small>The drugs listed above.</small></span></label>
+        <label><input type="radio" name="sg-ext-${p0.code}" value="ext" data-sg-ext="${p0.code}" ${isUp ? 'checked' : ''}>
+          <span><strong>Extended</strong> \u2014 ${gbp(upg.price)} + VAT <em>(+ ${gbp(extra)})</em><small>Everything in standard, plus ketamine, methadone, buprenorphine and sleep medicines such as zopiclone and zolpidem. Choose it only if your instruction needs those.</small></span></label>
+      </fieldset>` : '';
+    const price = upg ? '' : `<span class="panel-price">${gbp(unitPrice(p, item))} <small>+ VAT</small></span>`;
+    const action = unavailable
+      ? `<p class="ft-na">Not collected at our Derry~Londonderry office. Go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>`
+      : blocked
+        ? `<p class="ft-na">${blocked}</p>`
+        : inBasket
+          ? `<span class="added-flag">${icon('check', 15)} On your fee note</span>
+             <button class="btn small ghost" data-sg-remove="${p.code}">Remove</button>`
+          : `<button class="btn small outline" data-sg-add="${p.code}">Add to fee note</button>`;
+    return `
+      <article class="suggest-card ${inBasket ? 'in-basket' : ''}">
+        <p class="sg-why">Suggested because you chose: <strong>${concern.title}</strong></p>
+        <div class="sg-head"><h3>${p.name}</h3>${price}</div>
+        <p class="sg-plain">${PLAIN[p0.code] || p.detects}</p>
+        ${choice}
+        <div class="sg-actions">
+          ${action}
+          <button class="btn small ghost" data-sg-view="${p0.code}">See full details</button>
+        </div>
+      </article>`;
   }
 
   /* Fast track is all-or-nothing across the instruction */
