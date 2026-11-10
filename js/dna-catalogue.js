@@ -1,10 +1,10 @@
 /* NIVHA DNA relationship testing — catalogue and pricing
    Decisions locked at the fee note DNA workshop (July 2026):
-   - Lab partner: DNA Legal · analysis at up to 68 genetic markers (industry standard is 16)
+   - Lab partner: DNA Legal · analysis at up to 68 genetic markers
    - Headline price covers up to 2 people; each additional person £165 + VAT
    - Analysis-only tier removed — collection is always included
    - Extended family: no fixed price, quote on request via a case manager
-   - Turnaround: 15 working days from the lab receiving ALL samples
+   - Turnaround: approximately 15 working days from the lab receiving ALL samples
    NOTE (prototype): scientific figures and the court-report claim are indicative
    and awaiting scientific sign-off before publication. */
 
@@ -16,8 +16,7 @@ const DNA_INCLUDED_PEOPLE = 2;
 const DNA_COLLECTION = {
   belfast: { id: 'belfast', fee: 0,   label: 'NIVHA office — Belfast' },
   derry:   { id: 'derry',   fee: 150, label: 'NIVHA office — Derry~Londonderry' },
-  gp:      { id: 'gp',      fee: 20,  label: 'Your own GP surgery' },
-  onsite:  { id: 'onsite',  fee: 250, label: 'Your location — we come to you' }
+  gp:      { id: 'gp',      fee: 20,  label: 'Your own GP surgery' }
 };
 
 const DNA_TESTS = [
@@ -94,14 +93,14 @@ const DNA_TESTS = [
 
 /* Shared wording — single source so the wizard, fee note and checklist never drift */
 const DNA_TURNAROUND =
-  'The legal report is issued 15 working days from the laboratory receiving all samples. ' +
+  'The legal report is issued approximately 15 working days from the laboratory receiving all samples. ' +
   'Analysis cannot begin until every participant\u2019s sample has arrived, so one outstanding participant delays the result for the whole case.';
 
 const DNA_MARKER_CLAIM =
-  'Samples are analysed by an ISO 17025 accredited laboratory at up to 68 genetic markers \u2014 the industry standard is 16 \u2014 giving a stronger, more conclusive result.';
+  'Samples are analysed by an ISO 17025 accredited laboratory at up to 68 genetic markers.';
 
 const DNA_LEGAL_REPORT =
-  'A full legal report suitable for court is issued for every test \u2014 samples are collected under chain of custody by an HCPC-registered practitioner.';
+  'A full legal report suitable for court is issued for every test \u2014 samples are collected under chain of custody by a registered practitioner.';
 
 /* Checklist fees (surfaced on the participant checklist) */
 const DNA_FEES = {
@@ -109,3 +108,7 @@ const DNA_FEES = {
   nonAttendance: 50,      /* + VAT */
   nivhaPhotos: 5          /* + VAT per donor, if NIVHA takes the passport photos */
 };
+
+/* Statement agreed with the Quality Manager. Shown highlighted on the fee note and the on-the-day notes. Wording is verbatim. */
+const DNA_ADDITIONAL_SAMPLES =
+  'As every DNA case is different and on occasion additional information or samples may be required but this is something we wouldn\u2019t know in advance and that would be entirely a decision made by the testing laboratory.  This may incur extra costs.';
