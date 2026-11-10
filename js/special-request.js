@@ -71,6 +71,7 @@ function prefill(){
  if(d.alcCm===3||d.alcCm===6)S.alcMonths=d.alcCm;
  if(d.speed)S.speed='Fast track';
  if(d.loc==='derry')S.loc='Derry';else if(d.loc==='belfast')S.loc='Belfast';else if(d.loc==='onsite')S.loc='Elsewhere';
+ if(d.need==='alcmatch'){S.needs.add('alcmatch');S.alcMatch=true}
  if(d.email)S.email=d.email;
  if(d.org)S.org=d.org;
 }
