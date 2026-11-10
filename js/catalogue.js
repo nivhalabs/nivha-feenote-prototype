@@ -361,8 +361,16 @@ const GROUP_META = {
            typical: 'PEth is the recent alcohol marker — it bridges the gap between a breath test on the day and months of hair history.' }
 };
 
-/* Step 2 — concern-to-panel mapping */
+/* Step 2 — what the booker is trying to establish. Nothing here is added to the fee note: step 3 shows
+   these as suggestions and the booker presses Add. `exclusive` choices clear all the others and
+   recommend nothing. */
 const CONCERNS = [
+  {
+    id: 'named', icon: 'file', exclusive: true,
+    title: 'My instruction names the test or the substances',
+    sub: 'Go straight to the full list of panels. We suggest nothing.',
+    recommends: []
+  },
   {
     id: 'drugs-months', icon: 'calendar',
     title: 'Drug use over recent months',
@@ -374,12 +382,6 @@ const CONCERNS = [
     title: 'Drug use in the last few days',
     sub: 'Very recent use that hair cannot yet show',
     recommends: ['U-MUI-1']
-  },
-  {
-    id: 'drugs-extended', icon: 'layers',
-    title: 'A wider range of drugs',
-    sub: 'Including ketamine, methadone and sleep medicines',
-    recommends: ['H-DP2']
   },
   {
     id: 'analgesics', icon: 'pill',
@@ -395,29 +397,42 @@ const CONCERNS = [
   },
   {
     id: 'alc-abstinence', icon: 'shield',
-    title: 'Alcohol — verifying abstinence',
+    title: 'Alcohol \u2014 verifying abstinence',
     sub: 'Someone says they are not drinking',
     recommends: ['H-EtG']
   },
   {
     id: 'alc-chronic', icon: 'wave',
-    title: 'Alcohol — chronic excessive drinking',
+    title: 'Alcohol \u2014 chronic excessive drinking',
     sub: 'Evidence of sustained heavy drinking',
     recommends: ['H-EtG-FAEE', 'DBS-PEth']
   },
   {
     id: 'long-history', icon: 'history',
-    title: 'A longer history — 6 to 12 months',
+    title: 'A longer history \u2014 6 to 12 months',
     sub: 'Sustained use over a longer period',
     recommends: ['N-DP1']
   },
   {
-    id: 'not-sure', icon: 'help',
+    id: 'not-sure', icon: 'help', exclusive: true,
     title: "Unsure \u2014 I'll browse the panels",
     sub: 'Nothing is added for you. Read about each panel and choose what you need.',
     recommends: []
   }
 ];
+
+/* Plain-English line for each suggested panel. Reuses the wording already on the panel cards;
+   the booker still chooses, and checks the choice against their own instruction. */
+const PLAIN = {
+  'H-DP1': 'Looks for the drugs most often raised in court: cannabis, cocaine, ecstasy, amphetamines, heroin and other opiates, and common prescribed benzodiazepines such as diazepam. It shows use over recent months.',
+  'U-MUI-1': 'A urine test for use in the last few days. New drug use takes about a week to appear in hair, so urine is often ordered alongside it. Alcohol is checked by breath test at the appointment.',
+  'H-DP3': 'Looks for prescription painkillers and nerve-pain medicines that can be misused: tramadol, oxycodone, dihydrocodeine, hydrocodone, hydromorphone, pregabalin and gabapentin.',
+  'H-DP4': 'Looks for non-prescribed (street) benzodiazepines such as etizolam and bromazolam. Choose it where your instruction names them.',
+  'H-EtG': 'Checks whether there has been any alcohol use over recent months. Used where someone says they are not drinking and the court needs that checked.',
+  'H-EtG-FAEE': 'Checks for signs of heavy, sustained drinking over recent months. It includes the abstinence check, so you do not need to order both.',
+  'DBS-PEth': 'A blood test that shows drinking over roughly the last four weeks. It sits alongside a hair test: hair covers months, this covers the most recent weeks.',
+  'N-DP1': 'The same drugs as the standard hair panel, tested on nail clippings, which show a longer history of 6 to 12 months. Belfast office only, and polish or false nails must be removed.'
+};
 
 /* Organisation search — simulates a lookup of the public registers
    (Companies House and the Law Society of Northern Ireland directory).
