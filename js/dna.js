@@ -921,11 +921,59 @@
     sync();
   }
 
-  document.getElementById('submit-btn').addEventListener('click', () => {
+  function payload() {
     const tot = computeTotals();
-    state.refNumber = 'DNA-' + String(Math.floor(1000 + Math.random() * 9000));
-    if (!tot.poa && state.route === 'private') goTo(7);
-    else goTo(8);
+    return {
+      route: state.route, test: state.test,
+      details: state.details,
+      attendance: state.attendance, collection: state.collection, gp: state.gp,
+      participants: state.participants.map(p => ({
+        role: p.role, name: p.name, dob: p.dob, guardianName: p.guardianName || '',
+        collection: p.collection, gpName: p.gpName || '', gpAddress: p.gpAddress || ''
+      })),
+      acceptance: state.acceptance,
+      totals: tot.poa ? null : { total: tot.total },
+      leadEmail: state.leadEmail || ''
+    };
+  }
+
+  function saveForReturn() {
+    try { sessionStorage.setItem('nivha-dna-case', JSON.stringify({ state })); } catch (e) { /* private mode */ }
+  }
+
+  function showSubmitError(msg) {
+    let el = document.getElementById('submit-error');
+    if (!el) {
+      el = document.createElement('p');
+      el.id = 'submit-error';
+      el.className = 'req-error';
+      el.setAttribute('role', 'alert');
+      document.getElementById('submit-btn').insertAdjacentElement('afterend', el);
+    }
+    el.textContent = msg;
+  }
+
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-btn');
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Submitting\u2026';
+    const old = document.getElementById('submit-error');
+    if (old) old.remove();
+    try {
+      const r = await fetch('/api/dna/fee-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.ok) throw new Error(data.error || 'We could not submit the fee note. Please try again, or email info@nivha.net.');
+      state.refNumber = data.reference;
+      state.recordId = data.recordId || '';
+      const tot = computeTotals();
+      if (!tot.poa && state.route === 'private') goTo(7);
+      else goTo(8);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = label;
+      showSubmitError(e.message);
+    }
   });
 
   /* ---------------- payment (private, prototype) ---------------- */
@@ -949,11 +997,31 @@
         </div>
         <button class="btn primary full" id="pay-btn">${icon('lock', 16)} Pay ${gbp(tot.total)} securely</button>
         <p class="sum-note">${icon('card', 14)} Payment is processed by Stripe. NIVHA never sees your card details.</p>
-        <p class="sum-note">Prototype \u2014 no card is charged at this stage.</p>
+        <p class="pay-error" id="pay-error" role="alert" hidden></p>
       </div>`;
-    document.getElementById('pay-btn').addEventListener('click', () => {
-      state.paid = true;
-      goTo(8);
+    document.getElementById('pay-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('pay-btn');
+      const err = document.getElementById('pay-error');
+      err.hidden = true;
+      btn.disabled = true;
+      try {
+        const r = await fetch('/api/dna/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recordId: state.recordId }) });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.ok) throw new Error(data.error || 'We could not start the payment.');
+        if (data.alreadyPaid) { state.paid = true; goTo(8); return; }
+        if (data.simulated) {
+          await fetch('/api/dna/fee-notes/' + encodeURIComponent(state.recordId || 'none') + '/simulated-paid', { method: 'POST' });
+          state.paid = true;
+          goTo(8);
+          return;
+        }
+        saveForReturn();
+        window.location.href = data.url;
+      } catch (e) {
+        btn.disabled = false;
+        err.textContent = e.message + ' Your fee note ' + state.refNumber + ' is saved; email info@nivha.net if this continues.';
+        err.hidden = false;
+      }
     });
   }
 
@@ -963,6 +1031,7 @@
     const t = byId[state.test];
     const d = state.details;
     const isPrivate = state.route === 'private';
+    const anyOffice = (state.attendance === 'together' ? state.collection !== 'gp' : state.participants.some(p => p.collection !== 'gp'));
     const anyGp = (state.attendance === 'together' ? state.collection === 'gp' : state.participants.some(p => p.collection === 'gp'));
 
     const steps = tot.poa ? [
@@ -971,9 +1040,9 @@
       ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.'],
       ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples.']
     ] : [
-      ['Your fee note PDF is on its way', 'Emailed to ' + (esc(d.contactEmail) || 'you') + (isPrivate ? ' with your payment receipt.' : ' \u2014 our back office is notified and the case is opened.')],
+      ['Your fee note PDF is emailed to you', 'Sent to ' + (esc(d.contactEmail) || 'you') + (isPrivate ? ', marked paid, as your receipt.' : '. Our back office has been notified and the case is open.') + ' Please check your junk folder if it does not arrive within a few minutes.'],
       ['Each participant gets a checklist', 'One per person, listing exactly what to bring' + (anyGp ? ' \u2014 and we post the GP kit as soon as the surgery is confirmed.' : '.')],
-      ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.'],
+      ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.' + (anyOffice ? ' To arrange an appointment, email info@nivha.net quoting ' + esc(state.refNumber) + ' with your preferred date and time of day.' : '')],
       ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples. ' + (isPrivate ? 'Results are released to you on completion.' : 'Results are released on payment of the fee note.')]
     ];
 
@@ -988,6 +1057,7 @@
         ${steps.map((s, i) => `<li><span class="ps-num">${i + 1}</span><div><strong>${s[0]}</strong><span>${s[1]}</span></div></li>`).join('')}
       </ol>
       <div class="panel-actions">
+        ${state.recordId && (!isPrivate || state.paid) ? `<a class="btn primary" href="/api/dna/fee-notes/${encodeURIComponent(state.recordId)}/pdf">Download fee note (PDF)</a>` : ''}
         <a class="btn outline" href="/dna">Start another DNA fee note</a>
         <a class="btn ghost" href="/">Drug and alcohol testing</a>
       </div>`;
@@ -1098,12 +1168,44 @@
   }
 
   function unlock(email) {
+    if (email) state.leadEmail = String(email).toLowerCase();
     document.getElementById('gate').hidden = true;
     document.querySelector('.stepper').hidden = false;
     goTo(1);
   }
 
+  /* Return from the card payment: /dna?paid=1&sid=... */
+  async function handleReturn() {
+    const params = new URLSearchParams(location.search);
+    const sid = params.get('sid');
+    if (params.get('paid') !== '1' || !sid) return false;
+    history.replaceState(null, '', location.pathname);
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('nivha-dna-case') || 'null'); } catch (e) { /* none */ }
+    try {
+      const r = await fetch('/api/dna/checkout/confirm?session_id=' + encodeURIComponent(sid));
+      const data = await r.json();
+      if (!r.ok || !data.ok || !data.paid) throw new Error('not paid');
+      if (saved && saved.state) Object.assign(state, saved.state);
+      state.refNumber = data.reference || state.refNumber;
+      state.paid = true;
+      document.getElementById('gate').hidden = true;
+      document.querySelector('.stepper').hidden = false;
+      if (saved && saved.state && saved.state.test) { goTo(8); }
+      else {
+        document.querySelector('.stepper').hidden = true;
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>Payment received</h1><p>Your payment for fee note ${esc(state.refNumber)} has been received. The fee note, marked paid, is emailed to you.</p><p><a class="btn outline" href="/dna">Back to DNA fee notes</a></p></div>`;
+      }
+      try { sessionStorage.removeItem('nivha-dna-case'); } catch (e) { /* ignore */ }
+    } catch (e) {
+      document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>We could not confirm the payment</h1><p>If you were charged, the fee note is emailed to you once the payment clears. Otherwise email info@nivha.net and we will help.</p></div>`;
+    }
+    return true;
+  }
+
   async function initGate() {
+    if (await handleReturn()) return;
     renderGate();
     /* Magic link: /dna?gate=TOKEN arrives from the secure-link email. */
     const token = new URLSearchParams(location.search).get('gate');
