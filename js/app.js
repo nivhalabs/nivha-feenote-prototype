@@ -151,6 +151,9 @@
   const locLabel = () =>
     state.collection === 'onsite' ? 'Your location — on-site collection'
       : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : 'NIVHA office — Belfast';
+  /* Blood is always arranged by request (a clinician is needed), at Belfast, Derry~Londonderry or on site. Derry and on-site are by request anyway. */
+  const hasBlood = () => [...state.basket.keys()].some(c => byCode[c] && byCode[c].group === 'blood');
+  const requestOnly = () => state.collection !== 'belfast' || hasBlood();
 
   /* ---------------- icons ---------------- */
   const ICONS = {
@@ -1216,6 +1219,11 @@
             <p>${isPrivate
               ? `As soon as your payment clears, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`
               : `As soon as your fee note is submitted, you tell us where to come and your preferred date and time of day. We confirm availability within one working day, along with the collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) — once confirmed, a purchase order number confirms the collection. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
+            : requestOnly() ? `
+            <p><strong>You request the appointment — we confirm availability.</strong></p>
+            <p>${hasBlood() ? 'Blood samples are taken by our clinician, so blood collections are always arranged by request. ' : ''}${isPrivate
+              ? `As soon as your payment clears, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`
+              : `As soon as your fee note is submitted, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`} If you do not have a date yet, you can arrange it later by emailing info@nivha.net with your reference. Requests need five working days\u2019 notice. Cancellation is free up to 24 hours before.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
@@ -1446,6 +1454,7 @@
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
               ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. If the venue or collection room is not as declared on arrival, the visit may be paused or cancelled and the collection fee remains payable. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'}`
+              : requestOnly() ? `By request \u2014 after you submit, tell us your preferred date and time of day, or email info@nivha.net quoting the fee note reference. We confirm availability by email within one working day. Please do not send the donor to attend without a confirmed appointment. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`
               : `Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`}</p>
           </div>
           <div>
@@ -1645,7 +1654,7 @@
       <div class="panel-head">
         <p class="marker">Payment</p>
         <h1>Secure payment</h1>
-        <p class="lede">Pay by card to confirm your instruction. Your appointment calendar opens straight after.</p>
+        <p class="lede">Pay by card to confirm your instruction. ${requestOnly() ? 'You then tell us your preferred date and time.' : 'Your appointment calendar opens straight after.'}</p>
       </div>
       <div class="pay-grid">
         <div class="pay-summary">
@@ -1845,7 +1854,7 @@
     const d = state.details;
     const donorName = (isPrivate && d.selfDonor) ? d.contactName : d.donorName;
     if (state.collection === 'onsite') { renderOnsiteArrange(isPrivate, type, d, donorName); return; }
-    if (state.collection === 'derry') { renderDerryRequest(isPrivate, type, d, donorName); return; }
+    if (requestOnly()) { renderDerryRequest(isPrivate, type, d, donorName); return; }
 
     /* Belfast — check once whether live Acuity availability is configured */
     if (bk.live === undefined) {
@@ -2050,7 +2059,7 @@
       <div class="panel-head">
         <p class="marker">Booking</p>
         <h1>Request your appointment</h1>
-        <p class="lede">Appointments at our Derry~Londonderry office are arranged by request — tell us what suits and we confirm by email within one working day.</p>
+        <p class="lede">${hasBlood() ? 'Blood collections are always arranged by request, because a clinician takes the sample. ' : ''}Appointments at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office are arranged by request — tell us what suits and we confirm by email within one working day.</p>
       </div>
       <div class="bk-shell">
         <div class="bk-meta">
@@ -2060,7 +2069,7 @@
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
           ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — ${state.route === 'private' ? 'photo ID required' : 'photo ID, or a photograph taken at the collection'}</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings ${idShort(state.route === 'private')}</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
-          <p class="bk-note">Derry~Londonderry requests need five working days’ notice — the earliest date you can request is ${minLabel}.</p>
+          <p class="bk-note">Requests need five working days’ notice — the earliest date you can request is ${minLabel}.</p>
         </div>
         <div class="bk-cal-card">
           <div class="bk-arrange">
@@ -2116,10 +2125,10 @@
     sendBtn.addEventListener('click', () => {
       if (sendBtn.disabled || !req.date) return;
       const pretty = new Date(req.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      state.booking = { request: true, derryRequest: true, typeLabel: type.label, dateLabel: pretty, window: req.window, location: locLabel() };
+      state.booking = { request: true, derryRequest: true, office: state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast', typeLabel: type.label, dateLabel: pretty, window: req.window, location: locLabel() };
       state.bookingSkipped = false;
       if (state.recordId) {
-        API.post('/api/booking/request', { recordId: state.recordId, preferredDate: req.date, window: req.window }).catch(() => {});
+        API.post('/api/booking/request', { recordId: state.recordId, preferredDate: req.date, window: req.window, office: state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast' }).catch(() => {});
       }
       goTo(8);
     });
@@ -2368,11 +2377,11 @@
     const bookingStep = state.collection === 'onsite'
       ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings ${idShort(isPrivate)}.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
       : booked && booked.derryRequest
-      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our Derry~Londonderry office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
+      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our ${booked.office || 'Derry~Londonderry'} office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'} Cancellation is free up to 24 hours before.`]
-      : (state.collection === 'derry' || state.collection === 'onsite')
-      ? ['Arrange your appointment', `When you know the date, email info@nivha.net quoting ${state.refNumber} with your preferred date and time of day${state.collection === 'derry' ? '. Derry~Londonderry requests need five working days\u2019 notice' : ''}. We confirm availability by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
+      : requestOnly()
+      ? ['Arrange your appointment', `When you know the date, email info@nivha.net quoting ${state.refNumber} with your preferred date and time of day${state.collection !== 'onsite' ? '. Requests need five working days\u2019 notice' : ''}. We confirm availability by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`];
 
     const steps = isPrivate

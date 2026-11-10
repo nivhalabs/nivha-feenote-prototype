@@ -125,6 +125,14 @@ async function feeNotePdfBuffer(recordId) {
 }
 
 /* Email the fee note PDF to the requestor — fire and forget, never fatal. */
+/* Blood collections are always by request: no calendar and no emailed booking link. */
+function hasBloodPanel(fields) {
+  try {
+    const groups = new Map(require('./js/catalogue').CATALOGUE.map(c => [c.code, c.group]));
+    return JSON.parse(fields['Panels JSON'] || '[]').some(p => groups.get(String(p.code || '').replace('H-EtG/FAEE', 'H-EtG-FAEE')) === 'blood');
+  } catch { return false; }
+}
+
 async function sendFeeNoteEmail(recordId) {
   try {
     const { buf, data, fields } = await feeNotePdfBuffer(recordId);
@@ -138,7 +146,7 @@ async function sendFeeNoteEmail(recordId) {
       to,
       reference: data.ref,
       isPrivate: data.route === 'private',
-      requestOnly: !!fields['Location'] && fields['Location'] !== 'Belfast',
+      requestOnly: (!!fields['Location'] && fields['Location'] !== 'Belfast') || hasBloodPanel(fields),
       paid: !!fields['Paid at'],
       pdfBuffer: buf,
       downloadLink: `${BASE_URL}/api/fee-notes/${recordId}/pdf`,
@@ -389,7 +397,7 @@ function scheduleBookLater(recordId) {
       const status = f['Status'] || '';
       if (['Booked', 'On-site requested', 'Booking requested'].includes(status)) return;
       if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
-      if (f['Location'] !== 'Belfast') return; // Derry~Londonderry and on-site visits are arranged by the team
+      if (f['Location'] !== 'Belfast' || hasBloodPanel(f)) return; // Derry~Londonderry, on-site and blood collections are arranged by request
       const email = (f['Contact email'] || '').trim().toLowerCase();
       if (!email) return;
       await bookLaterEmail({
@@ -904,6 +912,7 @@ function minRequestDate(workingDays) {
 app.post('/api/booking/request', async (req, res) => {
   try {
     const { recordId, preferredDate, window: win } = req.body || {};
+    const office = (req.body || {}).office === 'Belfast' ? 'Belfast' : 'Derry~Londonderry';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(preferredDate || ''))) return res.status(400).json({ ok: false, error: 'Bad date' });
     if (!['Morning', 'Afternoon'].includes(win)) return res.status(400).json({ ok: false, error: 'Bad time window' });
     const chosen = new Date(preferredDate + 'T00:00:00');
@@ -917,7 +926,7 @@ app.post('/api/booking/request', async (req, res) => {
     const pretty = chosen.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const fields = {
       'Status': 'Booking requested',
-      'Booking request detail': `Derry~Londonderry office — preferred ${pretty}, ${win}`
+      'Booking request detail': `${office} office — preferred ${pretty}, ${win}`
     };
     if (DRY_RUN) { console.log(`[dry-run] booking request on ${recordId}:`, JSON.stringify(fields)); return res.json({ ok: true, dryRun: true }); }
     await at('PATCH', FEE_TABLE, { records: [{ id: recordId, fields }], typecast: true });
