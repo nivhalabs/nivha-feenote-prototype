@@ -267,7 +267,7 @@ const CATALOGUE = [
     drugs: ['Pregabalin', 'Gabapentin', 'Buprenorphine', 'Cathinones — mephedrone, MDPV', 'Alcohol — breath test at the appointment'],
     window: 'Roughly the last 3 to 4 days.',
     turnaround: 'About 10 working days from the lab receiving the sample.',
-    help: 'Covers drugs the standard urine panel does not. Individual drugs from this panel can instead be added to the standard panel at £50 + VAT per drug — call us to arrange that.'
+    help: 'Covers drugs the standard urine panel does not. Individual drugs from this panel can instead be added to the standard urine panel at £50 + VAT per drug — choose them on the standard urine panel card.'
   },
   {
     code: 'U-EtG-EtS', group: 'urine', price: 130, fastTrack: false, series: true,
@@ -343,6 +343,31 @@ const INCLUSION_RULES = [
   { superset: 'N-DP2', subset: 'N-DP1' },
   { superset: 'H-EtG-FAEE', subset: 'H-EtG' }
 ];
+
+/* Single drugs that can be added to the standard urine panel at a fixed price each (per collection).
+   Add-ons exist only on top of the standard panel; they are never ordered on their own, and are not
+   offered where the cathinones and additional analgesics panel (U-MUI-2) is already on the fee note. */
+const URINE_ADDON_PRICE = 50;
+const URINE_ADDON_HOST = 'U-MUI-1';
+const URINE_ADDON_COVERED_BY = 'U-MUI-2';
+const URINE_ADDONS = [
+  { id: 'pregabalin', name: 'Pregabalin' },
+  { id: 'gabapentin', name: 'Gabapentin' },
+  { id: 'buprenorphine', name: 'Buprenorphine' },
+  { id: 'cathinones', name: 'Cathinones (mephedrone, MDPV)' }
+];
+/* Valid add-on ids for a line: known, de-duplicated, standard urine panel only, and none where U-MUI-2 is also ordered.
+   Returns null when an id is not recognised, so a tampered request is never priced. */
+function cleanAddons(code, addons, codesOnFeeNote) {
+  if (code !== URINE_ADDON_HOST || !Array.isArray(addons) || !addons.length) return [];
+  if (codesOnFeeNote && codesOnFeeNote.has(URINE_ADDON_COVERED_BY)) return [];
+  const out = [];
+  for (const id of addons) {
+    if (!URINE_ADDONS.some(a => a.id === id)) return null;
+    if (!out.includes(id)) out.push(id);
+  }
+  return out;
+}
 
 const GROUP_META = {
   hair:  { label: 'Hair', icon: 'calendar', windowShort: 'Around 3 months',
@@ -516,5 +541,6 @@ function segmentUnitPrice(p, unit) {
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
-    HAIR_DEFAULT_CM, HAIR_MAX_CM, HAIR_SEGMENT_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice };
+    HAIR_DEFAULT_CM, HAIR_MAX_CM, HAIR_SEGMENT_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice,
+    URINE_ADDON_PRICE, URINE_ADDON_HOST, URINE_ADDON_COVERED_BY, URINE_ADDONS, cleanAddons };
 }
