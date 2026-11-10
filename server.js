@@ -315,12 +315,14 @@ app.post('/api/gate/request', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'A valid email is required' });
     }
     const entry = issueGate(email);
-    upsertLead(email, 'fee-note gate').catch(err => console.error('lead upsert failed:', err.message));
+    const isDna = String(req.body.product || '') === 'dna';
+    upsertLead(email, isDna ? 'dna fee-note gate' : 'fee-note gate').catch(err => console.error('lead upsert failed:', err.message));
     await gateEmail({
       baseUrl: BASE_URL,
       to: email,
       code: entry.code,
-      link: `${BASE_URL}/?gate=${entry.token}`
+      link: `${BASE_URL}${isDna ? '/dna' : '/'}?gate=${entry.token}`,
+      product: isDna ? 'dna' : 'drug'
     });
     /* devCode keeps the walkthrough usable until POSTMARK_TOKEN is set */
     res.json({ ok: true, emailDryRun: EMAIL_DRY_RUN, devCode: EMAIL_DRY_RUN ? entry.code : undefined });

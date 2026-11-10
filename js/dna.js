@@ -77,7 +77,7 @@
       id: 'trust',
       title: 'Trust or social services',
       sub: 'Health and social care trusts, family support and safeguarding teams.',
-      points: ['Fee note raised against your team or purchase order', 'Invoiced — results released on payment', 'Full legal report suitable for court']
+      points: ['Fee note raised against your team', 'Invoiced — results released on payment', 'Full legal report suitable for court']
     },
     {
       id: 'private',
@@ -204,13 +204,13 @@
       <p class="triage-q"><strong>Is the potential father available to give a sample?</strong></p>
       <div class="triage-answers">
         <button class="btn outline small" data-father="yes" ${triageState.fatherAvailable === 'yes' ? 'aria-pressed="true"' : ''}>Yes</button>
-        <button class="btn outline small" data-father="no" ${triageState.fatherAvailable === 'no' ? 'aria-pressed="true"' : ''}>No \u2014 he is unavailable or unwilling</button>
+        <button class="btn outline small" data-father="no" ${triageState.fatherAvailable === 'no' ? 'aria-pressed="true"' : ''}>No \u2014 they are unavailable or unwilling</button>
       </div>`;
     if (triageState.fatherAvailable === 'yes') {
       body += rec('paternity', 'Testing the potential father directly is the most conclusive option.');
     } else if (triageState.fatherAvailable === 'no') {
       body += `
-        <p class="triage-q"><strong>Who from his side of the family could take part instead?</strong></p>
+        <p class="triage-q"><strong>Who from the potential father\u2019s side of the family could take part instead?</strong></p>
         <div class="triage-answers stack">
           <button class="btn outline small" data-pick="sibling">A full brother or sister of the child</button>
           <button class="btn outline small" data-pick="auntuncle">The potential father\u2019s brother or sister</button>
@@ -315,14 +315,15 @@
 
   function minorBlockHtml(p) {
     const fatherRule = state.test === 'paternity'
-      ? ' and cannot be the potential father'
-      : ' and must not be one of the people being tested';
+      ? '. They cannot be the potential father'
+      : '. They must not be one of the people being tested';
     return `
           <div class="minor-block">
-            <p class="minor-head">${icon('alert', 16)} Under 18 \u2014 an accompanying adult is required</p>
-            <p>The adult must bring their own photographic ID, must be legally able to sign on the child\u2019s behalf${fatherRule}. Where a care order is in place, a copy is required and the child may need to attend with a social worker or someone holding parental responsibility.</p>
+            <p class="minor-head">${icon('alert', 16)} Under 18 \u2014 someone legally able to sign for the child must attend</p>
+            <p class="minor-strong"><strong>A person who is legally able to sign on the child\u2019s behalf must attend the collection with the child.</strong> This may be the child\u2019s social worker or someone else, such as a parent or guardian with parental responsibility. We cannot take the child\u2019s sample without them.</p>
+            <p>They must bring their own photographic ID${fatherRule}. Where a care order is in place, a copy is required.</p>
             <div class="form-field">
-              <label for="guardian-${p.uid}">Accompanying adult\u2019s full name</label>
+              <label for="guardian-${p.uid}">Full name of the person signing on the child\u2019s behalf</label>
               <input type="text" id="guardian-${p.uid}" data-uid="${p.uid}" data-prop="guardianName" value="${esc(p.guardianName)}" autocomplete="off">
             </div>
           </div>`;
@@ -366,12 +367,11 @@
   }
 
   /* ---------------- step 4 — collection ---------------- */
-  function collectionCards(selectedId, onsiteAllowed) {
+  function collectionCards(selectedId) {
     const cards = [
       { id: 'belfast', title: 'NIVHA office \u2014 Belfast', sub: 'Collection is included in your fee. Unit 1B, Concourse 1, Catalyst, Queens Road, Belfast.' },
       { id: 'derry', title: 'NIVHA office \u2014 Derry~Londonderry', sub: gbp(DNA_COLLECTION.derry.fee) + ' + VAT collection fee, added to your fee note.' },
-      { id: 'gp', title: 'Your own GP surgery', sub: gbp(DNA_COLLECTION.gp.fee) + ' per surgery \u2014 we post the kit to the surgery, the GP collects, and the surgery posts it direct to the lab.', flag: 'The standard, recommended route for participants in the Republic of Ireland.' },
-      { id: 'onsite', title: 'Your location \u2014 we come to you', sub: gbp(DNA_COLLECTION.onsite.fee) + ' + VAT. Professional environments only \u2014 we do not collect in private homes.', locked: !onsiteAllowed, flag: onsiteAllowed ? null : 'Available to instructing organisations only.' }
+      { id: 'gp', title: 'Your own GP surgery', sub: gbp(DNA_COLLECTION.gp.fee) + ' per kit \u2014 we post a kit to the surgery for each person, the GP collects, and the surgery posts it direct to the lab.', flag: 'The standard, recommended route for participants in the Republic of Ireland.' }
     ];
     return cards.map(c => `
       <button class="route-card location-card ${selectedId === c.id ? 'selected' : ''} ${c.locked ? 'locked' : ''}" data-collect="${c.id}" ${c.locked ? 'disabled' : ''}>
@@ -400,7 +400,6 @@
   }
 
   function renderCollection() {
-    const onsiteAllowed = state.route !== 'private';
     const box = document.getElementById('collection');
     const together = state.attendance === 'together';
 
@@ -417,7 +416,7 @@
       </div>`;
 
     if (together) {
-      html += `<div class="location-grid">${collectionCards(state.collection, onsiteAllowed)}</div>`;
+      html += `<div class="location-grid">${collectionCards(state.collection)}</div>`;
       if (state.collection === 'gp') html += gpFields('group', state.gp.name, state.gp.address);
     } else {
       const t = byId[state.test];
@@ -427,13 +426,13 @@
         return `
           <div class="collect-person" data-uid="${p.uid}">
             <p class="collect-person-name">${icon('user', 16)} <strong>${esc(p.name) || roleLabel(t, p.role, i, members.length)}</strong>${p.name ? ` <span>\u00b7 ${roleLabel(t, p.role, i, members.length)}</span>` : ''}</p>
-            <div class="location-grid compact">${collectionCards(p.collection, onsiteAllowed).replace(/data-collect="/g, `data-uid-collect="${p.uid}|`)}</div>
+            <div class="location-grid compact">${collectionCards(p.collection).replace(/data-collect="/g, `data-uid-collect="${p.uid}|`)}</div>
             ${p.collection === 'gp' ? gpFields(p.uid, p.gpName, p.gpAddress) : ''}
           </div>`;
       }).join('');
       html += `
         <div class="notice notice-saving">${icon('info', 18)}
-          <p>Participants sharing a GP surgery share the ${gbp(DNA_COLLECTION.gp.fee)} charge \u2014 enter the same surgery name and address and we post one kit. ${DNA_TURNAROUND}</p>
+          <p>The GP charge is ${gbp(DNA_COLLECTION.gp.fee)} + VAT per kit, one kit for each person collected at a surgery. ${DNA_TURNAROUND}</p>
         </div>`;
     }
 
@@ -509,10 +508,11 @@
     const usage = [];
     if (state.attendance === 'together') {
       const c = DNA_COLLECTION[state.collection];
+      const kits = c.id === 'gp' ? state.participants.length : 1;
       usage.push({
-        id: c.id, label: c.label, fee: c.fee,
+        id: c.id, label: c.label, fee: c.fee * kits, unit: c.fee, kits: c.id === 'gp' ? kits : 0,
         detail: c.id === 'gp' ? (state.gp.name ? state.gp.name + (state.gp.address ? ', ' + state.gp.address : '') : 'surgery to be confirmed') : null,
-        count: 1
+        count: kits
       });
       return usage;
     }
@@ -521,9 +521,11 @@
       if (p.collection === 'gp') {
         const key = 'gp|' + (p.gpName + '|' + p.gpAddress).toLowerCase().trim();
         if (!methods.has(key)) methods.set(key, {
-          id: 'gp', label: DNA_COLLECTION.gp.label, fee: DNA_COLLECTION.gp.fee,
-          detail: p.gpName ? p.gpName + (p.gpAddress ? ', ' + p.gpAddress : '') : 'surgery to be confirmed', count: 1
+          id: 'gp', label: DNA_COLLECTION.gp.label, fee: 0, unit: DNA_COLLECTION.gp.fee, kits: 0,
+          detail: p.gpName ? p.gpName + (p.gpAddress ? ', ' + p.gpAddress : '') : 'surgery to be confirmed', count: 0
         });
+        const g = methods.get(key);
+        g.kits += 1; g.count += 1; g.fee = g.unit * g.kits;
       } else if (!methods.has(p.collection)) {
         const c = DNA_COLLECTION[p.collection];
         methods.set(p.collection, { id: c.id, label: c.label, fee: c.fee, detail: null, count: 1 });
@@ -564,7 +566,7 @@
     const collRows = tot.collections.map(c =>
       c.fee === 0
         ? `<div class="sum-row sub"><span>Collection \u2014 ${c.label}</span><span>Included</span></div>`
-        : `<div class="sum-row sub"><span>Collection \u2014 ${c.label}${c.detail ? ' (' + esc(c.detail) + ')' : ''}</span><span>${tot.poa ? 'On request' : gbp(c.fee)}</span></div>`).join('');
+        : `<div class="sum-row sub"><span>Collection \u2014 ${c.label}${c.kits ? ' \u00b7 ' + c.kits + (c.kits === 1 ? ' kit' : ' kits') + ' at ' + gbp(c.unit) : ''}${c.detail ? ' (' + esc(c.detail) + ')' : ''}</span><span>${tot.poa ? 'On request' : gbp(c.fee)}</span></div>`).join('');
 
     const totals = tot.poa
       ? `<div class="sum-totals"><p class="sum-poa">This combination is priced on request \u2014 a case manager confirms the full quote, including collection, before anything proceeds.</p></div>`
@@ -735,7 +737,7 @@
     const collectionLines = tot.collections.map(c => `
       <tr>
         <td></td>
-        <td>Collection \u2014 ${c.label}${c.detail ? ` <span class="doc-detects">${esc(c.detail)}</span>` : ''}</td>
+        <td>Collection \u2014 ${c.label}${c.kits ? ' \u00b7 ' + c.kits + (c.kits === 1 ? ' kit' : ' kits') + ' at ' + money(c.unit) : ''}${c.detail ? ` <span class="doc-detects">${esc(c.detail)}</span>` : ''}</td>
         <td class="num">${c.fee === 0 ? 'Included' : money(c.fee)}</td>
       </tr>`).join('');
 
@@ -809,6 +811,10 @@
             <p class="doc-small">Scientific figures shown are indicative and awaiting scientific sign-off.</p>
           </div>
         </div>
+        <div class="doc-callout" role="note">
+          <p class="doc-label">Please note</p>
+          <p>${DNA_ADDITIONAL_SAMPLES}</p>
+        </div>
       </div>`;
   }
 
@@ -816,8 +822,8 @@
   function renderChecklist() {
     const t = byId[state.test];
     const fatherRule = state.test === 'paternity'
-      ? 'cannot be the potential father'
-      : 'must not be one of the people being tested';
+      ? '. They cannot be the potential father'
+      : '. They must not be one of the people being tested';
 
     const where = p => {
       const method = state.attendance === 'together' ? state.collection : p.collection;
@@ -839,8 +845,8 @@
             ${minor ? `
               <li>${icon('check', 15)}<span>Birth certificate</span></li>
               <li>${icon('check', 15)}<span>2 passport photographs</span></li>
-              <li>${icon('check', 15)}<span>Accompanied by <strong>${esc(p.guardianName) || 'an adult'}</strong>, who brings their own photographic ID, is legally able to sign on the child\u2019s behalf, and ${fatherRule}</span></li>
-              <li>${icon('check', 15)}<span>Where a care order is in place: a copy of the order \u2014 the child may need to attend with a social worker or someone holding parental responsibility</span></li>` : `
+              <li>${icon('check', 15)}<span><strong>Someone legally able to sign on the child\u2019s behalf must attend with the child</strong> \u2014 ${p.guardianName ? '<strong>' + esc(p.guardianName) + '</strong>' : 'this may be the social worker or someone else'}. They bring their own photographic ID${fatherRule}. We cannot take the child\u2019s sample without them.</span></li>
+              <li>${icon('check', 15)}<span>Where a care order is in place: a copy of the order</span></li>` : `
               <li>${icon('check', 15)}<span>Photographic ID \u2014 passport or driving licence</span></li>
               <li>${icon('check', 15)}<span>2 passport photographs</span></li>`}
           </ul>
@@ -869,7 +875,8 @@
           </div>
           <div>
             <p class="doc-label">On the day</p>
-            <p>Samples are simple mouth swabs, taken under chain of custody by an HCPC-registered practitioner. The laboratory may request additional documentation in some cases \u2014 we tell you before the appointment if so.</p>
+            <p>Samples are simple mouth swabs, taken under chain of custody by a registered practitioner.</p>
+            <p class="doc-callout">${DNA_ADDITIONAL_SAMPLES}</p>
           </div>
         </div>
       </div>`;
@@ -962,12 +969,12 @@
       ['A case manager calls you', 'We confirm the right combination of people to test and the full quote \u2014 nothing proceeds until you approve it.'],
       ['Your fee note and checklists follow', 'Once the quote is agreed, the fee note PDF and each participant\u2019s checklist are emailed to ' + (esc(d.contactEmail) || 'you') + '.'],
       ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.'],
-      ['The legal report is issued', '15 working days from the laboratory receiving all samples.']
+      ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples.']
     ] : [
       ['Your fee note PDF is on its way', 'Emailed to ' + (esc(d.contactEmail) || 'you') + (isPrivate ? ' with your payment receipt.' : ' \u2014 our back office is notified and the case is opened.')],
       ['Each participant gets a checklist', 'One per person, listing exactly what to bring' + (anyGp ? ' \u2014 and we post the GP kit as soon as the surgery is confirmed.' : '.')],
       ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.'],
-      ['The legal report is issued', '15 working days from the laboratory receiving all samples. ' + (isPrivate ? 'Results are released to you on completion.' : 'Results are released on payment of the fee note.')]
+      ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples. ' + (isPrivate ? 'Results are released to you on completion.' : 'Results are released on payment of the fee note.')]
     ];
 
     document.getElementById('confirmation').innerHTML = `
@@ -987,7 +994,6 @@
   }
 
   /* ---------------- gate ---------------- */
-  const GATE_KEY = 'nivha-gate-email';
   function renderGate() {
     const gate = document.getElementById('gate');
     gate.innerHTML = `
@@ -998,7 +1004,7 @@
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Priced as you build it</strong><p>The fee covers two people \u2014 add each extra person and watch the total update before you commit.</p></div>
-        <div class="gate-point"><strong>Full legal report</strong><p>Suitable for court \u2014 samples collected under chain of custody by an HCPC-registered practitioner.</p></div>
+        <div class="gate-point"><strong>Full legal report</strong><p>Suitable for court \u2014 samples collected under chain of custody by a registered practitioner.</p></div>
         <div class="gate-point"><strong>Everyone knows what to bring</strong><p>Each participant gets their own checklist with the fee note \u2014 ID, photographs and consent, spelled out per person.</p></div>
       </div>
       <div class="gate-card" id="gate-card">
@@ -1015,35 +1021,110 @@
         <span>Test helper \u2014 skip the email step</span>
         <button type="button" class="btn small ghost" id="dev-gate-new">Enter the DNA fee note tool</button>
       </div>` : ''}`;
-    gate.querySelector('#gate-send').addEventListener('click', () => {
+    gate.querySelector('#gate-send').addEventListener('click', async () => {
       const email = gate.querySelector('#gate-email').value.trim();
+      const err = gate.querySelector('#gate-error');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        gate.querySelector('#gate-error').hidden = false;
+        err.textContent = 'Enter a valid email address to receive your link.';
+        err.hidden = false;
         return;
       }
-      unlock(email);
+      const btn = gate.querySelector('#gate-send');
+      btn.disabled = true; btn.textContent = 'Sending\u2026';
+      try {
+        const resp = await apiPost('/api/gate/request', { email: email.toLowerCase(), product: 'dna' });
+        showGateCode(email.toLowerCase(), resp);
+      } catch (e) {
+        err.textContent = 'We could not send your link just now. Please try again.';
+        err.hidden = false;
+        btn.disabled = false; btn.textContent = 'Email my secure link';
+      }
+    });
+    gate.querySelector('#gate-email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') gate.querySelector('#gate-send').click();
     });
     const devGateNew = gate.querySelector('#dev-gate-new');
     if (devGateNew) devGateNew.addEventListener('click', () => unlock('test@example.com'));
   }
 
+  function apiPost(path, body) {
+    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(r => r.json().catch(() => ({})).then(data => {
+        if (!r.ok) { const e = new Error(data.error || r.statusText); e.status = r.status; throw e; }
+        return data;
+      }));
+  }
+
+  function showGateCode(email, resp) {
+    const card = document.getElementById('gate-card');
+    card.innerHTML = `
+      <h2>Check your inbox</h2>
+      <p>We have sent a secure link and a six-digit code to <strong>${esc(email)}</strong>. Open the link, or enter the code below. Both stay valid for 24 hours.</p>
+      <div class="gate-form gate-code-form">
+        <input type="text" id="gate-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" aria-label="Six-digit code">
+        <button class="btn primary" id="gate-verify">Continue</button>
+      </div>
+      <p class="gate-error" id="gate-code-error" hidden></p>
+      ${resp && resp.emailDryRun ? `<p class="gate-small gate-dev-hint">Prototype helper \u2014 email sending is switched off in this environment. Your code is <strong>${esc(resp.devCode)}</strong>.</p>` : ''}
+      <p class="gate-small">Nothing arrived after a couple of minutes? Check your junk folder, or <button type="button" class="linklike" id="gate-resend">send a fresh code</button>.</p>
+      <button class="btn ghost small" id="gate-back">Use a different email</button>`;
+    const codeInput = card.querySelector('#gate-code');
+    const showErr = msg => { const el = card.querySelector('#gate-code-error'); el.textContent = msg; el.hidden = false; };
+    const verify = async () => {
+      const code = codeInput.value.replace(/\D/g, '');
+      if (code.length !== 6) { showErr('Enter the six-digit code from your email.'); return; }
+      const btn = card.querySelector('#gate-verify');
+      btn.disabled = true; btn.textContent = 'Checking\u2026';
+      try {
+        await apiPost('/api/gate/verify', { email, code });
+        unlock(email);
+      } catch (e) {
+        btn.disabled = false; btn.textContent = 'Continue';
+        if (e.status === 410) showErr('That code has expired. Send a fresh one below.');
+        else if (e.status === 429) showErr('Too many attempts. Send a fresh code below.');
+        else showErr('That code does not match. Check your email and try again.');
+      }
+    };
+    card.querySelector('#gate-verify').addEventListener('click', verify);
+    codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+    codeInput.focus();
+    card.querySelector('#gate-resend').addEventListener('click', async () => {
+      try {
+        const fresh = await apiPost('/api/gate/request', { email, product: 'dna' });
+        showGateCode(email, fresh);
+      } catch (e) { showErr('We could not send a fresh code just now. Please try again.'); }
+    });
+    card.querySelector('#gate-back').addEventListener('click', renderGate);
+  }
+
   function unlock(email) {
-    try { localStorage.setItem(GATE_KEY, email.trim().toLowerCase()); } catch (e) {}
     document.getElementById('gate').hidden = true;
     document.querySelector('.stepper').hidden = false;
     goTo(1);
   }
 
+  async function initGate() {
+    renderGate();
+    /* Magic link: /dna?gate=TOKEN arrives from the secure-link email. */
+    const token = new URLSearchParams(location.search).get('gate');
+    if (!token) return;
+    history.replaceState(null, '', location.pathname);
+    try {
+      const r = await fetch('/api/gate/session/' + encodeURIComponent(token));
+      const sess = await r.json();
+      if (!r.ok) throw new Error('expired');
+      unlock(sess.email);
+    } catch (e) {
+      const err = document.getElementById('gate-error');
+      if (err) {
+        err.textContent = 'That secure link has expired. Enter your email and we send a fresh one.';
+        err.hidden = false;
+      }
+    }
+  }
+
   /* ---------------- init ---------------- */
   renderRoutes();
   renderTests();
-  let unlocked = '';
-  try { unlocked = localStorage.getItem(GATE_KEY) || ''; } catch (e) {}
-  if (unlocked) {
-    document.getElementById('gate').hidden = true;
-    document.querySelector('.stepper').hidden = false;
-    goTo(1);
-  } else {
-    renderGate();
-  }
+  initGate();
 })();
