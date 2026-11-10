@@ -5,6 +5,8 @@
 
   /* Test helpers only appear when the page is opened with ?dev=1 */
   const DEV = /(^|[?&])dev=1(&|$)/.test(location.search);
+  /* Photo ID: private bookings need it. For solicitor and trust bookings, if the donor has none we photograph them at the collection. */
+  const idShort = priv => priv ? 'photo ID' : 'photo ID, or a photograph taken at the collection';
 
   /* ---------------- API (fee note service) ---------------- */
   async function apiCall(method, path, body) {
@@ -1192,7 +1194,7 @@
 
       <fieldset>
         <legend>About the donor</legend>
-        <p class="fieldset-hint">The donor is the person being tested. They will need to bring photo ID to the appointment.</p>
+        <p class="fieldset-hint">${isPrivate ? 'The donor is the person being tested. They will need to bring photo ID to the appointment.' : 'The donor is the person being tested. They should bring photo ID to the appointment. If they have none, we take a photograph of them at the collection.'}</p>
         ${isPrivate ? `
           <div class="form-field">
             <label class="check-row"><input type="checkbox" id="self-donor" ${state.details.selfDonor ? 'checked' : ''}><span>I am the person being tested</span></label>
@@ -1443,8 +1445,8 @@
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
-              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. If the venue or collection room is not as declared on arrival, the visit may be paused or cancelled and the collection fee remains payable. The donor must bring photo ID.`
-              : 'Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. The donor must bring photo ID. Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.'}</p>
+              ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. If the venue or collection room is not as declared on arrival, the visit may be paused or cancelled and the collection fee remains payable. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'}`
+              : `Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`}</p>
           </div>
           <div>
             <p class="doc-label">Reports</p>
@@ -1489,6 +1491,10 @@
       const org = d.org ? d.org : 'my organisation';
       box.innerHTML = hairRow + `
         <label class="check-row">
+          <input type="checkbox" id="id-check" ${a.idResponsibility ? 'checked' : ''}>
+          <span>I understand that if the donor has no photo ID, NIVHA will take a photograph of the donor at the collection. Confirming the donor\u2019s identity is my responsibility as the person instructing, and I accept this.</span>
+        </label>
+        <label class="check-row">
           <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
           <span>I confirm the details above are correct, that I am authorised to instruct this testing on behalf of ${org}, and that I accept NIVHA's <a href="/data-sharing-terms" target="_blank" rel="noopener">Data Sharing Terms</a> for medico-legal instructions.</span>
         </label>
@@ -1499,6 +1505,7 @@
     const sync = () => {
       a.declaration = !!document.getElementById('declaration-check')?.checked;
       a.hairLength = !!document.getElementById('hair-check')?.checked;
+      a.idResponsibility = !isPrivate && !!document.getElementById('id-check')?.checked;
       a.consent = isPrivate ? !!document.getElementById('consent-check')?.checked : false;
       document.getElementById('submit-btn').disabled = !checks.every(c => c.checked);
     };
@@ -1547,6 +1554,7 @@
         declaration: true,
         dataSharingTermsVersion: state.route !== 'private' ? DST_VERSION : null,
         explicitConsent: state.route === 'private',
+        idResponsibility: state.route !== 'private' ? true : null,
         alcoholOneResult: state.alcOneResult && splitDrugLines().length > 0 && alcLines().length > 0 ? true : null,
         hairLengthCm: hairNeededCm() && state.acceptance && state.acceptance.hairLength ? hairNeededCm() : null,
         acceptedAt: new Date().toISOString()
@@ -1924,7 +1932,7 @@
           <p class="bk-type">${type.label}</p>
           <p class="bk-meta-line">${icon('clock', 16)}<span>30 minutes</span></p>
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
-          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — ${state.route === 'private' ? 'photo ID required' : 'photo ID, or a photograph taken at the collection'}</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings ${idShort(state.route === 'private')}</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
 
         </div>
@@ -2050,7 +2058,7 @@
           <p class="bk-type">${type.label}</p>
           <p class="bk-meta-line">${icon('clock', 16)}<span>30 minutes</span></p>
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
-          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — ${state.route === 'private' ? 'photo ID required' : 'photo ID, or a photograph taken at the collection'}</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings ${idShort(state.route === 'private')}</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
           <p class="bk-note">Derry~Londonderry requests need five working days’ notice — the earliest date you can request is ${minLabel}.</p>
         </div>
@@ -2156,7 +2164,7 @@
           <p class="doc-label">Visit</p>
           <p class="bk-type">${type.label}</p>
           <p class="bk-meta-line">${icon('pin', 16)}<span>${locLabel()}</span></p>
-          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — photo ID required</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings photo ID</span></p>`}
+          ${donorName ? `<p class="bk-meta-line">${icon('user', 16)}<span>Donor: ${donorName} — ${state.route === 'private' ? 'photo ID required' : 'photo ID, or a photograph taken at the collection'}</span></p>` : `<p class="bk-meta-line">${icon('user', 16)}<span>The donor brings ${idShort(state.route === 'private')}</span></p>`}
           ${type.notes.map(n => `<p class="bk-note">${n}</p>`).join('')}
           <p class="bk-note">Collections take place in professional environments only, where a private collection room is made available. A witness may be required to be present.</p>
           <p class="bk-note">The collection fee starts at ${gbp(ONSITE_COLLECTION_FROM)} + VAT and is confirmed before the visit.</p>
@@ -2358,12 +2366,12 @@
       + (state.fastTrack && [...state.basket.keys()].some(c => byCode[c].fastTrack) ? ' Your fast-tracked panels are reported in about 5 working days.' : '');
     const isRequest = booked && booked.request;
     const bookingStep = state.collection === 'onsite'
-      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings photo ID.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
+      ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings ${idShort(isPrivate)}.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
       : booked && booked.derryRequest
-      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our Derry~Londonderry office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`]
+      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our Derry~Londonderry office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : booked
-      ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID. Cancellation is free up to 24 hours before.`]
-      : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring' : 'The donor brings'} photo ID.`];
+      ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'} Cancellation is free up to 24 hours before.`]
+      : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`];
 
     const steps = isPrivate
       ? [

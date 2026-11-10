@@ -192,6 +192,9 @@ function feeNoteFields(p, reference) {
     if (a.explicitConsent) {
       bits.push('Explicit consent given to processing of personal information, including special category (health) data — UK/EU GDPR Art 9(2)(a). Withdrawal possible before analysis begins.');
     }
+    if (a.idResponsibility) {
+      bits.push('Donor identity: the requester accepts that if the donor has no photo ID, NIVHA photographs the donor at the collection, and that confirming the donor\'s identity is the requester\'s responsibility.');
+    }
     if (a.alcoholOneResult) {
       bits.push('Alcohol hair result confirmed as one result by the booker, although the drug result on this fee note is cut into segments. Cutting the alcohol result at the same points is a special request.');
     }
@@ -452,6 +455,10 @@ app.post('/api/fee-notes', async (req, res) => {
     const basketLines = (Array.isArray(p.basket) ? p.basket : []).map(l => ({ l, panel: catalogue.CATALOGUE.find(c => c.code === (l && l.code)) })).filter(x => x.panel && x.panel.group === 'hair');
     const drugSplit = basketLines.some(x => catalogue.segmentRule(x.panel).kind === 'drug' && (catalogue.hairLayout(x.panel, x.l.cm, x.l.cuts) || { segs: 0 }).segs > 0);
     const hasAlcohol = basketLines.some(x => catalogue.segmentRule(x.panel).kind === 'alcohol');
+    /* Solicitor and trust bookings: the donor may have no photo ID. The requester must have accepted that we photograph the donor at the collection and that identity is theirs to confirm. */
+    if (p.route !== 'private' && !(p.acceptance && p.acceptance.idResponsibility === true)) {
+      return res.status(400).json({ ok: false, error: 'Please confirm that you accept responsibility for the donor\u2019s identity.' });
+    }
     if (drugSplit && hasAlcohol && !(p.acceptance && p.acceptance.alcoholOneResult === true)) {
       return res.status(400).json({ ok: false, error: 'Your drug test is cut into segments. Please choose how the alcohol is reported, or make a special request to match the drug segments.' });
     }
@@ -852,7 +859,7 @@ app.post('/api/booking/confirm', async (req, res) => {
     const dob = f['Donor DOB'] ? ` (DOB ${String(f['Donor DOB']).split('-').reverse().join('/')})` : '';
     const notes = [
       `Fee note ${f['Reference'] || ''}${label ? ' — ' + label : ''}`,
-      f['Donor name'] ? `Donor: ${f['Donor name']}${dob} — photo ID required` : '',
+      f['Donor name'] ? `Donor: ${f['Donor name']}${dob} — ${f['Route'] === 'Private' ? 'photo ID required' : 'photo ID, or photograph at collection if none (requester accepts responsibility for identity)'}` : '',
       panels ? `Panels: ${panels}` : '',
       `Route: ${f['Route'] || ''}${f['Turnaround'] === 'Fast track' ? ' · Fast track' : ''}`,
       contactName && contactName !== attendee ? `Requested by: ${contactName}${f['Contact phone'] ? ' · ' + f['Contact phone'] : ''}` : ''
