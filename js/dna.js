@@ -204,13 +204,13 @@
       <p class="triage-q"><strong>Is the potential father available to give a sample?</strong></p>
       <div class="triage-answers">
         <button class="btn outline small" data-father="yes" ${triageState.fatherAvailable === 'yes' ? 'aria-pressed="true"' : ''}>Yes</button>
-        <button class="btn outline small" data-father="no" ${triageState.fatherAvailable === 'no' ? 'aria-pressed="true"' : ''}>No \u2014 he is unavailable or unwilling</button>
+        <button class="btn outline small" data-father="no" ${triageState.fatherAvailable === 'no' ? 'aria-pressed="true"' : ''}>No \u2014 they are unavailable or unwilling</button>
       </div>`;
     if (triageState.fatherAvailable === 'yes') {
       body += rec('paternity', 'Testing the potential father directly is the most conclusive option.');
     } else if (triageState.fatherAvailable === 'no') {
       body += `
-        <p class="triage-q"><strong>Who from his side of the family could take part instead?</strong></p>
+        <p class="triage-q"><strong>Who from the potential father\u2019s side of the family could take part instead?</strong></p>
         <div class="triage-answers stack">
           <button class="btn outline small" data-pick="sibling">A full brother or sister of the child</button>
           <button class="btn outline small" data-pick="auntuncle">The potential father\u2019s brother or sister</button>
