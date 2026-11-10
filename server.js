@@ -138,6 +138,7 @@ async function sendFeeNoteEmail(recordId) {
       to,
       reference: data.ref,
       isPrivate: data.route === 'private',
+      requestOnly: !!fields['Location'] && fields['Location'] !== 'Belfast',
       paid: !!fields['Paid at'],
       pdfBuffer: buf,
       downloadLink: `${BASE_URL}/api/fee-notes/${recordId}/pdf`,

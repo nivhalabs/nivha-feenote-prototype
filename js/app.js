@@ -2080,9 +2080,9 @@
             </div>
             <div class="bk-actions">
               <button class="btn primary" id="dr-send" disabled>Send booking request</button>
-              <button class="btn ghost" id="dr-skip">Request later using the emailed link</button>
+              <button class="btn ghost" id="dr-skip">I will arrange the date later</button>
             </div>
-            <p class="bk-caption">This is a request, not a confirmed booking — we confirm availability by email within one working day.</p>
+            <p class="bk-caption">This is a request, not a confirmed booking — we confirm availability by email within one working day. If you do not have a date yet, choose "I will arrange the date later" and email us with your reference ${state.refNumber} when you do.</p>
           </div>
         </div>
       </div>`;
@@ -2371,6 +2371,8 @@
       ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our Derry~Londonderry office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'} Cancellation is free up to 24 hours before.`]
+      : (state.collection === 'derry' || state.collection === 'onsite')
+      ? ['Arrange your appointment', `When you know the date, email info@nivha.net quoting ${state.refNumber} with your preferred date and time of day${state.collection === 'derry' ? '. Derry~Londonderry requests need five working days\u2019 notice' : ''}. We confirm availability by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : ['Book online', `A secure link to our scheduling calendar is in your inbox — choose a time that suits ${isPrivate ? 'you' : 'the donor'} whenever you are ready. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`];
 
     const steps = isPrivate
