@@ -1,2 +1,4 @@
 qa/
 node_modules/
+test/layout-out/
+__pycache__/

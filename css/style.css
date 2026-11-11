@@ -228,7 +228,7 @@ a, button, input, [role='button'] {
 .location-flag svg { flex-shrink: 0; margin-top: 2px; }
 
 /* ---------- step 2 — concerns ---------- */
-.concern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
+.concern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: var(--space-4); }
 .concern-card {
   position: relative; text-align: left;
   display: flex; gap: var(--space-4); align-items: flex-start;
@@ -284,7 +284,7 @@ a, button, input, [role='button'] {
 .cat-group-head { display: flex; align-items: baseline; gap: var(--space-4); margin-bottom: var(--space-4); border-bottom: 1px solid var(--color-divider); padding-bottom: var(--space-3); }
 .cat-group-head h2 { font-size: var(--text-lg); }
 .cat-group-head p { color: var(--color-text-faint); font-size: var(--text-xs); }
-.cat-list { display: grid; gap: var(--space-4); }
+.cat-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 
 /* panel cards */
 .panel-card {
@@ -295,7 +295,7 @@ a, button, input, [role='button'] {
 .panel-card.in-basket { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary), var(--shadow-sm); }
 .panel-card.unavailable { background: var(--color-surface-offset); border-style: dashed; }
 .panel-card.unavailable h3, .panel-card.unavailable .panel-price, .panel-card.unavailable .panel-detects { color: var(--color-text-faint); }
-.panel-card-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+.panel-card-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
 .panel-card-id { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
 .code-chip {
   font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
@@ -313,8 +313,8 @@ a, button, input, [role='button'] {
 .panel-price small { color: var(--color-text-faint); font-weight: 400; font-size: var(--text-xs); }
 .panel-card h3 { font-size: var(--text-base); margin-bottom: var(--space-1); }
 .panel-detects { color: var(--color-text-muted); font-size: var(--text-sm); margin-bottom: var(--space-3); }
-.panel-facts { display: grid; gap: var(--space-1); margin-bottom: var(--space-3); }
-.panel-facts div { display: grid; grid-template-columns: 108px 1fr; gap: var(--space-3); font-size: var(--text-xs); }
+.panel-facts { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-1); margin-bottom: var(--space-3); }
+.panel-facts div { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: var(--space-3); font-size: var(--text-xs); }
 .panel-facts dt { color: var(--color-text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 .panel-facts dd { color: var(--color-text-muted); }
 .panel-help { font-size: var(--text-sm); margin-bottom: var(--space-3); }
@@ -330,13 +330,16 @@ a, button, input, [role='button'] {
 .ft-na { font-size: var(--text-xs); color: var(--color-text-faint); }
 
 /* panel option selects (analysis variant / collection series) */
-.panel-options { display: grid; gap: var(--space-2); margin: var(--space-2) 0 var(--space-1); }
-.opt-field { display: grid; gap: 4px; }
+.panel-options { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); margin: var(--space-2) 0 var(--space-1); }
+.opt-field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
 .opt-field > span { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .opt-field select {
-  width: 100%; max-width: 100%; padding: 8px 10px;
+  /* Own chevron instead of the system one: Safari otherwise lets a long selected option widen the whole page */
+  -webkit-appearance: none; appearance: none;
+  width: 100%; max-width: 100%; min-width: 0; padding: 8px 34px 8px 10px;
+  white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
   font: inherit; font-size: var(--text-sm); color: var(--color-text);
-  background: #fff; border: 1px solid var(--color-border); border-radius: 8px;
+  background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%234a5560' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 12px center; border: 1px solid var(--color-border); border-radius: 8px;
   cursor: pointer;
 }
 .addon-block { margin: var(--space-3) 0 var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
@@ -528,7 +531,7 @@ a, button, input, [role='button'] {
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
-  .panel-with-aside { grid-template-columns: 1fr; }
+  .panel-with-aside { grid-template-columns: minmax(0, 1fr); }
   .summary { position: static; order: -1; }
   #summary-4 { display: none; }
   .mobile-total[hidden] { display: none; }
@@ -540,7 +543,14 @@ a, button, input, [role='button'] {
   .doc-head { flex-direction: column; }
   .doc-meta { text-align: left; }
   .doc-meta p { justify-content: flex-start; }
-  .doc-parties { grid-template-columns: 1fr; }
+  .doc-parties { grid-template-columns: minmax(0, 1fr); }
+  /* The fee note table must fit a phone: fixed columns, text wraps inside its cell */
+  .doc-table { table-layout: fixed; }
+  .doc-table th, .doc-table td { padding: var(--space-3) var(--space-2); }
+  .doc-table th:first-child, .doc-table td:first-child { width: 6rem; }
+  .doc-table th.num, .doc-table td.num { width: 5.5rem; }
+  .doc-table tfoot td:first-child { width: auto; }
+  .doc-table .code-chip { max-width: 100%; padding-inline: 6px; }
   .panel-actions { flex-direction: column-reverse; }
   .panel-actions .btn { width: 100%; }
 }
@@ -962,7 +972,7 @@ a, button, input, [role='button'] {
 .service-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 
 /* step 2 — test cards */
-.test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
+.test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: var(--space-4); }
 .test-card {
   position: relative; text-align: left;
   display: flex; flex-direction: column; gap: var(--space-2);
@@ -1317,3 +1327,32 @@ a, button, input, [role='button'] {
 .doc-terms p.doc-callout, .doc-callout p:not(.doc-label) { color: var(--color-warn-text); font-weight: 500; font-size: var(--text-sm); margin: 0; }
 .doc-terms p.doc-callout { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); }
 .minor-block > p.minor-strong { font-size: var(--text-sm); }
+
+/* ---------- long text must wrap, never push the page wider ----------
+   Names, addresses, references and email addresses are typed by users and can be very long. */
+.doc, .doc-parties > div, .doc-terms > div, .doc-table td, .summary, .summary-line, .sum-line { min-width: 0; }
+.doc p, .doc td, .doc strong, .summary, .summary li, .summary span, .summary strong { overflow-wrap: anywhere; }
+
+/* Narrowest phones: slimmer cut lines so the centimetre labels (0–1, 1–2 …) fit in the ruler */
+@media (max-width: 360px) {
+  .seg-cut { flex-basis: 17px; }
+}
+
+/* Phones: the fee note table becomes stacked rows (code and fee on one line, description underneath)
+   because three table columns do not fit a 320 to 480 px screen. */
+@media (max-width: 480px) {
+  .doc-table { table-layout: auto; }
+  .doc-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .doc-table, .doc-table tbody, .doc-table tfoot { display: block; }
+  .doc-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-3); align-items: start; }
+  .doc-table th, .doc-table td, .doc-table th:first-child, .doc-table td:first-child, .doc-table th.num, .doc-table td.num { width: auto; display: block; padding: var(--space-2) var(--space-3); }
+  .doc-table tbody td:nth-child(1) { grid-column: 1; grid-row: 1; padding-bottom: 0; }
+  .doc-table tbody td:nth-child(3) { grid-column: 2; grid-row: 1; padding-bottom: 0; }
+  .doc-table tbody td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding-top: var(--space-1); }
+  .doc-table tbody td:empty { display: none; }
+  .doc-table tbody tr:has(> td:first-child:empty) > td:nth-child(2) { grid-column: 1; grid-row: 1; padding-top: var(--space-2); }
+  .doc-table tbody tr:has(> td:first-child:empty) > td:nth-child(3) { padding-bottom: var(--space-2); }
+  .doc-table tfoot td { grid-row: 1; }
+  .doc-table tfoot td:first-child { grid-column: 1; text-align: left; }
+  .doc-table tfoot td.num { grid-column: 2; }
+}

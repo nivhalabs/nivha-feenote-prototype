@@ -1,0 +1,40 @@
+name: Layout check
+
+# Opens the fee note in Chromium, Firefox and WebKit (Safari's engine) at phone, tablet and desktop widths
+# and fails the pull request if anything spills out of its container or the page scrolls sideways.
+# It never submits a quote, so it cannot reach Stripe, Airtable or email.
+
+on:
+  pull_request:
+    paths:
+      - 'css/**'
+      - 'js/**'
+      - '*.html'
+      - 'server.js'
+      - 'test/layout_check.py'
+      - '.github/workflows/layout-check.yml'
+  workflow_dispatch:
+
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright
+      - run: python -m playwright install --with-deps chromium firefox webkit
+      - run: python test/layout_check.py
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: layout-report
+          path: test/layout-out/
+          retention-days: 14

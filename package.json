@@ -4,7 +4,9 @@
   "private": true,
   "description": "NIVHA fee note platform v2 — guided wizard + Airtable API",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:layout": "python3 test/layout_check.py",
+    "test:layout:quick": "python3 test/layout_check.py --quick"
   },
   "dependencies": {
     "docx": "^9.7.1",
