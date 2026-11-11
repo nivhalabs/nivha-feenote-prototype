@@ -1,5 +1,5 @@
 /* NIVHA Fee Note wizard — payment and booking are simulated; submissions are
-   recorded through the fee note API when the service is available. */
+   recorded through the quote and fee note API when the service is available. */
 (function () {
   'use strict';
 
@@ -118,7 +118,7 @@
       id: 'trust',
       title: 'Trust or social services',
       sub: 'Health and social care trusts, family support and safeguarding teams.',
-      points: ['Fee note raised against your team or purchase order', 'Invoiced — results released on payment', 'Court-ready expert reports']
+      points: ['Quote and fee note raised against your team or purchase order', 'Invoiced — results released on payment', 'Court-ready expert reports']
     },
     {
       id: 'private',
@@ -138,7 +138,7 @@
     {
       id: 'derry',
       title: 'NIVHA office — Derry~Londonderry',
-      sub: gbp(DERRY_COLLECTION_FEE) + ' + VAT collection fee, added to your fee note.',
+      sub: gbp(DERRY_COLLECTION_FEE) + ' + VAT collection fee, added to your quote and fee note.',
       flag: 'Limited panel range — nail testing is not available at this location.'
     },
     {
@@ -243,7 +243,8 @@
     grid.querySelectorAll('.route-card').forEach(card =>
       card.addEventListener('click', () => {
         state.route = card.dataset.route;
-        state.refNumber = null; // assigned by the fee note service on submission
+        document.body.setAttribute('data-route', state.route);
+        state.refNumber = null; // assigned by the quote and fee note service on submission
         if (state.route !== 'private') state.privateAck = false;
         if (state.route === 'private' && state.collection === 'onsite') state.collection = null;
         renderRoutes();
@@ -324,7 +325,7 @@
     if (removed.length && !state.notices.some(n => n.key === 'no-nail')) {
       state.notices.push({
         key: 'no-nail', type: 'warn',
-        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your fee note. Hair panels cover around 3 months, or choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
+        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your quote and fee note. Hair panels cover around 3 months, or choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
       });
     }
   }
@@ -374,7 +375,7 @@
         const sup = byCode[rule.superset], sub = byCode[rule.subset];
         state.notices.push({
           type: 'saving',
-          html: `<strong>${disp(sup.code)} already includes everything in ${disp(sub.code)}.</strong> We have removed ${disp(sub.code)} from your fee note and saved you ${gbp(sub.price)} + VAT.`
+          html: `<strong>${disp(sup.code)} already includes everything in ${disp(sub.code)}.</strong> We have removed ${disp(sub.code)} from your quote and fee note and saved you ${gbp(sub.price)} + VAT.`
         });
       }
     });
@@ -576,7 +577,7 @@
     el.innerHTML = `
       <section class="suggest" aria-label="Suggested panels">
         <h2>Suggested for you</h2>
-        <p class="suggest-note">These are suggestions based on what you chose. <strong>Nothing has been added to your fee note.</strong> Check each one against your instruction \u2014 the choice of tests is yours. All panels are listed below.</p>
+        <p class="suggest-note">These are suggestions based on what you chose. <strong>Nothing has been added to your quote and fee note.</strong> Check each one against your instruction \u2014 the choice of tests is yours. All panels are listed below.</p>
         <div class="suggest-list">${cards.join('')}</div>
       </section>`;
     el.querySelectorAll('[data-sg-add]').forEach(b => b.addEventListener('click', () => {
@@ -623,9 +624,9 @@
       : blocked
         ? `<p class="ft-na">${blocked}</p>`
         : inBasket
-          ? `<span class="added-flag">${icon('check', 15)} On your fee note</span>
+          ? `<span class="added-flag">${icon('check', 15)} On your quote and fee note</span>
              <button class="btn small ghost" data-sg-remove="${p.code}">Remove</button>`
-          : `<button class="btn small outline" data-sg-add="${p.code}">Add to fee note</button>`;
+          : `<button class="btn small outline" data-sg-add="${p.code}">Add to quote and fee note</button>`;
     return `
       <article class="suggest-card ${inBasket ? 'in-basket' : ''}">
         <p class="sg-why">Suggested because you chose: <strong>${concern.title}</strong></p>
@@ -644,7 +645,7 @@
     const idx = state.notices.findIndex(n => n.key === 'ft-all');
     if (state.fastTrack) {
       const inelig = [...state.basket.keys()].filter(c => !byCode[c].fastTrack);
-      const html = `<strong>Fast track applies to your whole instruction.</strong> Every eligible panel on your fee note is fast tracked at ${gbp(FAST_TRACK_FEE)} + VAT each — panels cannot be fast tracked individually.`
+      const html = `<strong>Fast track applies to your whole instruction.</strong> Every eligible panel on your quote and fee note is fast tracked at ${gbp(FAST_TRACK_FEE)} + VAT each — panels cannot be fast tracked individually.`
         + (inelig.length ? ` ${inelig.map(disp).join(', ')} ${inelig.length === 1 ? 'is' : 'are'} not eligible and ${inelig.length === 1 ? 'keeps' : 'keep'} the standard turnaround.` : '');
       if (idx > -1) state.notices[idx].html = html;
       else state.notices.push({ key: 'ft-all', type: 'saving', html });
@@ -810,7 +811,7 @@
   function addonHtml(p, item) {
     if (p.code !== URINE_ADDON_HOST) return '';
     if (state.basket.has(URINE_ADDON_COVERED_BY)) {
-      return `<div class="addon-block"><p class="addon-title">Add individual drugs</p><p class="addon-note">Already covered by the ${byCode[URINE_ADDON_COVERED_BY].name.toLowerCase()} panel on this fee note.</p></div>`;
+      return `<div class="addon-block"><p class="addon-title">Add individual drugs</p><p class="addon-note">Already covered by the ${byCode[URINE_ADDON_COVERED_BY].name.toLowerCase()} panel on this quote and fee note.</p></div>`;
     }
     const chosen = addonsOf(p, item);
     const perColl = (item.qty || 1) > 1 ? ' per collection' : '';
@@ -920,8 +921,8 @@
           ${inBasket
             ? `<button class="btn small ghost" data-remove="${p.code}">Remove</button>
                ${ftToggle}
-               <span class="added-flag">${icon('check', 15)} On your fee note</span>`
-            : `<button class="btn small outline" data-add="${p.code}">Add to fee note</button>
+               <span class="added-flag">${icon('check', 15)} On your quote and fee note</span>`
+            : `<button class="btn small outline" data-add="${p.code}">Add to quote and fee note</button>
                ${ftToggle}
                <button class="btn small ghost" data-collapse="${p0.code}">Hide details</button>`}
         </div>
@@ -989,7 +990,7 @@
     }
 
     const need = lay.cm > HAIR_DEFAULT_CM || lay.segs > 0
-      ? ` The donor needs at least ${lay.cm} cm of head hair; we ask you to confirm this when you review the fee note.` : '';
+      ? ` The donor needs at least ${lay.cm} cm of head hair; we ask you to confirm this when you review the quote and fee note.` : '';
     let sumLine;
     if (isAlc) sumLine = `${monthsText(lay.cm)}, ${lay.cm} cm of hair, one result: <strong>${gbp(unit)} + VAT</strong>.${need}`;
     else if (lay.segs) sumLine = `${monthsText(lay.cm)}, ${lay.cm} cm of hair, ${lay.segs + 1} results: ${lay.segs + 1} × ${gbp(unit)} = <strong>${gbp(unit * (lay.segs + 1))} + VAT</strong>.${need}`;
@@ -1055,7 +1056,7 @@
     const rows = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
       const rm = (state.step === 3 || state.step === 4)
-        ? ` <button type="button" class="sum-remove" data-sum-remove="${code}" aria-label="Remove ${disp(p.code)} from your fee note">Remove</button>` : '';
+        ? ` <button type="button" class="sum-remove" data-sum-remove="${code}" aria-label="Remove ${disp(p.code)} from your quote and fee note">Remove</button>` : '';
       return `<div class="sum-row"><span>${disp(p.code)} · ${lineLabel(p, item)}${rm}</span><span>${gbp(lineTotal(p, item))}</span></div>
         ${state.fastTrack && p.fastTrack ? `<div class="sum-row sub"><span>Fast track${ftUnits(p, item) > 1 ? ` × ${ftUnits(p, item)}` : ''}</span><span>${gbp(FAST_TRACK_FEE * ftUnits(p, item))}</span></div>` : ''}`;
     }).join('');
@@ -1105,7 +1106,7 @@
 
     const html = `
       <div class="summary-card">
-        <h2>Your fee note</h2>
+        <h2>Your quote and fee note</h2>
         <p class="sum-loc">Collection: ${locLabel()}</p>
         ${empty
           ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — each panel card explains what it tests for and when to choose it.</p>`
@@ -1122,11 +1123,11 @@
              </div>
              <p class="sum-note">${state.route === 'private'
                 ? 'Payment is taken securely in advance by card. Booking opens as soon as payment clears.'
-                : 'We invoice your organisation — results are released on payment of the fee note.'}</p>`}
+                : 'We invoice your organisation — results are released on payment of the quote and fee note.'}</p>`}
         ${ftUpsell}
-        ${state.step === 3 && alcMirrorNeeded() ? `<p class="sum-alert" role="alert">Your drug test is cut into segments and your fee note includes alcohol. <button type="button" class="seg-link" id="alc-jump">Choose how the alcohol is reported</button> before you continue.</p>` : ''}
+        ${state.step === 3 && alcMirrorNeeded() ? `<p class="sum-alert" role="alert">Your drug test is cut into segments and your quote and fee note includes alcohol. <button type="button" class="seg-link" id="alc-jump">Choose how the alcohol is reported</button> before you continue.</p>` : ''}
         ${state.step === 3 ? `<button class="btn primary full" id="sum-continue" ${empty || alcMirrorNeeded() ? 'disabled' : ''}>Continue to your details</button>` : ''}
-        ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review fee note</button>` : ''}
+        ${state.step === 4 ? `<button class="btn primary full" id="sum-review" ${empty ? 'disabled' : ''}>Review quote and fee note</button>` : ''}
       </div>`;
 
     const el3 = document.getElementById('summary-3'), el4 = document.getElementById('summary-4');
@@ -1166,7 +1167,7 @@
     document.getElementById('mt-count').textContent =
       state.basket.size + (state.basket.size === 1 ? ' panel' : ' panels') + ' · inc. VAT';
     document.getElementById('mt-amount').textContent = gbp(t.total);
-    document.getElementById('mt-continue').textContent = state.step === 3 ? 'Continue' : 'Review fee note';
+    document.getElementById('mt-continue').textContent = state.step === 3 ? 'Continue' : 'Review quote and fee note';
     document.getElementById('mt-continue').disabled = false;
     document.getElementById('mt-continue').onclick = () => {
       if (state.step === 3 && alcMirrorNeeded()) { /* explain rather than silently blocking */
@@ -1187,7 +1188,7 @@
         ${hint ? `<p class="field-hint">${hint}</p>` : ''}
         <input type="${type}" id="${id}" name="${id}" ${list ? `list="${list}"` : ''}
           placeholder="${placeholder}" value="${state.details[id] || ''}" ${required ? 'required' : ''} autocomplete="off">
-        <p class="field-error" hidden>This is needed to raise the fee note.</p>
+        <p class="field-error" hidden>This is needed to raise the quote and fee note.</p>
       </div>`;
   }
 
@@ -1214,15 +1215,15 @@
               placeholder="Search by organisation name" value="${state.details.org || ''}" required autocomplete="off">
             <div class="combo-results" id="org-results" hidden></div>
           </div>
-          <p class="field-error" hidden>This is needed to raise the fee note.</p>
+          <p class="field-error" hidden>This is needed to raise the quote and fee note.</p>
         </div>
         ${field('orgAddress', 'Address', { required: true, placeholder: 'Building and street' })}
         <div class="form-2col">
           ${field('orgTown', 'Town or city', { required: true })}
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
-        ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the fee note so your accounts team can match it.' })}
-        ${state.route === 'solicitor' ? field('legalAidRef', 'Legal Aid reference', { hint: 'If this fee note will be submitted to the Legal Aid Authority, the reference prints on the fee note so it can go straight to the court or admin office.' }) : ''}
+        ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the quote and fee note so your accounts team can match it.' })}
+        ${state.route === 'solicitor' ? field('legalAidRef', 'Legal Aid reference', { hint: 'If this quote and fee note will be submitted to the Legal Aid Authority, the reference prints on the quote and fee note so it can go straight to the court or admin office.' }) : ''}
         ${state.route === 'trust' ? `
         ${field('costCentre', 'Cost centre', { required: true, hint: 'So your finance team can allocate the fee.' })}
         <div class="form-2col">
@@ -1234,7 +1235,7 @@
       <fieldset>
         <legend>${isPrivate ? 'Your details' : 'Your contact details'}</legend>
         ${field('contactName', 'Full name', { required: true })}
-        ${field('contactEmail', 'Email', { type: 'email', required: true, hint: 'Your fee note and appointment confirmation go here.' })}
+        ${field('contactEmail', 'Email', { type: 'email', required: true, hint: 'Your quote and fee note and appointment confirmation go here.' })}
         ${field('contactPhone', 'Phone', { type: 'tel', required: true })}
       </fieldset>
 
@@ -1261,24 +1262,24 @@
             <p><strong>You request the visit — we confirm availability.</strong></p>
             <p>${isPrivate
               ? `As soon as your payment clears, you tell us your preferred date and time of day, and our team confirms availability within one working day — along with the collection room and the final collection fee.`
-              : `As soon as your fee note is submitted, you tell us where to come and your preferred date and time of day. We confirm availability within one working day, along with the collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) — once confirmed, a purchase order number confirms the collection. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
+              : `As soon as your quote and fee note is submitted, you tell us where to come and your preferred date and time of day. We confirm availability within one working day, along with the collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) — once confirmed, a purchase order number confirms the collection. The report is released on receipt of payment.`} A private room must be made available and a witness may be required to be present.</p>`
             : requestOnly() ? `
             <p><strong>You request the appointment — we confirm availability.</strong></p>
             <p>${hasBlood() ? 'Blood samples are taken by our clinician, so blood collections are always arranged by request. ' : ''}${isPrivate
               ? `As soon as your payment clears, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`
-              : `As soon as your fee note is submitted, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`} If you do not have a date yet, you can arrange it later by emailing info@nivha.net with your reference. Requests need five working days\u2019 notice. Cancellation is free up to 24 hours before.</p>`
+              : `As soon as your quote and fee note is submitted, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`} If you do not have a date yet, you can arrange it later by emailing info@nivha.net with your reference. Requests need five working days\u2019 notice. Cancellation is free up to 24 hours before.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
               ? `As soon as your payment clears, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits you. We also email the link, so you can book later if you prefer.`
-              : `As soon as your fee note is submitted, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits the donor. We also email the link, so it can be booked later.`} Cancellation is free up to 24 hours before.</p>`}
+              : `As soon as your quote and fee note is submitted, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits the donor. We also email the link, so it can be booked later.`} Cancellation is free up to 24 hours before.</p>`}
           </div>
         </div>
       </fieldset>
 
       <div class="panel-actions">
         <button type="button" class="btn ghost" data-back-4>Back</button>
-        <button type="submit" class="btn primary">Review fee note</button>
+        <button type="submit" class="btn primary">Review quote and fee note</button>
       </div>`;
 
     form.querySelectorAll('input').forEach(inp => {
@@ -1420,7 +1421,7 @@
     const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
     const donorName = (isPrivate && d.selfDonor) ? d.contactName : d.donorName;
 
-    document.getElementById('submit-btn').textContent = isPrivate ? 'Submit and continue to payment' : 'Submit fee note';
+    document.getElementById('submit-btn').textContent = isPrivate ? 'Submit and continue to payment' : 'Submit quote and fee note';
 
     const lines = [...state.basket.keys()].map(code => {
       const p = byCode[code], item = state.basket.get(code);
@@ -1447,7 +1448,7 @@
             </div>
           </div>
           <div class="doc-meta">
-            <p><span>Fee note</span><strong>${state.refNumber || 'Assigned on submission'}</strong></p>
+            <p><span>Quote and fee note</span><strong>${state.refNumber || 'Assigned on submission'}</strong></p>
             <p><span>Date</span><strong>${today}</strong></p>
           </div>
         </div>
@@ -1491,19 +1492,19 @@
             <p class="doc-label">Payment</p>
             <p>${isPrivate
               ? 'Payment is taken securely in advance by card. Results are released to you, or an authorised representative, on completion of analysis.'
-              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.'}${state.route === 'solicitor' ? ' This fee note can be submitted to the Legal Aid Authority for approval.' : ''}</p>
+              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.'}${state.route === 'solicitor' ? ' This quote and fee note can be submitted to the Legal Aid Authority for approval.' : ''}</p>
           </div>
           <div>
             <p class="doc-label">Appointments</p>
             <p>${state.collection === 'onsite'
               ? `On-site visits are arranged as a request — you tell us your preferred date and time and we confirm availability.${isPrivate ? '' : ' Once availability and the collection fee are confirmed, a purchase order number confirms the collection; the report is released on receipt of payment.'} Collections take place in professional environments only, where a private collection room is made available — we do not collect in private homes. A witness may be required to be present. If the venue or collection room is not as declared on arrival, the visit may be paused or cancelled and the collection fee remains payable. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'}`
-              : requestOnly() ? `By request \u2014 after you submit, tell us your preferred date and time of day, or email info@nivha.net quoting the fee note reference. We confirm availability by email within one working day. Please do not send the donor to attend without a confirmed appointment. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`
+              : requestOnly() ? `By request \u2014 after you submit, tell us your preferred date and time of day, or email info@nivha.net quoting the quote and fee note reference. We confirm availability by email within one working day. Please do not send the donor to attend without a confirmed appointment. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`
               : `Booked online — straight after submission or via the emailed scheduling link. Please do not send the donor to attend without a booking. ${isPrivate ? 'The donor must bring photo ID.' : 'The donor should bring photo ID. If they have none, we take a photograph of the donor at the collection, and the person instructing is responsible for confirming the donor\u2019s identity.'} Cancellation is free up to 24 hours before; missed appointments incur a £50 + VAT fee.`}</p>
           </div>
           <div>
             <p class="doc-label">Reports</p>
             <p>A written report with expert interpretation is issued where applicable. Interim reports are not normally issued without part-payment.</p>
-            ${isPrivate ? '' : `<p class="doc-small">Court and reporting rates, where required, are itemised on page 2 of the issued fee note. Where the instruction is legally aided, the applicable legal aid authority's rates are observed.</p>`}
+            ${isPrivate ? '' : `<p class="doc-small">Court and reporting rates, where required, are itemised on page 2 of the issued quote and fee note. Where the instruction is legally aided, the applicable legal aid authority's rates are observed.</p>`}
           </div>
         </div>
       </div>`;
@@ -1536,9 +1537,9 @@
         </label>
         <label class="check-row">
           <input type="checkbox" id="consent-check" ${a.consent ? 'checked' : ''}>
-          <span>I consent to NIVHA processing the personal information in this fee note — including sensitive test information — to provide the testing service, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
+          <span>I consent to NIVHA processing the personal information in this quote and fee note — including sensitive test information — to provide the testing service, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
         </label>
-        <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net — collection and cancellation fees already incurred remain payable. ${d.selfDonor ? '' : 'The person being tested confirms their own agreement at the collection appointment. '}Your consent is recorded against this fee note with the date and time.</p>`;
+        <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net — collection and cancellation fees already incurred remain payable. ${d.selfDonor ? '' : 'The person being tested confirms their own agreement at the collection appointment. '}Your consent is recorded against this quote and fee note with the date and time.</p>`;
     } else {
       const org = d.org ? d.org : 'my organisation';
       box.innerHTML = hairRow + `
@@ -1550,7 +1551,7 @@
           <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
           <span>I confirm the details above are correct, that I am authorised to instruct this testing on behalf of ${org}, and that I accept NIVHA's <a href="/data-sharing-terms" target="_blank" rel="noopener">Data Sharing Terms</a> for medico-legal instructions.</span>
         </label>
-        <p class="data-note">The Data Sharing Terms set out how NIVHA and your organisation handle the information in this fee note as independent controllers — including the specialist providers we use, security, retention and breach notification. Your acceptance is recorded against this fee note with the version, date and time. A countersigned copy is available on request. Our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a> explains how we handle personal information, including donor details.</p>`;
+        <p class="data-note">The Data Sharing Terms set out how NIVHA and your organisation handle the information in this quote and fee note as independent controllers — including the specialist providers we use, security, retention and breach notification. Your acceptance is recorded against this quote and fee note with the version, date and time. A countersigned copy is available on request. Our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a> explains how we handle personal information, including donor details.</p>`;
     }
 
     const checks = [...box.querySelectorAll('input[type="checkbox"]')];
@@ -1663,6 +1664,7 @@
     try { saved = JSON.parse(sessionStorage.getItem(PAY_STATE_KEY) || 'null'); } catch (e) {}
     if (!saved || saved.route !== 'private' || !saved.refNumber) return false;
     state.route = saved.route;
+    document.body.setAttribute('data-route', state.route || '');
     state.privateAck = true;
     state.basket = new Map(saved.basket || []);
     state.fastTrack = !!saved.fastTrack;
@@ -1690,7 +1692,7 @@
     document.getElementById('checkout').innerHTML = `
       <div class="success-banner">
         ${icon('check', 20)}
-        <div><strong>Fee note ${state.refNumber} submitted</strong>
+        <div><strong>Quote and fee note ${state.refNumber} submitted</strong>
         <span>One step left — private instructions are paid in advance. Booking opens as soon as payment is confirmed.</span></div>
       </div>
       ${notice ? `<div class="pay-notice">${icon('info', 18)}<span>${notice}</span></div>` : ''}
@@ -1702,7 +1704,7 @@
       <div class="pay-grid">
         <div class="pay-summary">
           <h2>Paying NIVHA Laboratory Services Ltd</h2>
-          <p class="sum-loc">Fee note ${state.refNumber} · Collection: ${locLabel()}</p>
+          <p class="sum-loc">Quote and fee note ${state.refNumber} · Collection: ${locLabel()}</p>
           <div class="sum-rows">${rows}
             ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
             ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
@@ -1965,12 +1967,12 @@
       <div class="success-banner">
         ${icon('check', 20)}
         <div>
-          <strong>${state.resumed ? `Fee note ${state.refNumber}` : isPrivate && state.payment
+          <strong>${state.resumed ? `Quote and fee note ${state.refNumber}` : isPrivate && state.payment
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
-            : `Fee note ${state.refNumber} submitted`}</strong>
+            : `Quote and fee note ${state.refNumber} submitted`}</strong>
           <span>${state.resumed ? 'Choose a time that suits the donor. We confirm the appointment by email.' : isPrivate && state.payment
-            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now choose the appointment.`
-            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now choose the appointment.`}</span>
+            ? `Quote and fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now choose the appointment.`
+            : `Quote and fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now choose the appointment.`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -2093,10 +2095,10 @@
         <div>
           <strong>${isPrivate && state.payment
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
-            : `Fee note ${state.refNumber} submitted`}</strong>
+            : `Quote and fee note ${state.refNumber} submitted`}</strong>
           <span>${isPrivate && state.payment
-            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now request the appointment.`
-            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now request the appointment.`}</span>
+            ? `Quote and fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()} Now request the appointment.`
+            : `Quote and fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()} Now request the appointment.`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -2200,10 +2202,10 @@
         <div>
           <strong>${isPrivate && state.payment
             ? `Payment received — ${gbp(state.payment.amount)} · receipt ${state.payment.receipt}`
-            : `Fee note ${state.refNumber} submitted`}</strong>
+            : `Quote and fee note ${state.refNumber} submitted`}</strong>
           <span>${isPrivate && state.payment
-            ? `Fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()}`
-            : `Fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()}`}</span>
+            ? `Quote and fee note ${state.refNumber}, marked paid, has been emailed to ${d.contactEmail || 'your inbox'} as a PDF — it doubles as your receipt.${dlInline()}`
+            : `Quote and fee note ${state.refNumber} has been emailed to ${d.contactEmail || 'your inbox'} as a PDF.${dlInline()}`}</span>
         </div>
       </div>
       <div class="panel-head">
@@ -2266,7 +2268,7 @@
             <div class="req-field">
               <p class="req-label">Purchase order number <span class="req-optional">optional at this stage</span></p>
               <input type="text" class="req-input" id="req-po" placeholder="e.g. PO-2026-0147" value="${d.caseref || ''}" autocomplete="off">
-              <p class="req-hint">Not needed to send the request — we ask for a purchase order once the test and collection fee are confirmed. The report is released on receipt of payment of the fee note.</p>
+              <p class="req-hint">Not needed to send the request — we ask for a purchase order once the test and collection fee are confirmed. The report is released on receipt of payment of the quote and fee note.</p>
             </div>` : ''}
             <div class="req-field">
               <p class="req-label">Safeguarding</p>
@@ -2430,22 +2432,22 @@
     const steps = isPrivate
       ? [
         ['Payment received', gbp(state.payment ? state.payment.amount : computeTotals().total) + ' paid by card — reference ' + (state.payment ? state.payment.receipt : 'NV-8362') + '.'],
-        ['Your fee note', 'Fee note ' + state.refNumber + ', marked paid, has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — it doubles as your receipt. You can also download it below.'],
+        ['Your quote and fee note', 'Quote and fee note ' + state.refNumber + ', marked paid, has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — it doubles as your receipt. You can also download it below.'],
         bookingStep,
         ['Analysis', analysisCopy],
         ['Your results', 'Your report is released to you, or an authorised representative, and to no one else, as soon as analysis is complete.']
       ]
       : [
-        ['Your fee note', 'Fee note ' + state.refNumber + ' has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — ready to file or present, with a download link in the email. You can also download it below.'],
+        ['Your quote and fee note', 'Quote and fee note ' + state.refNumber + ' has been emailed to ' + (state.details.contactEmail || 'your inbox') + ' as a PDF — ready to file or present, with a download link in the email. You can also download it below.'],
         bookingStep,
         ['Analysis', analysisCopy],
-        ['The report', 'A court-ready expert report is released on payment of the fee note.']
+        ['The report', 'A court-ready expert report is released on payment of the quote and fee note.']
       ];
 
     document.getElementById('confirmation').innerHTML = `
       <div class="confirm">
         <div class="confirm-badge">${icon('check', 30)}</div>
-        <p class="marker">Fee note ${state.refNumber}</p>
+        <p class="marker">Quote and fee note ${state.refNumber}</p>
         <h1>${booked && booked.derryRequest ? 'Thank you — your appointment is requested' : isRequest ? 'Thank you — your visit is requested' : booked ? 'All set — the appointment is booked' : 'Thank you — your instruction is in'}</h1>
         <p class="lede">Here is ${booked && !isRequest ? 'everything in one place' : 'what happens next'}.</p>
         <ol class="timeline">
@@ -2454,8 +2456,8 @@
               <div><strong>${h}</strong><p>${b}</p></div></li>`).join('')}
         </ol>
         <div class="confirm-actions">
-          ${state.recordId ? `<a class="btn primary" href="/api/fee-notes/${state.recordId}/pdf">Download fee note (PDF)</a>` : ''}
-          <button class="btn outline" id="restart">Start another fee note</button>
+          ${state.recordId ? `<a class="btn primary" href="/api/fee-notes/${state.recordId}/pdf">Download quote and fee note (PDF)</a>` : ''}
+          <button class="btn outline" id="restart">Start another quote and fee note</button>
         </div>
       </div>`;
     document.getElementById('restart').addEventListener('click', () => location.reload());
@@ -2501,7 +2503,7 @@
     gate.innerHTML = `
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
-        <h1>Court-ready drug and alcohol testing, with an itemised fee note in about three minutes</h1>
+        <h1>Court-ready drug and alcohol testing, with an itemised quote and fee note in about three minutes</h1>
         <p class="lede">Hair, nail and urine testing for care proceedings and personal reassurance — collected at our Belfast and Derry~Londonderry offices, or on site for organisations.</p>
       </div>
       <div class="gate-points">
@@ -2511,13 +2513,13 @@
       </div>
       <div class="gate-card" id="gate-card">
         <h2>Get your secure link</h2>
-        <p>Enter your email address and we send a link that unlocks the fee note tool.</p>
+        <p>Enter your email address and we send a link that unlocks the quote and fee note tool.</p>
         <div class="gate-form">
           <input type="email" id="gate-email" placeholder="you@organisation.co.uk" autocomplete="email">
           <button class="btn primary" id="gate-send">Email my secure link</button>
         </div>
         <p class="gate-error" id="gate-error" hidden>Enter a valid email address to receive your link.</p>
-        <p class="gate-small">We use your email address to send your secure link and to follow up about your fee note. How we handle personal information for medico-legal testing — including donor details — is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+        <p class="gate-small">We use your email address to send your secure link and to follow up about your quote and fee note. How we handle personal information for medico-legal testing — including donor details — is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
         <p class="gate-small">Used NIVHA before? Use the same email and we prefill your organisation and contact details — never donor information.</p>
       </div>
       ${DEV ? `<div class="dev-fill-bar gate-dev">
@@ -2611,7 +2613,7 @@
       const banner = document.createElement('div');
       banner.className = 'success-banner';
       banner.id = 'returning-banner';
-      banner.innerHTML = `${icon('check', 20)}<div><strong>Welcome back</strong><span>We have prefilled your organisation and contact details from your last fee note. Donor details always start fresh.</span></div>`;
+      banner.innerHTML = `${icon('check', 20)}<div><strong>Welcome back</strong><span>We have prefilled your organisation and contact details from your last quote and fee note. Donor details always start fresh.</span></div>`;
       document.getElementById('step-1').prepend(banner);
     }
     goTo(1);
@@ -2647,18 +2649,19 @@
     if (r.mode === 'booked') {
       const when = r.appointmentAt ? new Date(r.appointmentAt) : null;
       const label = when && !isNaN(when) ? ' for ' + when.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + ' at ' + when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
-      showNotice('Fee note ' + r.reference, 'An appointment is already booked', 'This fee note already has a collection appointment' + label + '. To change it, ' + help.charAt(0).toLowerCase() + help.slice(1));
+      showNotice('Quote and fee note ' + r.reference, 'An appointment is already booked', 'This quote and fee note already has a collection appointment' + label + '. To change it, ' + help.charAt(0).toLowerCase() + help.slice(1));
       return true;
     }
     if (r.mode === 'team') {
-      showNotice('Fee note ' + r.reference, 'Our team arranges this appointment', 'Appointments for this collection location are arranged by our team, who will contact you. ' + help);
+      showNotice('Quote and fee note ' + r.reference, 'Our team arranges this appointment', 'Appointments for this collection location are arranged by our team, who will contact you. ' + help);
       return true;
     }
     if (r.mode === 'unpaid') {
-      showNotice('Fee note ' + r.reference, 'Payment is needed first', 'This fee note is paid by card before an appointment can be booked. ' + help);
+      showNotice('Quote and fee note ' + r.reference, 'Payment is needed first', 'This quote and fee note is paid by card before an appointment can be booked. ' + help);
       return true;
     }
     state.route = r.route;
+    document.body.setAttribute('data-route', state.route || '');
     state.privateAck = true;
     state.collection = r.location;
     state.fastTrack = !!r.fastTrack;

@@ -1,5 +1,5 @@
 /* NIVHA DNA relationship testing — guided fee note wizard (prototype)
-   Reuses the fee note design system (css/style.css) and mirrors the
+   Reuses the quote and fee note design system (css/style.css) and mirrors the
    drug and alcohol wizard's structure. Front-end prototype: submission,
    payment and PDF generation are simulated for review. */
 (function () {
@@ -77,7 +77,7 @@
       id: 'trust',
       title: 'Trust or social services',
       sub: 'Health and social care trusts, family support and safeguarding teams.',
-      points: ['Fee note raised against your team', 'Invoiced — results released on payment', 'Full legal report suitable for court']
+      points: ['Quote and fee note raised against your team', 'Invoiced — results released on payment', 'Full legal report suitable for court']
     },
     {
       id: 'private',
@@ -137,6 +137,7 @@
     grid.querySelectorAll('.route-card').forEach(el =>
       el.addEventListener('click', () => {
         state.route = el.dataset.route;
+        document.body.setAttribute('data-route', state.route);
         renderRoutes();
         setTimeout(() => goTo(2), 220);
       }));
@@ -155,7 +156,7 @@
         <span class="test-proves">${t.proves}</span>
         <span class="test-meta">${t.priced
           ? `Covers up to ${DNA_INCLUDED_PEOPLE} people \u00b7 each additional person ${gbp(DNA_ADDITIONAL_PERSON_FEE)} + VAT`
-          : 'Priced case by case with a case manager \u2014 build the fee note and we confirm the quote'}</span>
+          : 'Priced case by case with a case manager \u2014 choose your people and we confirm the quote'}</span>
         <span class="concern-tick" aria-hidden="true">${icon('check', 14)}</span>
       </button>`).join('');
     grid.querySelectorAll('.test-card').forEach(el =>
@@ -270,7 +271,7 @@
     const noticeBox = document.getElementById('roster-notices');
     noticeBox.innerHTML = `
       <div class="notice notice-saving">${icon('info', 18)}
-        <p>Every participant gets their own checklist with the fee note, so each person knows exactly what to bring. ${DNA_TURNAROUND}</p>
+        <p>Every participant gets their own checklist with the quote and fee note, so each person knows exactly what to bring. ${DNA_TURNAROUND}</p>
       </div>`;
 
     box.querySelectorAll('[data-add]').forEach(b =>
@@ -370,7 +371,7 @@
   function collectionCards(selectedId) {
     const cards = [
       { id: 'belfast', title: 'NIVHA office \u2014 Belfast', sub: 'Collection is included in your fee. Unit 1B, Concourse 1, Catalyst, Queens Road, Belfast.' },
-      { id: 'derry', title: 'NIVHA office \u2014 Derry~Londonderry', sub: gbp(DNA_COLLECTION.derry.fee) + ' + VAT collection fee, added to your fee note.' },
+      { id: 'derry', title: 'NIVHA office \u2014 Derry~Londonderry', sub: gbp(DNA_COLLECTION.derry.fee) + ' + VAT collection fee, added to your quote and fee note.' },
       { id: 'gp', title: 'Your own GP surgery', sub: gbp(DNA_COLLECTION.gp.fee) + ' per kit \u2014 we post a kit to the surgery for each person, the GP collects, and the surgery posts it direct to the lab.', flag: 'The standard, recommended route for participants in the Republic of Ireland.' }
     ];
     return cards.map(c => `
@@ -578,13 +579,13 @@
 
     const html = `
       <div class="summary-card">
-        <h2>Your fee note</h2>
+        <h2>Your quote and fee note</h2>
         <p class="sum-loc">${t.name} \u00b7 ${tot.people} ${tot.people === 1 ? 'person' : 'people'}</p>
         <div class="sum-rows">${rows}${state.step >= 4 ? collRows : ''}</div>
         ${totals}
         <p class="sum-note">${DNA_TURNAROUND}</p>
         ${state.step === 3 ? `<button class="btn primary full" id="sum-continue">Continue to collection</button>` : ''}
-        ${state.step === 5 ? `<button class="btn primary full" id="sum-review">Review fee note</button>` : ''}
+        ${state.step === 5 ? `<button class="btn primary full" id="sum-review">Review quote and fee note</button>` : ''}
       </div>`;
 
     ['summary-3', 'summary-4', 'summary-5'].forEach((id, i) => {
@@ -608,7 +609,7 @@
       t.people + (t.people === 1 ? ' person' : ' people') + (t.poa ? '' : ' \u00b7 inc. VAT');
     document.getElementById('mt-amount').textContent = t.poa ? 'On request' : gbp(t.total);
     const btn = document.getElementById('mt-continue');
-    btn.textContent = state.step === 5 ? 'Review fee note' : 'Continue';
+    btn.textContent = state.step === 5 ? 'Review quote and fee note' : 'Continue';
     btn.onclick = () => {
       if (state.step === 3) { if (validateRoster()) goTo(4); }
       else if (state.step === 4) { if (validateCollection()) goTo(5); }
@@ -624,7 +625,7 @@
         <label for="${id}">${label}${required ? '' : ' <span class="optional">optional</span>'}</label>
         ${hint ? `<p class="field-hint">${hint}</p>` : ''}
         <input type="${type}" id="${id}" name="${id}" placeholder="${placeholder}" value="${esc(state.details[id])}" ${required ? 'required' : ''} autocomplete="off">
-        <p class="field-error" hidden>This is needed to raise the fee note.</p>
+        <p class="field-error" hidden>This is needed to raise the quote and fee note.</p>
       </div>`;
   }
 
@@ -641,11 +642,11 @@
           ${field('orgTown', 'Town or city', { required: true })}
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
-        ${field('caseref', 'Your case or matter reference', { hint: 'Quoted on the fee note and all correspondence.' })}
-        ${field('legalAidRef', 'Legal Aid reference', { hint: 'If the instruction is legally aided \u2014 the fee note can be submitted to the Legal Aid Authority for approval.' })}
+        ${field('caseref', 'Your case or matter reference', { hint: 'Quoted on the quote and fee note and all correspondence.' })}
+        ${field('legalAidRef', 'Legal Aid reference', { hint: 'If the instruction is legally aided \u2014 the quote and fee note can be submitted to the Legal Aid Authority for approval.' })}
         <h2 class="form-section-head">Who we correspond with</h2>
         ${field('contactName', 'Your name', { required: true })}
-        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The fee note PDF and each participant\u2019s checklist are sent here.' })}
+        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The quote and fee note PDF and each participant\u2019s checklist are sent here.' })}
         ${field('contactPhone', 'Phone number', { type: 'tel' })}`;
     } else if (r === 'trust') {
       html = `
@@ -663,13 +664,13 @@
         ${field('approverName', 'Approving officer', { hint: 'If a manager approves spend on this case.' })}
         <h2 class="form-section-head">Who we correspond with</h2>
         ${field('contactName', 'Your name', { required: true })}
-        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The fee note PDF and each participant\u2019s checklist are sent here.' })}
+        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The quote and fee note PDF and each participant\u2019s checklist are sent here.' })}
         ${field('contactPhone', 'Phone number', { type: 'tel' })}`;
     } else {
       html = `
         <h2 class="form-section-head">About you</h2>
         ${field('contactName', 'Your full name', { required: true })}
-        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your fee note, payment receipt and each participant\u2019s checklist are sent here.' })}
+        ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your quote and fee note, payment receipt and each participant\u2019s checklist are sent here.' })}
         ${field('contactPhone', 'Phone number', { type: 'tel' })}`;
     }
     if (DEV) html += `
@@ -718,7 +719,7 @@
 
     document.getElementById('submit-btn').textContent =
       tot.poa ? 'Submit and request your quote'
-        : isPrivate ? 'Submit and continue to payment' : 'Submit fee note';
+        : isPrivate ? 'Submit and continue to payment' : 'Submit quote and fee note';
 
     const money = v => tot.poa ? '\u2014' : gbp(v);
 
@@ -752,7 +753,7 @@
             </div>
           </div>
           <div class="doc-meta">
-            <p><span>Fee note</span><strong>${state.refNumber || 'Assigned on submission'}</strong></p>
+            <p><span>Quote and fee note</span><strong>${state.refNumber || 'Assigned on submission'}</strong></p>
             <p><span>Date</span><strong>${today}</strong></p>
           </div>
         </div>
@@ -799,7 +800,7 @@
               ? 'Nothing is payable now. A case manager confirms the quote and payment terms with you before the case proceeds.'
               : isPrivate
                 ? 'Payment is taken securely in advance by card. Results are released to you on completion of analysis.'
-                : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the fee note.' + (state.route === 'solicitor' ? ' This fee note can be submitted to the Legal Aid Authority for approval.' : '')}</p>
+                : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.' + (state.route === 'solicitor' ? ' This quote and fee note can be submitted to the Legal Aid Authority for approval.' : '')}</p>
           </div>
           <div>
             <p class="doc-label">Turnaround</p>
@@ -859,7 +860,7 @@
           <div class="doc-brand">
             <div>
               <p class="doc-brand-name">Participant checklist</p>
-              <p class="doc-brand-sub">Issued with your fee note \u2014 one copy for each participant</p>
+              <p class="doc-brand-sub">Issued with your quote and fee note \u2014 one copy for each participant</p>
             </div>
           </div>
         </div>
@@ -898,9 +899,9 @@
         </label>
         <label class="check-row">
           <input type="checkbox" id="consent-check" ${a.consent ? 'checked' : ''}>
-          <span>I consent to NIVHA processing the personal information in this fee note \u2014 including sensitive test information \u2014 to provide the testing service, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
+          <span>I consent to NIVHA processing the personal information in this quote and fee note \u2014 including sensitive test information \u2014 to provide the testing service, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</span>
         </label>
-        <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net \u2014 collection and cancellation fees already incurred remain payable. Each adult participant confirms their own agreement at the collection appointment; an accompanying adult signs for a child. Your consent is recorded against this fee note with the date and time.</p>`;
+        <p class="data-note">You can withdraw your consent at any time before analysis begins by contacting info@nivha.net \u2014 collection and cancellation fees already incurred remain payable. Each adult participant confirms their own agreement at the collection appointment; an accompanying adult signs for a child. Your consent is recorded against this quote and fee note with the date and time.</p>`;
     } else {
       const org = d.org ? esc(d.org) : 'my organisation';
       box.innerHTML = `
@@ -908,7 +909,7 @@
           <input type="checkbox" id="declaration-check" ${a.declaration ? 'checked' : ''}>
           <span>I confirm the details above are correct, that I am authorised to instruct this testing on behalf of ${org}, and that I accept NIVHA's <a href="/data-sharing-terms" target="_blank" rel="noopener">Data Sharing Terms</a> for medico-legal instructions.</span>
         </label>
-        <p class="data-note">The Data Sharing Terms set out how NIVHA and your organisation handle the information in this fee note as independent controllers \u2014 including the specialist providers we use, security, retention and breach notification. Your acceptance is recorded against this fee note with the version, date and time. Each adult participant confirms their own agreement at the collection appointment; an accompanying adult signs for a child. Our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a> explains how we handle personal information, including participant details.</p>`;
+        <p class="data-note">The Data Sharing Terms set out how NIVHA and your organisation handle the information in this quote and fee note as independent controllers \u2014 including the specialist providers we use, security, retention and breach notification. Your acceptance is recorded against this quote and fee note with the version, date and time. Each adult participant confirms their own agreement at the collection appointment; an accompanying adult signs for a child. Our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a> explains how we handle personal information, including participant details.</p>`;
     }
 
     const checks = [...box.querySelectorAll('input[type="checkbox"]')];
@@ -963,7 +964,7 @@
     try {
       const r = await fetch('/api/dna/fee-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload()) });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok || !data.ok) throw new Error(data.error || 'We could not submit the fee note. Please try again, or email info@nivha.net.');
+      if (!r.ok || !data.ok) throw new Error(data.error || 'We could not submit the quote and fee note. Please try again, or email info@nivha.net.');
       state.refNumber = data.reference;
       state.recordId = data.recordId || '';
       const tot = computeTotals();
@@ -984,12 +985,12 @@
       <div class="panel-head">
         <p class="marker">Payment</p>
         <h1>Secure card payment</h1>
-        <p class="lede">Your fee note ${state.refNumber} is raised. Payment is taken securely in advance \u2014 booking opens as soon as it clears.</p>
+        <p class="lede">Your quote and fee note ${state.refNumber} is raised. Payment is taken securely in advance \u2014 booking opens as soon as it clears.</p>
       </div>
       <div class="summary-card checkout-card">
         <h2>${t.name} \u00b7 ${tot.people} ${tot.people === 1 ? 'person' : 'people'}</h2>
         <div class="sum-rows">
-          <div class="sum-row"><span>Fee note ${state.refNumber}</span><span>${gbp(tot.net)}</span></div>
+          <div class="sum-row"><span>Quote and fee note ${state.refNumber}</span><span>${gbp(tot.net)}</span></div>
           <div class="sum-row"><span>VAT at 20%</span><span>${gbp(tot.vat)}</span></div>
         </div>
         <div class="sum-totals">
@@ -1019,7 +1020,7 @@
         window.location.href = data.url;
       } catch (e) {
         btn.disabled = false;
-        err.textContent = e.message + ' Your fee note ' + state.refNumber + ' is saved; email info@nivha.net if this continues.';
+        err.textContent = e.message + ' Your quote and fee note ' + state.refNumber + ' is saved; email info@nivha.net if this continues.';
         err.hidden = false;
       }
     });
@@ -1036,20 +1037,20 @@
 
     const steps = tot.poa ? [
       ['A case manager calls you', 'We confirm the right combination of people to test and the full quote \u2014 nothing proceeds until you approve it.'],
-      ['Your fee note and checklists follow', 'Once the quote is agreed, the fee note PDF and each participant\u2019s checklist are emailed to ' + (esc(d.contactEmail) || 'you') + '.'],
+      ['Your quote and fee note and checklists follow', 'Once the quote is agreed, the quote and fee note PDF and each participant\u2019s checklist are emailed to ' + (esc(d.contactEmail) || 'you') + '.'],
       ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.'],
       ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples.']
     ] : [
-      ['Your fee note PDF is emailed to you', 'Sent to ' + (esc(d.contactEmail) || 'you') + (isPrivate ? ', marked paid, as your receipt.' : '. Our back office has been notified and the case is open.') + ' Please check your junk folder if it does not arrive within a few minutes.'],
+      ['Your quote and fee note PDF is emailed to you', 'Sent to ' + (esc(d.contactEmail) || 'you') + (isPrivate ? ', marked paid, as your receipt.' : '. Our back office has been notified and the case is open.') + ' Please check your junk folder if it does not arrive within a few minutes.'],
       ['Each participant gets a checklist', 'One per person, listing exactly what to bring' + (anyGp ? ' \u2014 and we post the GP kit as soon as the surgery is confirmed.' : '.')],
       ['Samples are collected', 'Mouth swabs under chain of custody, at the locations you chose.' + (anyOffice ? ' To arrange an appointment, email info@nivha.net quoting ' + esc(state.refNumber) + ' with your preferred date and time of day.' : '')],
-      ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples. ' + (isPrivate ? 'Results are released to you on completion.' : 'Results are released on payment of the fee note.')]
+      ['The legal report is issued', 'Approximately 15 working days from the laboratory receiving all samples. ' + (isPrivate ? 'Results are released to you on completion.' : 'Results are released on payment of the quote and fee note.')]
     ];
 
     document.getElementById('confirmation').innerHTML = `
       <div class="success-banner">${icon('check', 20)}
         <div>
-          <strong>${tot.poa ? 'Quote request received' : state.paid ? 'Payment received \u2014 fee note submitted' : 'Fee note submitted'}</strong>
+          <strong>${tot.poa ? 'Quote request received' : state.paid ? 'Payment received \u2014 quote and fee note submitted' : 'Quote and fee note submitted'}</strong>
           <span>Reference ${state.refNumber} \u00b7 ${t.name} \u00b7 ${tot.people} ${tot.people === 1 ? 'participant' : 'participants'}${tot.poa ? '' : ' \u00b7 ' + gbp(tot.total) + ' inc. VAT'}</span>
         </div>
       </div>
@@ -1057,8 +1058,8 @@
         ${steps.map((s, i) => `<li><span class="ps-num">${i + 1}</span><div><strong>${s[0]}</strong><span>${s[1]}</span></div></li>`).join('')}
       </ol>
       <div class="panel-actions">
-        ${state.recordId && (!isPrivate || state.paid) ? `<a class="btn primary" href="/api/dna/fee-notes/${encodeURIComponent(state.recordId)}/pdf">Download fee note (PDF)</a>` : ''}
-        <a class="btn outline" href="/dna">Start another DNA fee note</a>
+        ${state.recordId && (!isPrivate || state.paid) ? `<a class="btn primary" href="/api/dna/fee-notes/${encodeURIComponent(state.recordId)}/pdf">Download quote and fee note (PDF)</a>` : ''}
+        <a class="btn outline" href="/dna">Start another DNA quote and fee note</a>
         <a class="btn ghost" href="/">Drug and alcohol testing</a>
       </div>`;
   }
@@ -1069,27 +1070,27 @@
     gate.innerHTML = `
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
-        <h1>Court-ready DNA relationship testing, with an itemised fee note in about three minutes</h1>
+        <h1>Court-ready DNA relationship testing, with an itemised quote and fee note in about three minutes</h1>
         <p class="lede">Paternity, maternity, sibling and family relationship testing for care proceedings, legal cases and personal certainty \u2014 analysed at up to 68 genetic markers by an ISO 17025 accredited laboratory.</p>
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Priced as you build it</strong><p>The fee covers two people \u2014 add each extra person and watch the total update before you commit.</p></div>
         <div class="gate-point"><strong>Full legal report</strong><p>Suitable for court \u2014 samples collected under chain of custody by a registered practitioner.</p></div>
-        <div class="gate-point"><strong>Everyone knows what to bring</strong><p>Each participant gets their own checklist with the fee note \u2014 ID, photographs and consent, spelled out per person.</p></div>
+        <div class="gate-point"><strong>Everyone knows what to bring</strong><p>Each participant gets their own checklist with the quote and fee note \u2014 ID, photographs and consent, spelled out per person.</p></div>
       </div>
       <div class="gate-card" id="gate-card">
         <h2>Get your secure link</h2>
-        <p>Enter your email address and we send a link that unlocks the fee note tool.</p>
+        <p>Enter your email address and we send a link that unlocks the quote and fee note tool.</p>
         <div class="gate-form">
           <input type="email" id="gate-email" placeholder="you@organisation.co.uk" autocomplete="email">
           <button class="btn primary" id="gate-send">Email my secure link</button>
         </div>
         <p class="gate-error" id="gate-error" hidden>Enter a valid email address to receive your link.</p>
-        <p class="gate-small">We use your email address to send your secure link and to follow up about your fee note. How we handle personal information for medico-legal testing is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+        <p class="gate-small">We use your email address to send your secure link and to follow up about your quote and fee note. How we handle personal information for medico-legal testing is set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
       </div>
       ${DEV ? `<div class="dev-fill-bar gate-dev">
         <span>Test helper \u2014 skip the email step</span>
-        <button type="button" class="btn small ghost" id="dev-gate-new">Enter the DNA fee note tool</button>
+        <button type="button" class="btn small ghost" id="dev-gate-new">Enter the DNA quote and fee note tool</button>
       </div>` : ''}`;
     gate.querySelector('#gate-send').addEventListener('click', async () => {
       const email = gate.querySelector('#gate-email').value.trim();
@@ -1195,11 +1196,11 @@
       else {
         document.querySelector('.stepper').hidden = true;
         document.getElementById('gate').hidden = false;
-        document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>Payment received</h1><p>Your payment for fee note ${esc(state.refNumber)} has been received. The fee note, marked paid, is emailed to you.</p><p><a class="btn outline" href="/dna">Back to DNA fee notes</a></p></div>`;
+        document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>Payment received</h1><p>Your payment for quote and fee note ${esc(state.refNumber)} has been received. The quote and fee note, marked paid, is emailed to you.</p><p><a class="btn outline" href="/dna">Back to DNA quotes and fee notes</a></p></div>`;
       }
       try { sessionStorage.removeItem('nivha-dna-case'); } catch (e) { /* ignore */ }
     } catch (e) {
-      document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>We could not confirm the payment</h1><p>If you were charged, the fee note is emailed to you once the payment clears. Otherwise email info@nivha.net and we will help.</p></div>`;
+      document.getElementById('gate').innerHTML = `<div class="gate-card"><h1>We could not confirm the payment</h1><p>If you were charged, the quote and fee note is emailed to you once the payment clears. Otherwise email info@nivha.net and we will help.</p></div>`;
     }
     return true;
   }
