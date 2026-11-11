@@ -1,0 +1,14 @@
+'use strict';
+const assert = require('assert');
+const { computeTotals } = require('../lib/pricing');
+let n = 0;
+const t = (name, fn) => { fn(); n++; };
+const basket = [{ code: 'H-DP1', qty: 1, cm: 3 }];
+const bf = computeTotals({ basket, fastTrack: false, location: 'belfast' });
+const dub = computeTotals({ basket, fastTrack: false, location: 'dublin' });
+const der = computeTotals({ basket, fastTrack: false, location: 'derry' });
+t('Dublin adds a £100 collection fee to the subtotal', () => assert.strictEqual(dub.net, bf.net + 100));
+t('VAT is not charged on the Dublin fee', () => assert.strictEqual(dub.vat, bf.vat));
+t('Dublin total is the Belfast total plus £100', () => assert.strictEqual(dub.total, bf.total + 100));
+t('Derry~Londonderry still carries VAT on its fee', () => { assert.strictEqual(der.vat, bf.vat + 15); assert.strictEqual(der.noVat, 0); });
+console.log(`\ndublin: ${n}/${n} tests passed`);

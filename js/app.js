@@ -52,7 +52,7 @@
     expanded: new Set(),         // panel cards opened for detail on step 3
     fastTrack: false,            // fast track applies to the whole instruction
     notices: [],
-    collection: null,            // 'belfast' | 'derry' | 'onsite'
+    collection: null,            // 'belfast' | 'derry' | 'dublin' | 'onsite'
     details: {},
     refNumber: null,
     payment: null,               // { receipt, amount } once the simulated payment clears
@@ -112,7 +112,7 @@
       id: 'solicitor',
       title: 'Solicitor or legal representative',
       sub: 'Instructing on behalf of a client in family or criminal proceedings.',
-      points: ['Fee note addressed to your practice', 'Can be submitted to the Legal Aid Authority for approval', 'Invoiced — results released on payment', 'Court-ready expert reports']
+      points: ['Fee note addressed to your practice', 'Can be submitted for legal aid approval', 'Invoiced — results released on payment', 'Court-ready expert reports']
     },
     {
       id: 'trust',
@@ -142,6 +142,12 @@
       flag: 'Limited panel range — nail testing is not available at this location.'
     },
     {
+      id: 'dublin',
+      title: 'Dublin city centre',
+      sub: gbp(DUBLIN_COLLECTION_FEE) + ' collection fee (no VAT), added to your quote and fee note. Appointments are arranged by request.',
+      flag: 'Limited panel range — nail testing is not available at this location.'
+    },
+    {
       id: 'onsite',
       title: 'At your location — we come to you',
       sub: 'From ' + gbp(ONSITE_COLLECTION_FROM) + ' + VAT, priced on request — we confirm the fee before the visit.',
@@ -149,12 +155,13 @@
     }
   ];
 
-  const nailUnavailable = () => state.collection === 'derry';
-  const nailWhere = () => 'at our Derry~Londonderry office';
+  const nailUnavailable = () => state.collection === 'derry' || state.collection === 'dublin';
+  const nailWhere = () => state.collection === 'dublin' ? 'in Dublin city centre' : 'at our Derry~Londonderry office';
+  const officeName = () => state.collection === 'dublin' ? 'Dublin city centre' : state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast';
 
   const locLabel = () =>
     state.collection === 'onsite' ? 'Your location — on-site collection'
-      : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : 'NIVHA office — Belfast';
+      : state.collection === 'derry' ? 'NIVHA office — Derry~Londonderry' : state.collection === 'dublin' ? 'Dublin city centre' : 'NIVHA office — Belfast';
   /* Blood is always arranged by request (a clinician is needed), at Belfast, Derry~Londonderry or on site. Derry and on-site are by request anyway. */
   const hasBlood = () => [...state.basket.keys()].some(c => byCode[c] && byCode[c].group === 'blood');
   const requestOnly = () => state.collection !== 'belfast' || hasBlood();
@@ -296,7 +303,7 @@
       if (isPrivate && l.id === 'onsite') return `
       <div class="route-card location-card locked">
         <span class="route-title">${l.title}</span>
-        <span class="route-sub">Available to organisations only. Private appointments take place at our Belfast or Derry~Londonderry offices.</span>
+        <span class="route-sub">Available to organisations only. Private appointments take place at our Belfast or Derry~Londonderry offices, or in Dublin city centre.</span>
         <span class="location-flag">${icon('info', 15)}<span>Solicitors and trusts can arrange on-site collection in professional environments.</span></span>
         <span class="route-cta">Organisations only</span>
       </div>`;
@@ -620,7 +627,7 @@
       </fieldset>` : '';
     const price = upg ? '' : `<span class="panel-price">${gbp(unitPrice(p, item))} <small>+ VAT</small></span>`;
     const action = unavailable
-      ? `<p class="ft-na">Not collected at our Derry~Londonderry office. Go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>`
+      ? `<p class="ft-na">Not collected ${nailWhere()}. Go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>`
       : blocked
         ? `<p class="ft-na">${blocked}</p>`
         : inBasket
@@ -861,7 +868,7 @@
         </div>
         ${blocked ? `<p class="ft-na">${blocked}</p>` : ''}
         ${upg && !unavailable ? `<p class="ft-na">An extended version is available on the details view (+ ${gbp(upg.price - p0.price)} + VAT).</p>` : ''}
-        ${unavailable ? `<p class="ft-na">Not collected at our Derry~Londonderry office — go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>` : ''}
+        ${unavailable ? `<p class="ft-na">Not collected ${nailWhere()} — go back to step 1 and choose the Belfast office or an on-site collection if you need this panel.</p>` : ''}
       </article>`;
     }
 
@@ -1043,11 +1050,12 @@
       if (rule.codes.every(c => state.basket.has(c))) saving += rule.saving;
     });
     const fastTrack = state.fastTrack ? ftCount * FAST_TRACK_FEE : 0;
-    const collection = state.collection === 'derry' ? DERRY_COLLECTION_FEE : 0;
+    const collection = state.collection === 'derry' ? DERRY_COLLECTION_FEE : state.collection === 'dublin' ? DUBLIN_COLLECTION_FEE : 0;
+    const noVat = state.collection === 'dublin' ? DUBLIN_COLLECTION_FEE : 0; /* Dublin collection fee is in the subtotal but carries no VAT */
     const onsite = state.collection === 'onsite';
     const net = panels - saving + fastTrack + collection;
-    const vat = Math.round(net * VAT_RATE * 100) / 100;
-    return { panels, saving, fastTrack, collection, onsite, net, vat, total: net + vat };
+    const vat = Math.round((net - noVat) * VAT_RATE * 100) / 100;
+    return { panels, saving, fastTrack, collection, noVat, onsite, net, vat, total: net + vat };
   }
 
   function renderSummary() {
@@ -1112,7 +1120,7 @@
           ? `<p class="sum-empty">Nothing here yet. Add at least one panel to continue — each panel card explains what it tests for and when to choose it.</p>`
           : `<div class="sum-rows">${rows}
               ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
-              ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
+              ${t.collection ? `<div class="sum-row"><span>Collection — ${state.collection === 'dublin' ? 'Dublin city centre (no VAT)' : 'Derry~Londonderry office'}</span><span>${gbp(t.collection)}</span></div>` : ''}
               ${t.onsite ? `<div class="sum-row"><span>On-site collection — from ${gbp(ONSITE_COLLECTION_FROM)}</span><span>On request</span></div>` : ''}
              </div>
              <div class="sum-totals">
@@ -1196,7 +1204,8 @@
     const form = document.getElementById('details-form');
     const isPrivate = state.route === 'private';
     const hasDSD = state.basket.has('H-DSD') || state.basket.has('N-DSD');
-    const office = state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast';
+    const office = officeName();
+    const atOffice = state.collection === 'dublin' ? 'in Dublin city centre' : `at our ${office} office`;
     const onsite = state.collection === 'onsite';
 
     form.innerHTML = `
@@ -1223,7 +1232,7 @@
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
         ${field('caseref', 'Your case or purchase order reference', { hint: 'Appears on the quote and fee note so your accounts team can match it.' })}
-        ${state.route === 'solicitor' ? field('legalAidRef', 'Legal Aid reference', { hint: 'If this quote and fee note will be submitted to the Legal Aid Authority, the reference prints on the quote and fee note so it can go straight to the court or admin office.' }) : ''}
+        ${state.route === 'solicitor' ? field('legalAidRef', 'Legal Aid reference', { hint: 'If this quote and fee note will be submitted for legal aid approval, the reference prints on the quote and fee note so it can go straight to the court or admin office.' }) : ''}
         ${state.route === 'trust' ? `
         ${field('costCentre', 'Cost centre', { required: true, hint: 'So your finance team can allocate the fee.' })}
         <div class="form-2col">
@@ -1266,13 +1275,13 @@
             : requestOnly() ? `
             <p><strong>You request the appointment — we confirm availability.</strong></p>
             <p>${hasBlood() ? 'Blood samples are taken by our clinician, so blood collections are always arranged by request. ' : ''}${isPrivate
-              ? `As soon as your payment clears, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`
-              : `As soon as your quote and fee note is submitted, you tell us your preferred date and time of day at our ${office} office, and we confirm by email within one working day.`} If you do not have a date yet, you can arrange it later by emailing info@nivha.net with your reference. Requests need five working days\u2019 notice. Cancellation is free up to 24 hours before.</p>`
+              ? `As soon as your payment clears, you tell us your preferred date and time of day ${atOffice}, and we confirm by email within one working day.`
+              : `As soon as your quote and fee note is submitted, you tell us your preferred date and time of day ${atOffice}, and we confirm by email within one working day.`} If you do not have a date yet, you can arrange it later by emailing info@nivha.net with your reference. Requests need five working days\u2019 notice. Cancellation is free up to 24 hours before.</p>`
             : `
             <p><strong>You choose the time — no phone calls needed.</strong></p>
             <p>${isPrivate
-              ? `As soon as your payment clears, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits you. We also email the link, so you can book later if you prefer.`
-              : `As soon as your quote and fee note is submitted, our scheduling calendar opens right here — choose an appointment at our ${office} office at a time that suits the donor. We also email the link, so it can be booked later.`} Cancellation is free up to 24 hours before.</p>`}
+              ? `As soon as your payment clears, our scheduling calendar opens right here — choose an appointment ${atOffice} at a time that suits you. We also email the link, so you can book later if you prefer.`
+              : `As soon as your quote and fee note is submitted, our scheduling calendar opens right here — choose an appointment ${atOffice} at a time that suits the donor. We also email the link, so it can be booked later.`} Cancellation is free up to 24 hours before.</p>`}
           </div>
         </div>
       </fieldset>
@@ -1477,7 +1486,7 @@
           <tbody>
             ${lines}
             ${t.saving ? `<tr><td></td><td>Combined rate — H-DP1 + H-DP3</td><td class="num">−${gbp(t.saving)}</td></tr>` : ''}
-            ${t.collection ? `<tr><td></td><td>Collection — NIVHA office, Derry~Londonderry</td><td class="num">${gbp(t.collection)}</td></tr>` : ''}
+            ${t.collection ? `<tr><td></td><td>${state.collection === 'dublin' ? 'Collection — Dublin city centre (no VAT charged on this fee)' : 'Collection — NIVHA office, Derry~Londonderry'}</td><td class="num">${gbp(t.collection)}</td></tr>` : ''}
             ${t.onsite ? `<tr><td></td><td>On-site collection — at your premises, priced on request and confirmed before the visit (not included in the totals below)</td><td class="num">from ${gbp(ONSITE_COLLECTION_FROM)}</td></tr>` : ''}
           </tbody>
           <tfoot>
@@ -1492,7 +1501,7 @@
             <p class="doc-label">Payment</p>
             <p>${isPrivate
               ? 'Payment is taken securely in advance by card. Results are released to you, or an authorised representative, on completion of analysis.'
-              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.'}${state.route === 'solicitor' ? ' This quote and fee note can be submitted to the Legal Aid Authority for approval.' : ''}</p>
+              : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.'}${state.route === 'solicitor' ? ' This quote and fee note can be submitted for legal aid approval for approval.' : ''}</p>
           </div>
           <div>
             <p class="doc-label">Appointments</p>
@@ -1577,11 +1586,11 @@
     const summary = lines.map(l => `${l.code} · ${l.label} — £${l.amount.toFixed(2)}`);
     if (t.saving) summary.push(`Combined rate — H-DP1 + H-DP3 — −£${t.saving.toFixed(2)}`);
     if (t.fastTrack) summary.push(`Fast track — £${t.fastTrack.toFixed(2)}`);
-    if (t.collection) summary.push(`Collection — Derry~Londonderry office — £${t.collection.toFixed(2)}`);
+    if (t.collection) summary.push(`Collection — ${state.collection === 'dublin' ? 'Dublin city centre (no VAT)' : 'Derry~Londonderry office'} — £${t.collection.toFixed(2)}`);
     if (t.onsite) summary.push('On-site collection — priced on request');
     if (t.saving) lines.push({ code: '', label: 'Combined rate — H-DP1 + H-DP3', amount: -t.saving });
     if (t.fastTrack) lines.push({ code: '', label: 'Fast track', amount: t.fastTrack });
-    if (t.collection) lines.push({ code: '', label: 'Collection — Derry~Londonderry office', amount: t.collection });
+    if (t.collection) lines.push({ code: '', label: state.collection === 'dublin' ? 'Collection — Dublin city centre (no VAT)' : 'Collection — Derry~Londonderry office', amount: t.collection });
     if (t.onsite) lines.push({ code: '', label: 'On-site collection — priced on request', amount: 0 });
     let gateEmail = '';
     try { gateEmail = localStorage.getItem(GATE_KEY) || ''; } catch (e) {}
@@ -1707,7 +1716,7 @@
           <p class="sum-loc">Quote and fee note ${state.refNumber} · Collection: ${locLabel()}</p>
           <div class="sum-rows">${rows}
             ${t.saving ? `<div class="sum-row saving"><span>Combined rate — H-DP1 + H-DP3</span><span>−${gbp(t.saving)}</span></div>` : ''}
-            ${t.collection ? `<div class="sum-row"><span>Collection — Derry~Londonderry office</span><span>${gbp(t.collection)}</span></div>` : ''}
+            ${t.collection ? `<div class="sum-row"><span>Collection — ${state.collection === 'dublin' ? 'Dublin city centre (no VAT)' : 'Derry~Londonderry office'}</span><span>${gbp(t.collection)}</span></div>` : ''}
             ${t.onsite ? `<div class="sum-row"><span>On-site collection — from ${gbp(ONSITE_COLLECTION_FROM)}</span><span>On request</span></div>` : ''}
           </div>
           <div class="sum-totals">
@@ -2104,7 +2113,7 @@
       <div class="panel-head">
         <p class="marker">Booking</p>
         <h1>Request your appointment</h1>
-        <p class="lede">${hasBlood() ? 'Blood collections are always arranged by request, because a clinician takes the sample. ' : ''}Appointments at our ${state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast'} office are arranged by request — tell us what suits and we confirm by email within one working day.</p>
+        <p class="lede">${hasBlood() ? 'Blood collections are always arranged by request, because a clinician takes the sample. ' : ''}Appointments ${state.collection === 'dublin' ? 'in Dublin city centre' : 'at our ' + officeName() + ' office'} are arranged by request — tell us what suits and we confirm by email within one working day.</p>
       </div>
       <div class="bk-shell">
         <div class="bk-meta">
@@ -2170,10 +2179,10 @@
     sendBtn.addEventListener('click', () => {
       if (sendBtn.disabled || !req.date) return;
       const pretty = new Date(req.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-      state.booking = { request: true, derryRequest: true, office: state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast', typeLabel: type.label, dateLabel: pretty, window: req.window, location: locLabel() };
+      state.booking = { request: true, derryRequest: true, office: officeName(), typeLabel: type.label, dateLabel: pretty, window: req.window, location: locLabel() };
       state.bookingSkipped = false;
       if (state.recordId) {
-        API.post('/api/booking/request', { recordId: state.recordId, preferredDate: req.date, window: req.window, office: state.collection === 'derry' ? 'Derry~Londonderry' : 'Belfast' }).catch(() => {});
+        API.post('/api/booking/request', { recordId: state.recordId, preferredDate: req.date, window: req.window, office: officeName() }).catch(() => {});
       }
       goTo(8);
     });
@@ -2422,7 +2431,7 @@
     const bookingStep = state.collection === 'onsite'
       ? ['Visit requested', `You asked for ${isRequest && booked.dateLabel !== 'As soon as possible' ? booked.dateLabel : 'the earliest available date'}${isRequest ? ', ' + booked.window.toLowerCase() : ''}${isRequest && booked.venue && booked.venue.name ? `, at ${booked.venue.name}, ${booked.venue.address}, ${booked.venue.town} ${booked.venue.postcode}` : ''}. Our team confirms availability within one working day and agrees the private collection room and the final collection fee (from ${gbp(ONSITE_COLLECTION_FROM)} + VAT) with you.${!isPrivate ? (isRequest && booked.po ? ` The collection is raised against purchase order ${booked.po}.` : ' Once the fee is confirmed, a purchase order number confirms the collection.') : ''} A witness may be required to be present, and the donor brings ${idShort(isPrivate)}.${isRequest && booked.contact && booked.contact.name ? ` Our collector asks for ${booked.contact.name} on arrival.` : ''}${isRequest && booked.safeguarding && booked.safeguarding.risk === 'yes' ? ' We review the note you left for our collector before confirming.' : ''}`]
       : booked && booked.derryRequest
-      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, at our ${booked.office || 'Derry~Londonderry'} office. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
+      ? ['Appointment requested', `You asked for ${booked.dateLabel}, ${booked.window.toLowerCase()}, ${booked.office === 'Dublin city centre' ? 'in Dublin city centre' : 'at our ' + (booked.office || 'Derry~Londonderry') + ' office'}. We confirm the appointment by email within one working day. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'}`]
       : booked
       ? ['Appointment booked', `${booked.typeLabel} — ${booked.dateLabel} at ${booked.time}, ${booked.location}. ${isPrivate ? 'Bring photo ID.' : 'The donor brings photo ID, or we take a photograph of them at the collection.'} Cancellation is free up to 24 hours before.`]
       : requestOnly()
@@ -2504,7 +2513,7 @@
       <div class="gate-hero">
         <p class="marker">NIVHA Laboratory Services</p>
         <h1>Court-ready drug and alcohol testing, with an itemised quote and fee note in about three minutes</h1>
-        <p class="lede">Hair, nail and urine testing for care proceedings and personal reassurance — collected at our Belfast and Derry~Londonderry offices, or on site for organisations.</p>
+        <p class="lede">Hair, nail and urine testing for care proceedings and personal reassurance — collected at our Belfast and Derry~Londonderry offices, in Dublin city centre, or on site for organisations.</p>
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Instant itemised pricing</strong><p>See exactly what each panel costs before you commit — unlocked with a secure link sent to your inbox.</p></div>

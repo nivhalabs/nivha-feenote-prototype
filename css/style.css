@@ -218,6 +218,7 @@ a, button, input, [role='button'] {
 .location-block h2 { font-size: var(--text-lg); margin-bottom: var(--space-2); }
 .location-hint { color: var(--color-text-muted); font-size: var(--text-sm); margin-bottom: var(--space-5); }
 .location-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); }
+@media (min-width: 720px) { .location-grid:not(.compact) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .location-flag {
   display: flex; gap: var(--space-2); align-items: flex-start;
   font-size: var(--text-xs); color: var(--color-warn-text);
