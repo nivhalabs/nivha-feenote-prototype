@@ -87,12 +87,12 @@ together referred to as the "Parties" and each a "Party".
 | Test results | Screening and confirmation results for each sample collected, including substance(s) tested for and quantitative findings |
 | Collection event records | Date, time, and location of collection, collector identity, collection method, and donor declaration |
 | Chain of custody references | Unique specimen identifier and tamper-evident seal number for traceability |
-| Scientific report | Full analytical report including methodology, findings, and expert interpretation |
+| Technical report | Full analytical report including methodology, findings, and expert interpretation |
 | Fee notes and case administration | Fee note documents, CCN references, booking confirmations, and appointment correspondence |
 
 4.3 Data subjects are donors instructed for testing under the relevant Instruction, and the professional staff of each Party involved in the Instruction. The nature of processing includes collection, recording, storage, retrieval, consultation, use, disclosure by transmission, and erasure.
 
-4.4 Results and scientific reports are shared only with the designated case contacts within the Instructing Organisation identified on the Instruction, and are never disclosed by NIVHA to any other client or third party except as set out in this Agreement or as directed by the court.
+4.4 Results and technical reports are shared only with the designated case contacts within the Instructing Organisation identified on the Instruction, and are never disclosed by NIVHA to any other client or third party except as set out in this Agreement or as directed by the court.
 
 ## 5. Lawful Basis for Sharing
 
@@ -128,7 +128,7 @@ together referred to as the "Parties" and each a "Party".
 | Workflow automation | Processor — internal workflow automation | Art 28 terms; EU hosting |
 | Document generation | Processor — document conversion | Signed DPA on file; Swiss/EU |
 | Freelance sample collectors | Sub-processors — sample collection on NIVHA's behalf | NIVHA Collector DP Addendum (Article 28 terms) |
-| Freelance reporting scientists | Sub-processors — expert report preparation | NIVHA Scientist DP Addendum (Article 28 terms) |
+| Freelance Reporting Officers | Sub-processors — expert report preparation | NIVHA Scientist DP Addendum (Article 28 terms) |
 | Analytical laboratories | Independent controllers — accredited analysis under their own ISO 17025 SOPs | NIVHA Laboratory Data Sharing Agreement |
 
 7.2 NIVHA shall notify the Instructing Organisation of any material change to the categories of provider listed above where the change materially affects the protection of shared personal data.
@@ -163,7 +163,7 @@ together referred to as the "Parties" and each a "Party".
 
 | Record Type | Retention Period |
 |---|---|
-| Test results, scientific reports, and chain of custody documentation | 6 years from the date of the final report on the Instruction |
+| Test results, technical reports, and chain of custody documentation | 6 years from the date of the final report on the Instruction |
 | Fee notes and case administration records | 6 years from the date of the final report on the Instruction |
 | Donor acknowledgements | Aligned with the corresponding test records |
 | Secure sign-in and account data | 12 months from last activity |
@@ -215,7 +215,7 @@ together referred to as the "Parties" and each a "Party".
 
 13.1 Nothing in this Agreement prevents either Party from disclosing personal data where required by a court order, witness summons, or rule of court. Where practicable and lawful, the disclosing Party shall inform the other Party before making such a disclosure.
 
-13.2 Scientific reports prepared for proceedings are expert evidence, and their use and onward disclosure within proceedings is governed by the rules of court and the directions of the court.
+13.2 Technical reports prepared for proceedings are expert evidence, and their use and onward disclosure within proceedings is governed by the rules of court and the directions of the court.
 
 ## 14. Governing Law and Jurisdiction
 

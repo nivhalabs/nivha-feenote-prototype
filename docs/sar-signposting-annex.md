@@ -92,7 +92,7 @@ Dear [Name],
 
 Thank you for contacting us on [date] about [your recent enquiry / your request for information].
 
-Where testing has been arranged through an instructing organisation — such as a Health and Social Care Trust or a solicitor — the test results and any scientific report are provided to that organisation, and they are best placed to discuss the results and what they mean for your case. We would therefore encourage you to contact [name of Trust team / solicitor firm, where known] in the first instance.
+Where testing has been arranged through an instructing organisation — such as a Health and Social Care Trust or a solicitor — the test results and any technical report are provided to that organisation, and they are best placed to discuss the results and what they mean for your case. We would therefore encourage you to contact [name of Trust team / solicitor firm, where known] in the first instance.
 
 You also have the right to make a subject access request to NIVHA for a copy of the personal information that NIVHA itself holds about you. This is free of charge. To do so, please write to:
 
@@ -140,7 +140,7 @@ In a Trust or solicitor instruction, the test result exists for one purpose: the
 
 - **Do not release results or reports directly to the donor while the case is live.** They receive them through the instructing party or as the court directs — that is where the result can be explained in context, with the safeguarding picture the Trust holds and NIVHA does not.
 - **Consult the instructing party before responding to any donor SAR** (this also satisfies the notification duty in the Data Sharing Agreement): confirm whether proceedings are live and whether any safeguarding concern applies to direct release.
-- The legal footing: results are data concerning health, and the serious harm test applies (DPA 2018 Schedule 3, Part 2 — with the reporting scientist consulted); material prepared for the proceedings is covered by 7.1 and 7.2; and safeguarding-sensitive material by 7.3.
+- The legal footing: results are data concerning health, and the serious harm test applies (DPA 2018 Schedule 3, Part 2 — with the Reporting Officer consulted); material prepared for the proceedings is covered by 7.1 and 7.2; and safeguarding-sensitive material by 7.3.
 - **Once proceedings have concluded** and the instructing party confirms no ongoing safeguarding concern, direct release of the donor's own result can be appropriate — decided record by record and documented.
 
 What the donor is told, in plain terms: "Your results form part of the evidence in your case, so they are provided through [the Trust / your solicitor] or the court rather than directly by us — this protects the proceedings and everyone involved in them. The information NIVHA holds about you outside the case papers is included in our response."

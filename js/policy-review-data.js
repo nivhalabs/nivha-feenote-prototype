@@ -341,7 +341,7 @@ const REVIEW_PARTS = [
       { ref: 'W5-1', title: 'Document map header and small print', blocks: [
         ['copy', '⟨Organisation⟩ · base template supplied by NIVHA Laboratory Services'],
         ['copy', 'The policy refers to laboratory cut-off levels generically — the current published schedule of the analysing laboratory applies at the time of any test, so the document does not go out of date when a schedule changes. It carries a version stamp and a review date ⟨12 or 24⟩ months out.'],
-        ['flag', 'The versioned cut-off appendix does not ship until scientific sign-off is complete — the generated document says figures "are confirmed … and issued as a versioned appendix following scientific sign-off". These two statements should be checked against each other before launch.'],
+        ['flag', 'The versioned cut-off appendix does not ship until technical sign-off is complete — the generated document says figures "are confirmed … and issued as a versioned appendix following technical sign-off". These two statements should be checked against each other before launch.'],
       ]},
       { ref: 'W5-2', title: 'Supporting documents upsell', blocks: [
         ['copy', 'Add the supporting documents'],
@@ -870,7 +870,7 @@ const REVIEW_PARTS = [
         ['note', 'The appendix renders on every build because the contract clause wording is always included. Lettered A when there is no appendix A (reserve builds).'],
       ]},
       { ref: 'CLOSE', title: 'Closing note', badges: ['all builds'], blocks: [
-        ['copy', 'Confirmation cut-off levels and related scientific figures are those in ⟨the current laboratory schedule of the organisation\u2019s testing provider, NIVHA Laboratory Services / the current laboratory schedule of the organisation\u2019s appointed testing provider⟩, which is available to the organisation on request. This document is a template for the organisation to review and adopt — it is not legal advice.'],
+        ['copy', 'Confirmation cut-off levels and related technical figures are those in ⟨the current laboratory schedule of the organisation\u2019s testing provider, NIVHA Laboratory Services / the current laboratory schedule of the organisation\u2019s appointed testing provider⟩, which is available to the organisation on request. This document is a template for the organisation to review and adopt — it is not legal advice.'],
       ]},
     ],
   },

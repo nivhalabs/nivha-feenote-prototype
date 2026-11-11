@@ -44,7 +44,7 @@ This drug and/or alcohol test has been instructed by:
 | Collection location | [Belfast office / Derry~Londonderry office / on-site address] |
 | Collector name | [Name] |
 
-NIVHA Laboratory Services Ltd is the testing provider. Our role is to collect your sample, arrange accredited laboratory analysis, and report the findings to the party who instructed the test. Where instructed, a NIVHA reporting scientist prepares an expert report which may be used in legal proceedings.
+NIVHA Laboratory Services Ltd is the testing provider. Our role is to collect your sample, arrange accredited laboratory analysis, and report the findings to the party who instructed the test. Where instructed, a NIVHA Reporting Officer prepares an expert report which may be used in legal proceedings.
 
 ## Section B — What Happens to Your Sample and Your Information
 
@@ -91,9 +91,9 @@ You have instructed and paid for this test yourself. The legal basis for process
 
 ## Section D — Medication and Product Use
 
-Some prescribed medicines, over-the-counter remedies, foods, and cosmetic products can affect test results. Telling us about them helps the laboratory and the reporting scientist interpret your result fairly and accurately.
+Some prescribed medicines, over-the-counter remedies, foods, and cosmetic products can affect test results. Telling us about them helps the laboratory and the Reporting Officer interpret your result fairly and accurately.
 
-You do not have to disclose anything, but anything you do disclose will be recorded on the collection form and shared with the laboratory and reporting scientist, and may appear in the report.
+You do not have to disclose anything, but anything you do disclose will be recorded on the collection form and shared with the laboratory and Reporting Officer, and may appear in the report.
 
 | Disclosure | Detail |
 |---|---|

@@ -45,7 +45,7 @@ Samples are collected at our Belfast and Derry~Londonderry offices, or on site a
 | Case data | NIVHA client case number (CCN) or private case number (PCN), panels and sample types instructed, testing timeframes, collection location |
 | Collection event data | Date, time, and location of sample collection; collector identity; collection method; donor declaration; medication and product-use disclosures; chain of custody reference |
 | Test result data | Substance(s) tested for, quantitative findings, screening and confirmation results — this constitutes special category data (health data) |
-| Scientific report data | Full analytical report including methodology, findings, and expert interpretation |
+| Technical report data | Full analytical report including methodology, findings, and expert interpretation |
 | Payment data (private clients) | Payment amount, date, and transaction reference. Card details are processed by our payment provider and are never stored on NIVHA systems |
 | Account and enquiry data | Email address used to request a secure sign-in link, booking preferences, correspondence with our team |
 
@@ -88,11 +88,11 @@ We never sell personal data. We never disclose one client's identity or instruct
 
 | Recipient | Role | Data shared | Basis |
 | --- | --- | --- | --- |
-| Instructing party (Trust or solicitor) | Independent controller | Test results, scientific reports, collection event records, fee notes | Results are returned to the party who instructed the testing |
-| Courts and parties to proceedings | Independent controller | Scientific reports and expert evidence | As directed by the court or the instructing party within proceedings |
+| Instructing party (Trust or solicitor) | Independent controller | Test results, technical reports, collection event records, fee notes | Results are returned to the party who instructed the testing |
+| Courts and parties to proceedings | Independent controller | Technical reports and expert evidence | As directed by the court or the instructing party within proceedings |
 | Analytical laboratories | Independent controller | Biological sample, chain of custody data | Partner laboratories perform accredited analysis |
 | Sample collectors | Processor (acting on NIVHA's behalf) | Collection event data, identity verification | Collectors engaged by NIVHA to perform sample collection |
-| Scientific team | Processor | Test results, chain of custody, analytical data | NIVHA's reporting scientists prepare expert reports |
+| Reporting Officers | Processor | Test results, chain of custody, analytical data | NIVHA's Reporting Officers prepare expert reports |
 | Case management platform (US) | Processor — case management | Instruction data, case references, donor identity data, test status | US transfer governed by UK IDTA / EU SCCs |
 | Application hosting provider (US) | Processor — application hosting | Data entered into the fee note tool while it is processed | US transfer governed by UK IDTA / EU SCCs |
 | Email delivery provider (US) | Processor — email delivery | Email address, secure sign-in codes and links, booking reminders, case references | US transfer governed by UK IDTA / EU SCCs |
@@ -127,7 +127,7 @@ We retain personal data only for as long as necessary to fulfil the purposes for
 
 | Record type | Retention period | Rationale |
 | --- | --- | --- |
-| Fee notes, instruction records, test results, and scientific reports | 6 years from the final report | Aligned with limitation periods for legal proceedings and our Appropriate Policy Document |
+| Fee notes, instruction records, test results, and technical reports | 6 years from the final report | Aligned with limitation periods for legal proceedings and our Appropriate Policy Document |
 | Chain of custody documentation | Aligned with the corresponding test result | Must be retained alongside the result it evidences |
 | Retained samples (including B samples) | In accordance with laboratory retention policy | Sample type and accreditation requirements determine the retention window |
 | Enquiry and secure sign-in data where no fee note is raised | 12 months from last contact | Sufficient period to support a returning enquiry |
@@ -141,7 +141,7 @@ Under UK GDPR and EU GDPR, you have rights in relation to your personal data. Th
 | Right | Description | Notes |
 | --- | --- | --- |
 | Right of access (Article 15) | You may request a copy of the personal data we hold about you | Formal written Subject Access Requests are processed within 30 calendar days. Donors in Trust or solicitor instructions may also wish to approach the instructing party, which holds the case file. Records prepared for court proceedings, or information subject to legal privilege or safeguarding restrictions, may be withheld or may need to be provided through the court or the instructing party — any restriction is assessed record by record and confirmed in our response |
-| Right to rectification (Article 16) | You may request correction of inaccurate personal data | Applies to identity and contact data. Test results are scientific records and cannot be "corrected" through this right |
+| Right to rectification (Article 16) | You may request correction of inaccurate personal data | Applies to identity and contact data. Test results are technical records and cannot be "corrected" through this right |
 | Right to erasure (Article 17) | You may request deletion of your personal data in certain circumstances | This right is limited where records must be retained for legal claims or proceedings |
 | Right to restriction (Article 18) | You may request that we restrict processing | Available while accuracy is contested or where erasure is not appropriate |
 | Right to object (Article 21) | You may object to processing based on public task or legitimate interests | NIVHA will assess whether compelling legitimate grounds exist to override the objection |
@@ -164,7 +164,7 @@ To enquire about B sample analysis, contact NIVHA at info@nivha.net, or raise it
 
 ## 12. Automated Decision-Making
 
-NIVHA does not make any decision about you based solely on automated processing, including profiling, that produces legal effects concerning you or similarly significantly affects you (Article 22). Screening results that exceed reporting thresholds are always reviewed and interpreted by a qualified scientist before any result is reported.
+NIVHA does not make any decision about you based solely on automated processing, including profiling, that produces legal effects concerning you or similarly significantly affects you (Article 22). Screening results that exceed reporting thresholds are always reviewed and interpreted by a qualified Reporting Officer before any result is reported.
 
 ## 13. Right to Complain
 

@@ -932,9 +932,9 @@
   const coversText = (p, item) => {
     const lay = layoutOf(p, item), rest = p.window.replace(/^[^.]*\.\s*/, '');
     const isNew = /^Around 3 months/.test(p.window) && rest !== p.window ? rest : '';
-    if (lay.segs) return `${monthsText(lay.cm)} of history, ${lay.cm} cm of head hair, in ${lay.segs + 1} separate results. ${isNew} Indicative, awaiting scientific sign-off.`.trim();
-    if (lay.cm === HAIR_DEFAULT_CM) return p.window + ' Indicative, awaiting scientific sign-off.';
-    return `Around ${monthsText(lay.cm)} of history (${lay.cm} cm of head hair), one result. ${isNew} Indicative, awaiting scientific sign-off.`.trim();
+    if (lay.segs) return `${monthsText(lay.cm)} of history, ${lay.cm} cm of head hair, in ${lay.segs + 1} separate results. ${isNew} Indicative, awaiting technical sign-off.`.trim();
+    if (lay.cm === HAIR_DEFAULT_CM) return p.window + ' Indicative, awaiting technical sign-off.';
+    return `Around ${monthsText(lay.cm)} of history (${lay.cm} cm of head hair), one result. ${isNew} Indicative, awaiting technical sign-off.`.trim();
   };
 
   function openSpecialRequest(need) {
@@ -1027,7 +1027,7 @@
         <div class="seg-warn" role="note"><strong>If this is for a court</strong>, it is your responsibility to choose the period and the segments the court has requested. We test what you choose and cannot change it afterwards.</div>
         <p class="seg-more">${isAlc ? 'Need the alcohol result split, matched to drug segments, or longer than 6 months?' : 'Need longer than 6 months, or a different layout?'} <button type="button" class="seg-link" data-special="1">Make a special request</button></p>
         <details class="panel-help seg-help"><summary>How this works</summary>${help}
-          <p class="seg-flag">The time periods shown are indicative and awaiting scientific sign-off.</p></details>
+          <p class="seg-flag">The time periods shown are indicative and awaiting technical sign-off.</p></details>
       </div>`;
   }
 
@@ -2506,7 +2506,7 @@
       </div>
       <div class="gate-points">
         <div class="gate-point"><strong>Instant itemised pricing</strong><p>See exactly what each panel costs before you commit — unlocked with a secure link sent to your inbox.</p></div>
-        <div class="gate-point"><strong>Expert reports for proceedings</strong><p>Reports prepared by our reporting scientists, worded for solicitors, trusts and the courts.</p></div>
+        <div class="gate-point"><strong>Expert reports for proceedings</strong><p>Reports prepared by our Reporting Officers, worded for solicitors, trusts and the courts.</p></div>
         <div class="gate-point"><strong>Book online</strong><p>Choose a time at our offices, or arrange on-site collection for organisations — no phone calls needed.</p></div>
       </div>
       <div class="gate-card" id="gate-card">

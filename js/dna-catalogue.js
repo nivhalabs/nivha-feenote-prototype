@@ -5,8 +5,8 @@
    - Analysis-only tier removed — collection is always included
    - Extended family: no fixed price, quote on request via a case manager
    - Turnaround: approximately 15 working days from the lab receiving ALL samples
-   NOTE (prototype): scientific figures and the court-report claim are indicative
-   and awaiting scientific sign-off before publication. */
+   NOTE (prototype): technical figures and the court-report claim are indicative
+   and awaiting technical sign-off before publication. */
 
 const DNA_VAT_RATE = 0.20;
 const DNA_ADDITIONAL_PERSON_FEE = 165;   /* + VAT, per person beyond the 2 included */
