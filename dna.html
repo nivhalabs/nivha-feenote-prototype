@@ -2,13 +2,14 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NIVHA — DNA relationship testing fee note</title>
 <meta name="description" content="Build your NIVHA DNA relationship testing fee note — a guided experience for solicitors, trusts and private clients.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=34">
+<link rel="stylesheet" href="css/style.css?v=35">
 <link rel="icon" type="image/png" href="assets/favicon.png">
 </head>
 <body>
@@ -16,13 +17,20 @@
 <header class="site-header">
   <div class="header-inner">
     <a class="brand" href="https://www.nivha.net/" aria-label="NIVHA home">
-      <img src="assets/nivha-logo.png" alt="NIVHA" width="428" height="96">
+      <img src="assets/nivha-logo.png" alt="NIVHA Laboratory Services" width="428" height="96">
     </a>
-    <span class="header-context">Medico-legal fee note</span>
-    <div class="header-help">
-      <span class="header-help-label">Need a hand?</span>
-      <a href="tel:+442890737942">+44 (0) 28 9073 7942</a>
-    </div>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="site-nav">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <a href="https://www.nivha.net/medico-legal">Medico-legal</a>
+      <a href="https://www.nivha.net/dna-testing">DNA testing</a>
+      <a href="https://www.nivha.net/private-testing">Private testing</a>
+      <a href="https://www.nivha.net/workplace-services">Workplace</a>
+      <a href="https://www.nivha.net/information-hub">Information hub</a>
+      <a href="https://www.nivha.net/contact">Contact</a>
+      <a class="nav-cta" href="https://www.nivha.net/fee-note">Request a fee note</a>
+    </nav>
   </div>
 </header>
 
@@ -198,5 +206,6 @@
 
 <script src="js/dna-catalogue.js?v=18"></script>
 <script src="js/dna.js?v=21"></script>
+<script src="js/site-nav.js?v=1"></script>
 </body>
 </html>

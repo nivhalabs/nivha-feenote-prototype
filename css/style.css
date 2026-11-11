@@ -73,18 +73,51 @@ a, button, input, [role='button'] {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 
-/* ---------- header ---------- */
+/* ---------- header (same as the NIVHA website) ---------- */
 .site-header {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-divider);
+  position: relative; z-index: 50;
 }
 .header-inner {
   max-width: 1100px; margin: 0 auto;
-  padding: var(--space-4) var(--space-5);
-  display: flex; align-items: center; gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  display: flex; align-items: center; gap: var(--space-6);
 }
 .brand { display: flex; align-items: center; text-decoration: none; }
-.brand img { height: 30px; width: auto; }
+.brand img { height: 34px; width: auto; }
+.site-nav { margin-left: auto; display: flex; align-items: center; gap: var(--space-5); }
+.site-nav a {
+  text-decoration: none; color: var(--color-text-muted);
+  font-size: var(--text-sm); font-weight: 600;
+}
+.site-nav a:hover, .site-nav a[aria-current='page'] { color: var(--color-text); }
+.nav-cta {
+  background: var(--color-primary); color: #fff !important;
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-md);
+}
+.nav-cta:hover { background: var(--color-primary-hover); }
+.nav-toggle { display: none; background: none; border: 0; cursor: pointer; }
+@media (max-width: 820px) {
+  .site-nav {
+    display: none;
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--color-surface); border-bottom: 1px solid var(--color-divider);
+    flex-direction: column; align-items: stretch; gap: 0;
+    padding: var(--space-2) var(--space-5) var(--space-4);
+    box-shadow: var(--shadow-md);
+  }
+  .site-nav.open { display: flex; }
+  .site-nav a { padding: var(--space-3) 0; border-bottom: 1px solid var(--color-divider); }
+  .site-nav a:last-child { border-bottom: none; }
+  .nav-cta { text-align: center; margin-top: var(--space-3); border-radius: var(--radius-md); }
+  .nav-toggle {
+    display: flex; margin-left: auto; flex-direction: column; gap: 5px;
+    padding: var(--space-2);
+  }
+  .nav-toggle span { width: 22px; height: 2px; background: var(--color-text); border-radius: 2px; }
+}
+
 .header-context {
   font-size: var(--text-sm); color: var(--color-text-muted);
   padding-left: var(--space-4); border-left: 1px solid var(--color-border);
@@ -92,9 +125,7 @@ a, button, input, [role='button'] {
 .header-help { margin-left: auto; text-align: right; font-size: var(--text-sm); }
 .header-help-label { display: block; color: var(--color-text-faint); font-size: var(--text-xs); }
 .header-help a { color: var(--color-primary); text-decoration: none; font-weight: 600; }
-.header-help a:hover { color: var(--color-primary-hover); }
-
-/* ---------- stepper ---------- */
+@media (max-width: 640px) { .header-context { display: none; } }
 .stepper { background: var(--color-surface); border-bottom: 1px solid var(--color-divider); }
 .stepper-inner {
   max-width: 1100px; margin: 0 auto; padding: 0 var(--space-5);
@@ -504,7 +535,6 @@ a, button, input, [role='button'] {
   .wizard { padding-bottom: var(--space-20); }
 }
 @media (max-width: 640px) {
-  .header-context { display: none; }
   .doc { padding: var(--space-5); }
   .doc-head { flex-direction: column; }
   .doc-meta { text-align: left; }
