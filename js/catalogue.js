@@ -5,6 +5,7 @@
 const VAT_RATE = 0.20;
 const FAST_TRACK_FEE = 80;            /* per panel, + VAT */
 const DERRY_COLLECTION_FEE = 75;      /* Derry~Londonderry office collection, + VAT */
+const DUBLIN_COLLECTION_FEE = 100;     /* Dublin city centre collection, no VAT charged on this fee */
 const ONSITE_COLLECTION_FROM = 250;   /* on-site collection starts here — priced on request, + VAT */
 
 /* ---------- Hair period and segments ----------
@@ -540,7 +541,7 @@ function segmentUnitPrice(p, unit) {
 /* Node export so the server prices fee notes from the same catalogue.
    Browsers ignore this block. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
+  module.exports = { DRUG_LISTS, LIST_FOOTER, drugListText, CATALOGUE, COMBINED_RATES, BLOCK_RULES, INCLUSION_RULES, VAT_RATE, FAST_TRACK_FEE, DERRY_COLLECTION_FEE, DUBLIN_COLLECTION_FEE, ONSITE_COLLECTION_FROM,
     HAIR_DEFAULT_CM, HAIR_MAX_CM, HAIR_SEGMENT_MAX_CM, ALCOHOL_PERIODS, FAST_TRACK_PER_SEGMENT, segmentRule, hairLayout, presetCuts, segmentUnitPrice,
     URINE_ADDON_PRICE, URINE_ADDON_HOST, URINE_ADDON_COVERED_BY, URINE_ADDONS, cleanAddons };
 }

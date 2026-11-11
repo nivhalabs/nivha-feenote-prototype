@@ -71,7 +71,7 @@
       id: 'solicitor',
       title: 'Solicitor or legal representative',
       sub: 'Instructing DNA testing on behalf of a client in family proceedings.',
-      points: ['Fee note addressed to your practice', 'Can be submitted to the Legal Aid Authority for approval', 'Invoiced — results released on payment', 'Full legal report suitable for court']
+      points: ['Fee note addressed to your practice', 'Can be submitted for legal aid approval', 'Invoiced — results released on payment', 'Full legal report suitable for court']
     },
     {
       id: 'trust',
@@ -643,7 +643,7 @@
           ${field('orgPostcode', 'Postcode', { required: true })}
         </div>
         ${field('caseref', 'Your case or matter reference', { hint: 'Quoted on the quote and fee note and all correspondence.' })}
-        ${field('legalAidRef', 'Legal Aid reference', { hint: 'If the instruction is legally aided \u2014 the quote and fee note can be submitted to the Legal Aid Authority for approval.' })}
+        ${field('legalAidRef', 'Legal Aid reference', { hint: 'If the instruction is legally aided \u2014 the quote and fee note can be submitted for legal aid approval.' })}
         <h2 class="form-section-head">Who we correspond with</h2>
         ${field('contactName', 'Your name', { required: true })}
         ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'The quote and fee note PDF and each participant\u2019s checklist are sent here.' })}
@@ -800,7 +800,7 @@
               ? 'Nothing is payable now. A case manager confirms the quote and payment terms with you before the case proceeds.'
               : isPrivate
                 ? 'Payment is taken securely in advance by card. Results are released to you on completion of analysis.'
-                : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.' + (state.route === 'solicitor' ? ' This quote and fee note can be submitted to the Legal Aid Authority for approval.' : '')}</p>
+                : 'Invoiced to the instructing organisation. Analysis proceeds on booking; results are released on payment of the quote and fee note.' + (state.route === 'solicitor' ? ' This quote and fee note can be submitted for legal aid approval.' : '')}</p>
           </div>
           <div>
             <p class="doc-label">Turnaround</p>

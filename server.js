@@ -79,7 +79,7 @@ async function nextReference(route) {
 
 /* ---------------- mapping ---------------- */
 const ROUTE_MAP = { solicitor: 'Solicitor', trust: 'Trust', private: 'Private' };
-const LOCATION_MAP = { belfast: 'Belfast', derry: 'Derry~Londonderry', onsite: 'On-site' };
+const LOCATION_MAP = { belfast: 'Belfast', derry: 'Derry~Londonderry', dublin: 'Dublin', onsite: 'On-site' };
 const ROUTE_KEY = Object.fromEntries(Object.entries(ROUTE_MAP).map(([k, v]) => [v, k]));
 const LOCATION_KEY = Object.fromEntries(Object.entries(LOCATION_MAP).map(([k, v]) => [v, k]));
 
@@ -98,7 +98,8 @@ function pdfDataFromFields(f) {
     totals: {
       net: Number(f['Subtotal']) || 0,
       vat: Number(f['VAT']) || 0,
-      total: Number(f['Total']) || 0
+      total: Number(f['Total']) || 0,
+      noVat: f['Location'] === 'Dublin' ? 100 : 0
     },
     details: {
       org: f['Organisation'] || '', orgAddress: f['Org address'] || '',
@@ -401,7 +402,7 @@ function scheduleBookLater(recordId) {
       const status = f['Status'] || '';
       if (['Booked', 'On-site requested', 'Booking requested'].includes(status)) return;
       if (f['Route'] === 'Private' && status !== 'Paid') return; // pay first, then nudge
-      if (f['Location'] !== 'Belfast' || hasBloodPanel(f)) return; // Derry~Londonderry, on-site and blood collections are arranged by request
+      if (f['Location'] !== 'Belfast' || hasBloodPanel(f)) return; // Derry~Londonderry, Dublin, on-site and blood collections are arranged by request
       const email = (f['Contact email'] || '').trim().toLowerCase();
       if (!email) return;
       await bookLaterEmail({
@@ -446,7 +447,7 @@ app.post('/api/fee-notes', async (req, res) => {
         console.warn(`totals mismatch — client £${p.totals.total} vs server £${serverTotals.total}; server wins`);
         p.needsPriceReview = true;
       }
-      p.totals = { net: serverTotals.net, vat: serverTotals.vat, total: serverTotals.total };
+      p.totals = { net: serverTotals.net, vat: serverTotals.vat, total: serverTotals.total, noVat: serverTotals.noVat };
     } else if (p.route === 'private') {
       return res.status(400).json({ ok: false, error: 'Could not price the fee note' });
     }
@@ -919,7 +920,8 @@ function minRequestDate(workingDays) {
 app.post('/api/booking/request', async (req, res) => {
   try {
     const { recordId, preferredDate, window: win } = req.body || {};
-    const office = (req.body || {}).office === 'Belfast' ? 'Belfast' : 'Derry~Londonderry';
+    const reqOffice = (req.body || {}).office;
+    const office = reqOffice === 'Belfast' ? 'Belfast' : reqOffice === 'Dublin' ? 'Dublin city centre' : 'Derry~Londonderry';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(preferredDate || ''))) return res.status(400).json({ ok: false, error: 'Bad date' });
     if (!['Morning', 'Afternoon'].includes(win)) return res.status(400).json({ ok: false, error: 'Bad time window' });
     const chosen = new Date(preferredDate + 'T00:00:00');
