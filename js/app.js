@@ -332,7 +332,7 @@
     if (removed.length && !state.notices.some(n => n.key === 'no-nail')) {
       state.notices.push({
         key: 'no-nail', type: 'warn',
-        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your quote and fee note. Hair panels cover around 3 months, or choose the Belfast office or an on-site collection for a 6 to 12 month nail history.`
+        html: `<strong>Nail testing is not available ${nailWhere()}.</strong> We have removed ${removed.map(disp).join(', ')} from your quote and fee note. Hair panels cover around 3 months, or choose the Belfast office or an on-site collection for a nail history of around 3 to 6 months.`
       });
     }
   }
@@ -365,7 +365,7 @@
     const el = document.getElementById('combo-hint');
     if (state.concerns.has('drugs-months') && !state.concerns.has('drugs-recent')) {
       el.hidden = false;
-      el.innerHTML = `${icon('info', 18)}<div><strong>Worth knowing.</strong> New drug use takes about a week to appear in hair. Where cannabis or very recent use is a concern, courts often ask for a urine test alongside hair — you can add one on the next step.</div>`;
+      el.innerHTML = `${icon('info', 18)}<div><strong>Worth knowing.</strong> New drug use takes roughly one to two weeks to appear in hair. Where cannabis or very recent use is a concern, courts often ask for a urine test alongside hair — you can add one on the next step.</div>`;
     } else {
       el.hidden = true;
     }
@@ -1007,7 +1007,7 @@
       ? `<p>Alcohol markers are read over the length of hair chosen and reported as one result: 3 months needs about 3 cm of hair and 6 months needs at least 6 cm. If the donor has less, we test what we can collect and state the length of hair taken.</p>
          <p>${p.code === 'H-EtG-FAEE' ? 'Any further EtG result is charged at the EtG price, because FAEE is read as one overview. ' : ''}A hair test cannot give the order of events within a result and cannot show that someone has not drunk alcohol. To split the alcohol result, or match it to drug segments, make a special request.</p>`
       : `<p>Head hair grows about 1 cm a month, so each centimetre is roughly one month of exposure and the newest hair is nearest the scalp. One drug result covers at most 3 cm of hair. Cutting the hair into parts gives a separate result for each part, so a change over time can be seen. Each part is tested and reported separately and is charged at the panel price.</p>
-         <p>Use is not shown in hair for about a week after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
+         <p>Use is not shown in hair for roughly one to two weeks after it happens. Growth rates vary, and bleaching or colouring can lower the levels found. Body hair is analysed whole and cannot be segmented.</p>`;
     let mirror = '';
     const split = splitDrugLines();
     if (isAlc && split.length) {
