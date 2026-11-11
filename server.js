@@ -1051,6 +1051,29 @@ app.post('/api/policy-review/comments', async (req, res) => {
 policyOrders.mount(app, { baseUrl: BASE_URL });
 
 /* ---------------- static site ---------------- */
+/* This service is the booking tool, not the public website. Keep it out of
+   search results so the website's own pages carry the search ranking. */
+app.use((req, res, next) => {
+  res.set('X-Robots-Tag', 'noindex, follow');
+  next();
+});
+
+/* The pages link to the NIVHA website at https://www.nivha.net. To point those
+   links somewhere else (for example to check the journey against a preview of
+   the new website), set SITE_URL. Left unset, the pages are served unchanged. */
+const SITE_URL = String(process.env.SITE_URL || '').replace(/\/+$/, '');
+if (SITE_URL && SITE_URL !== 'https://www.nivha.net') {
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+    let p = req.path === '/' ? '/index' : req.path.replace(/\.html$/, '');
+    if (!/^\/[a-z-]+$/.test(p)) return next();
+    const file = path.join(__dirname, p.slice(1) + '.html');
+    if (!fs.existsSync(file)) return next();
+    const html = fs.readFileSync(file, 'utf8').split('https://www.nivha.net').join(SITE_URL);
+    res.set('Cache-Control', 'no-cache').type('html').send(html);
+  });
+}
+
 /* Serve only the public web assets. Server code, libraries, internal
    documents and tooling must never be reachable over HTTP. */
 app.use((req, res, next) => {
