@@ -147,6 +147,7 @@ async function sendFeeNoteEmail(recordId) {
       to,
       reference: data.ref,
       isPrivate: data.route === 'private',
+      route: data.route,
       requestOnly: (!!fields['Location'] && fields['Location'] !== 'Belfast') || hasBloodPanel(fields),
       paid: !!fields['Paid at'],
       pdfBuffer: buf,

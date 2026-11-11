@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NIVHA — Medico-legal fee note</title>
-<meta name="description" content="Build your NIVHA drug and alcohol testing fee note — a guided experience for solicitors, trusts and private clients.">
+<title>NIVHA — Medico-legal quote and fee note</title>
+<meta name="description" content="Build your NIVHA drug and alcohol testing quote and fee note — a guided experience for solicitors, trusts and private clients.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
       <a href="https://www.nivha.net/workplace-services">Workplace</a>
       <a href="https://www.nivha.net/information-hub">Information hub</a>
       <a href="https://www.nivha.net/contact">Contact</a>
-      <a class="nav-cta" href="https://www.nivha.net/fee-note">Request a fee note</a>
+      <a class="nav-cta" href="https://www.nivha.net/fee-note">Get a quote</a>
     </nav>
   </div>
 </header>
@@ -46,7 +46,7 @@
   <div class="stepper-inner" id="stepper">
     <button class="step" data-step="1"><span class="step-num">01</span><span class="step-label">Who and where</span></button>
     <button class="step" data-step="2"><span class="step-num">02</span><span class="step-label">What the court needs</span></button>
-    <button class="step" data-step="3"><span class="step-num">03</span><span class="step-label">Build your fee note</span></button>
+    <button class="step" data-step="3"><span class="step-num">03</span><span class="step-label">Build your quote and fee note</span></button>
     <button class="step" data-step="4"><span class="step-num">04</span><span class="step-label">Your details</span></button>
     <button class="step" data-step="5"><span class="step-num">05</span><span class="step-label">Review and submit</span></button>
   </div>
@@ -62,11 +62,11 @@
     <div class="panel-head">
       <p class="marker">01</p>
       <h1>Who is instructing this testing?</h1>
-      <p class="lede">This shapes your fee note, how it is worded for court, and how payment works. It takes about three minutes from here.</p>
+      <p class="lede">This shapes your quote and fee note, how it is worded for court, and how payment works. It takes about three minutes from here.</p>
     </div>
 
     <ol class="process-strip" aria-label="How it works">
-      <li><span class="ps-num">1</span><div><strong>Build your fee note</strong><span>Priced as you go, in about three minutes.</span></div></li>
+      <li><span class="ps-num">1</span><div><strong>Build your quote and fee note</strong><span>Priced as you go, in about three minutes.</span></div></li>
       <li><span class="ps-num">2</span><div><strong>Book online</strong><span>Pick a time as soon as you submit — no phone calls.</span></div></li>
       <li><span class="ps-num">3</span><div><strong>Attend the appointment</strong><span>The donor brings photo ID. Solicitor and trust bookings: if there is none, we take a photograph.</span></div></li>
       <li><span class="ps-num">4</span><div><strong>Court-ready report</strong><span>Prepared by our Reporting Officers.</span></div></li>
@@ -88,7 +88,7 @@
     <div class="panel-head">
       <p class="marker">02</p>
       <h1>What does the court need to know?</h1>
-      <p class="lede">Choose everything that applies and we will suggest panels. Nothing is added to your fee note until you choose it.</p>
+      <p class="lede">Choose everything that applies and we will suggest panels. Nothing is added to your quote and fee note until you choose it.</p>
     </div>
     <div class="concern-grid" id="concern-grid"></div>
     <div class="combo-hint" id="combo-hint" hidden></div>
@@ -103,7 +103,7 @@
     <div class="panel-main">
       <div class="panel-head">
         <p class="marker">03</p>
-        <h1>Build your fee note</h1>
+        <h1>Build your quote and fee note</h1>
         <p class="lede" id="step3-lede">A panel is a set of related drugs analysed together on one sample. Each card shows exactly what it covers. Add what you need and the total updates as you go.</p>
       </div>
       <div id="suggestions"></div>
@@ -121,8 +121,8 @@
       <div class="panel-head">
         <p class="marker">04</p>
         <h1>Your details</h1>
-        <p class="lede">Everything we need to raise the fee note and send your booking link.</p>
-        <p class="data-note">We only ask for what the fee note and collection appointment need. Donor details are treated as special category data, are never prefilled for returning clients, and are handled as set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
+        <p class="lede">Everything we need to raise the quote and fee note and send your booking link.</p>
+        <p class="data-note">We only ask for what the quote and fee note and collection appointment need. Donor details are treated as special category data, are never prefilled for returning clients, and are handled as set out in our <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.</p>
       </div>
       <form id="details-form" novalidate></form>
     </div>
@@ -133,14 +133,14 @@
   <section class="panel" id="step-5" hidden>
     <div class="panel-head">
       <p class="marker">05</p>
-      <h1>Review your fee note</h1>
+      <h1>Review your quote and fee note</h1>
       <p class="lede">This is the document your instruction generates — itemised and ready to present.</p>
     </div>
     <div id="feenote-doc"></div>
     <div class="declaration" id="declaration-box"></div>
     <div class="panel-actions">
       <button class="btn ghost" data-back>Back</button>
-      <button class="btn primary" id="submit-btn" disabled>Submit fee note</button>
+      <button class="btn primary" id="submit-btn" disabled>Submit quote and fee note</button>
     </div>
   </section>
 
@@ -190,7 +190,7 @@
     </div>
     <div>
       <h4>Services</h4>
-      <ul><li><a href="https://www.nivha.net/medico-legal" target="_blank" rel="noopener">Medico-legal testing</a></li><li><a href="https://www.nivha.net/hair-drug-testing" target="_blank" rel="noopener">Hair follicle testing</a></li><li><a href="https://www.nivha.net/dna-testing" target="_blank" rel="noopener">DNA testing</a></li><li><a href="https://www.nivha.net/workplace-services" target="_blank" rel="noopener">Workplace testing</a></li><li><a href="https://www.nivha.net/workplace-policy" target="_blank" rel="noopener">Workplace policy</a></li><li><a href="https://www.nivha.net/policy-builder" target="_blank" rel="noopener">Policy builder</a></li><li><a href="https://www.nivha.net/toolbox-talk" target="_blank" rel="noopener">Toolbox talk pack</a></li><li><a href="https://www.nivha.net/client-enabled-testing-training" target="_blank" rel="noopener">Equipment and training</a></li><li><a href="https://www.nivha.net/republic-of-ireland" target="_blank" rel="noopener">Republic of Ireland</a></li><li><a href="https://www.nivha.net/fee-note" target="_blank" rel="noopener">Fee note</a></li></ul>
+      <ul><li><a href="https://www.nivha.net/medico-legal" target="_blank" rel="noopener">Medico-legal testing</a></li><li><a href="https://www.nivha.net/hair-drug-testing" target="_blank" rel="noopener">Hair follicle testing</a></li><li><a href="https://www.nivha.net/dna-testing" target="_blank" rel="noopener">DNA testing</a></li><li><a href="https://www.nivha.net/workplace-services" target="_blank" rel="noopener">Workplace testing</a></li><li><a href="https://www.nivha.net/workplace-policy" target="_blank" rel="noopener">Workplace policy</a></li><li><a href="https://www.nivha.net/policy-builder" target="_blank" rel="noopener">Policy builder</a></li><li><a href="https://www.nivha.net/toolbox-talk" target="_blank" rel="noopener">Toolbox talk pack</a></li><li><a href="https://www.nivha.net/client-enabled-testing-training" target="_blank" rel="noopener">Equipment and training</a></li><li><a href="https://www.nivha.net/republic-of-ireland" target="_blank" rel="noopener">Republic of Ireland</a></li><li><a href="https://www.nivha.net/fee-note" target="_blank" rel="noopener">Quote and fee note</a></li></ul>
     </div>
   </div>
   <div class="footer-legal">
@@ -206,7 +206,8 @@
 </footer>
 
 <script src="js/catalogue.js?v=27"></script>
-<script src="js/app.js?v=30"></script>
-<script src="js/site-nav.js?v=1"></script>
+<script src="js/app.js?v=31"></script>
+<script src="js/wording.js?v=2"></script>
+  <script src="js/site-nav.js?v=1"></script>
 </body>
 </html>
