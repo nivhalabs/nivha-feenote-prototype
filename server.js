@@ -475,7 +475,7 @@ app.post('/api/fee-notes', async (req, res) => {
     /* The PDF describes the period and segments from the validated basket, not from the browser's copy of each line. */
     for (const line of p.panels) {
       const src = (p.basket || []).find(l => l && l.code === String(line.code || '').replace('H-EtG/FAEE', 'H-EtG-FAEE'));
-      if (src) { line.cm = src.cm; line.cuts = src.cuts; } else { delete line.cm; delete line.cuts; }
+      if (src) { line.cm = src.cm; line.cuts = src.cuts; line.addons = catalogue.cleanAddons(src.code, src.addons, new Set((p.basket || []).map(l => l && l.code))) || []; } else { delete line.cm; delete line.cuts; delete line.addons; }
     }
 
     const reference = await nextReference(p.route);

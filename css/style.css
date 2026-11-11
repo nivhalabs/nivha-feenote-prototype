@@ -307,6 +307,18 @@ a, button, input, [role='button'] {
   background: #fff; border: 1px solid var(--color-border); border-radius: 8px;
   cursor: pointer;
 }
+.addon-block { margin: var(--space-3) 0 var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+.addon-title { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-2); }
+.addon-title small { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.addon-list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.addon-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border: 1px solid var(--color-border); border-radius: 999px; background: var(--color-surface, #fff); color: var(--color-text); font: inherit; font-size: var(--text-sm); cursor: pointer; text-align: left; }
+.addon-chip:hover { border-color: var(--color-primary); }
+.addon-chip:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.addon-chip.on { background: #eaf4f7; border-color: var(--color-primary); font-weight: 600; }
+.addon-tick { width: 16px; height: 16px; border: 1.5px solid var(--color-text-muted); border-radius: 4px; flex: none; position: relative; }
+.addon-chip.on .addon-tick { background: var(--color-primary); border-color: var(--color-primary); }
+.addon-chip.on .addon-tick::after { content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.addon-note { font-size: var(--text-sm); color: var(--color-text-muted); margin-top: var(--space-2); }
 .opt-field select:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .added-flag { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-primary); font-size: var(--text-xs); font-weight: 600; }
 

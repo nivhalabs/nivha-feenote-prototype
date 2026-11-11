@@ -69,12 +69,15 @@
     : '';
   const disp = code => code.replace('H-EtG-FAEE', 'H-EtG/FAEE');
 
-  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1, cm: HAIR_DEFAULT_CM, cuts: [], preset: 'one' };
+  const getOpts = code => state.opts.get(code) || { variant: 0, qty: 1, cm: HAIR_DEFAULT_CM, cuts: [], preset: 'one', addons: [] };
+  /* Single drugs added to the standard urine panel (£50 each, per collection). Not offered where U-MUI-2 is already ordered. */
+  const addonsOf = (p, o) => cleanAddons(p.code, o && o.addons, new Set(state.basket.keys())) || [];
+  const addonNames = (p, o) => addonsOf(p, o).map(id => URINE_ADDONS.find(a => a.id === id).name);
   const unitPrice = (p, o) => p.variants ? p.variants[o.variant].price : p.price;
   /* Period and cut points for a hair panel; falls back to the 3 month default if a stored choice is not valid */
   const layoutOf = (p, o) => hairLayout(p, o && o.cm, o && o.cuts) || hairLayout(p, HAIR_DEFAULT_CM, []);
   const segsOf = (p, o) => layoutOf(p, o).segs;
-  const lineTotal = (p, o) => unitPrice(p, o) * (o.qty || 1) + segsOf(p, o) * segmentUnitPrice(p, unitPrice(p, o));
+  const lineTotal = (p, o) => (unitPrice(p, o) + addonsOf(p, o).length * URINE_ADDON_PRICE) * (o.qty || 1) + segsOf(p, o) * segmentUnitPrice(p, unitPrice(p, o));
   /* Fast track is charged on each segment as well as each panel (flag in catalogue.js) */
   const ftUnits = (p, o) => FAST_TRACK_PER_SEGMENT ? 1 + segsOf(p, o) : 1;
   /* Longest hair needed (cm) across the basket; 0 when every hair panel is the standard 3 months in one piece */
@@ -98,6 +101,7 @@
       else if (lay.cm !== HAIR_DEFAULT_CM) s += ` — ${monthsText(lay.cm)}, one result`;
     }
     if (p.variants && o.variant > 0) s += ' — ' + p.variants[o.variant].short.toLowerCase();
+    if (addonsOf(p, o).length) s += ' — plus ' + addonNames(p, o).join(', ') + ' (' + gbp(URINE_ADDON_PRICE) + ' each)';
     if (p.series && o.qty > 1) s += ' — series of ' + (o.qty === 2 ? 'two' : 'three');
     return s;
   };
@@ -505,6 +509,24 @@
       state.alcOneResult = false; state.acceptance = null;
       renderCatalogue(); renderSummary(); updateMobileBar();
     }));
+    wrap.querySelectorAll('[data-addon]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.addon, cur = state.basket.get(URINE_ADDON_HOST) || getOpts(URINE_ADDON_HOST);
+      const list = (cur.addons || []).includes(id) ? cur.addons.filter(x => x !== id) : [...(cur.addons || []), id];
+      state.opts.set(URINE_ADDON_HOST, { ...getOpts(URINE_ADDON_HOST), addons: list });
+      if (state.basket.has(URINE_ADDON_HOST)) state.basket.get(URINE_ADDON_HOST).addons = list;
+      renderCatalogue(); renderSummary(); updateMobileBar();
+    }));
+    wrap.querySelectorAll('[data-addon-switch]').forEach(b => b.addEventListener('click', () => {
+      const cur = state.basket.get(URINE_ADDON_HOST) || getOpts(URINE_ADDON_HOST);
+      const wasIn = state.basket.has(URINE_ADDON_HOST);
+      state.opts.set(URINE_ADDON_HOST, { ...getOpts(URINE_ADDON_HOST), addons: [] });
+      state.basket.delete(URINE_ADDON_HOST);
+      state.basket.set(URINE_ADDON_COVERED_BY, { variant: 0, qty: cur.qty || 1 });
+      if (!wasIn) state.basket.delete(URINE_ADDON_COVERED_BY);
+      state.expanded.add(URINE_ADDON_COVERED_BY);
+      resolveConflicts(true);
+      renderCatalogue(); renderNotices(); renderSummary(); updateMobileBar();
+    }));
     wrap.querySelectorAll('[data-qty]').forEach(sel => sel.addEventListener('change', () => {
       const code = sel.dataset.qty, q = +sel.value;
       state.opts.set(code, { ...getOpts(code), qty: q });
@@ -781,6 +803,26 @@
     return null;
   }
 
+  /* Add individual drugs to the standard urine panel: a simple list of buttons, £50 + VAT each. */
+  function addonHtml(p, item) {
+    if (p.code !== URINE_ADDON_HOST) return '';
+    if (state.basket.has(URINE_ADDON_COVERED_BY)) {
+      return `<div class="addon-block"><p class="addon-title">Add individual drugs</p><p class="addon-note">Already covered by the ${byCode[URINE_ADDON_COVERED_BY].name.toLowerCase()} panel on this fee note.</p></div>`;
+    }
+    const chosen = addonsOf(p, item);
+    const perColl = (item.qty || 1) > 1 ? ' per collection' : '';
+    const nudge = chosen.length * URINE_ADDON_PRICE >= byCode[URINE_ADDON_COVERED_BY].price
+      ? `<p class="addon-note">Added drugs cost ${gbp(chosen.length * URINE_ADDON_PRICE)}${perColl} here. The ${byCode[URINE_ADDON_COVERED_BY].name.toLowerCase()} panel covers all of these for ${gbp(byCode[URINE_ADDON_COVERED_BY].price)} + VAT. <button type="button" class="link-btn" data-addon-switch="1">Use that panel instead</button></p>` : '';
+    return `
+      <div class="addon-block">
+        <p class="addon-title">Add individual drugs <small>${gbp(URINE_ADDON_PRICE)} + VAT each${perColl ? ', per collection' : ''}</small></p>
+        <div class="addon-list" role="group" aria-label="Add individual drugs to the standard urine panel">
+          ${URINE_ADDONS.map(a => `<button type="button" class="addon-chip ${chosen.includes(a.id) ? 'on' : ''}" data-addon="${a.id}" aria-pressed="${chosen.includes(a.id)}"><span class="addon-tick" aria-hidden="true"></span>${a.name}</button>`).join('')}
+        </div>
+        ${nudge}
+      </div>`;
+  }
+
   function renderPanelCard(p0) {
     const upg = upgradeTarget(p0);
     const p = effectivePanel(p0);
@@ -861,6 +903,7 @@
         ${drugListHtml(p0, p, upg, isUp)}
         ${upgradeToggle}
         ${options}
+        ${addonHtml(p, item)}
         ${segmentHtml(p, item)}
         <dl class="panel-facts">
           <div><dt>Covers</dt><dd>${segmentRule(p) ? coversText(p, item) : p.window}</dd></div>
@@ -1587,7 +1630,7 @@
   const PAY_STATE_KEY = 'nivha-pay-state';
 
   function rawBasket() {
-    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1, ...(segmentRule(byCode[code]) ? (({ cm, cuts }) => ({ cm, cuts }))(layoutOf(byCode[code], o)) : {}) }));
+    return [...state.basket.entries()].map(([code, o]) => ({ code, variant: (o && o.variant) || 0, qty: (o && o.qty) || 1, ...(addonsOf(byCode[code], o).length ? { addons: addonsOf(byCode[code], o) } : {}), ...(segmentRule(byCode[code]) ? (({ cm, cuts }) => ({ cm, cuts }))(layoutOf(byCode[code], o)) : {}) }));
   }
 
   /* The wizard state lives in memory, so it is parked in sessionStorage for
