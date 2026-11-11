@@ -86,12 +86,12 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 | Test results | Screening and confirmation results for each sample collected, including substance(s) tested for and quantitative findings |
 | Collection event records | Date, time, and location of collection, collector identity, collection method, and donor declaration |
 | Chain of custody references | Unique specimen identifier and tamper-evident seal number for traceability |
-| Scientific report | Full analytical report including methodology, findings, and expert interpretation |
+| Technical report | Full analytical report including methodology, findings, and expert interpretation |
 | Fee notes and case administration | Fee note documents, CCN references, booking confirmations, and appointment correspondence |
 
 5.3 Data subjects are donors instructed for testing under the relevant Instruction, and the professional staff of each party involved in the Instruction. The nature of processing includes collection, recording, storage, retrieval, consultation, use, disclosure by transmission, and erasure.
 
-5.4 Results and scientific reports are shared only with the designated case contacts within the Instructing Organisation identified on the Instruction, and are never disclosed by NIVHA to any other client or third party except as set out in these Terms or as directed by the court.
+5.4 Results and technical reports are shared only with the designated case contacts within the Instructing Organisation identified on the Instruction, and are never disclosed by NIVHA to any other client or third party except as set out in these Terms or as directed by the court.
 
 ## 6. Lawful Basis for Sharing
 
@@ -127,7 +127,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 | Workflow automation | Processor — internal workflow automation | Art 28 terms; EU hosting |
 | Document generation | Processor — document conversion | Signed DPA on file; Swiss/EU |
 | Freelance sample collectors | Sub-processors — sample collection on NIVHA's behalf | NIVHA Collector DP Addendum (Article 28 terms) |
-| Freelance reporting scientists | Sub-processors — expert report preparation | NIVHA Scientist DP Addendum (Article 28 terms) |
+| Freelance Reporting Officers | Sub-processors — expert report preparation | NIVHA Scientist DP Addendum (Article 28 terms) |
 | Analytical laboratories | Independent controllers — accredited analysis under their own ISO 17025 SOPs | NIVHA Laboratory Data Sharing Agreement |
 
 8.2 NIVHA shall notify the Instructing Organisation of any material change to the categories of provider listed above where the change materially affects the protection of shared personal data. Changes are also reflected in the published version of these Terms.
@@ -162,7 +162,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 | Record Type | Retention Period |
 |---|---|
-| Test results, scientific reports, and chain of custody documentation | 6 years from the date of the final report on the Instruction |
+| Test results, technical reports, and chain of custody documentation | 6 years from the date of the final report on the Instruction |
 | Fee notes and case administration records | 6 years from the date of the final report on the Instruction |
 | Donor acknowledgements | Aligned with the corresponding test records |
 | Secure sign-in and account data | 12 months from last activity |
@@ -246,7 +246,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 15.1 **B sample:** Where the collection protocol and sample format permit, NIVHA retains a B sample (split or secondary sample) in accordance with chain of custody requirements. If a donor's test result is positive and a B sample has been retained, the donor may request that the B sample be analysed by an independent laboratory, at the requesting party's own expense unless otherwise agreed or directed by the court. The Instructing Organisation shall inform donors of their B sample rights where applicable, and NIVHA shall cooperate in facilitating any B sample analysis request, including the secure transfer of the B sample to the nominated independent laboratory.
 
-15.2 **Court disclosure:** Nothing in these Terms prevents either party from disclosing personal data where required by a court order, witness summons, or rule of court. Where practicable and lawful, the disclosing party shall inform the other before making such a disclosure. Scientific reports prepared for proceedings are expert evidence, and their use and onward disclosure within proceedings is governed by the rules of court and the directions of the court.
+15.2 **Court disclosure:** Nothing in these Terms prevents either party from disclosing personal data where required by a court order, witness summons, or rule of court. Where practicable and lawful, the disclosing party shall inform the other before making such a disclosure. Technical reports prepared for proceedings are expert evidence, and their use and onward disclosure within proceedings is governed by the rules of court and the directions of the court.
 
 15.3 **Governing law:** These Terms and any dispute or claim arising out of or in connection with them are governed by and construed in accordance with the laws of Northern Ireland, and the parties submit to the exclusive jurisdiction of the courts of Northern Ireland.
 

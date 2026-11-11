@@ -808,7 +808,7 @@
           <div>
             <p class="doc-label">The report</p>
             <p>${DNA_LEGAL_REPORT} ${DNA_MARKER_CLAIM}</p>
-            <p class="doc-small">Scientific figures shown are indicative and awaiting scientific sign-off.</p>
+            <p class="doc-small">Technical figures shown are indicative and awaiting technical sign-off.</p>
           </div>
         </div>
         <div class="doc-callout" role="note">
