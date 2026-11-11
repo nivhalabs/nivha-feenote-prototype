@@ -31,6 +31,7 @@ const stripe = require('./lib/stripe');
 const acuity = require('./lib/acuity');
 const { uploadFeeNote } = require('./lib/dropbox');
 const { buildPolicyDoc } = require('./lib/policy-doc');
+const dnaCases = require('./lib/dna');
 const policyOrders = require('./lib/policy-orders');
 const BASE_URL = (process.env.APP_BASE_URL || 'https://nivha-feenote-prototype-production.up.railway.app').replace(/\/$/, '');
 const BOOK_EMAIL_DELAY_MS = Number(process.env.BOOK_EMAIL_DELAY_MS || 15 * 60 * 1000);
@@ -54,7 +55,7 @@ async function at(method, pathPart, body) {
 
 /* Next reference. Conventions: CCN (client case number) for trust and
    solicitor instructions, PCN (private case number) for private clients,
-   both starting at 1000. DNA casework will use a DNA prefix when built.
+   both starting at 1000. DNA casework uses DNA- from 1000 (see lib/dna.js).
    Scan existing references for the prefix, take max + 1 (pilot volumes). */
 async function nextReference(route) {
   const prefix = route === 'private' ? 'PCN' : 'CCN';
@@ -324,12 +325,14 @@ app.post('/api/gate/request', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'A valid email is required' });
     }
     const entry = issueGate(email);
-    upsertLead(email, 'fee-note gate').catch(err => console.error('lead upsert failed:', err.message));
+    const isDna = String(req.body.product || '') === 'dna';
+    upsertLead(email, isDna ? 'dna fee-note gate' : 'fee-note gate').catch(err => console.error('lead upsert failed:', err.message));
     await gateEmail({
       baseUrl: BASE_URL,
       to: email,
       code: entry.code,
-      link: `${BASE_URL}/?gate=${entry.token}`
+      link: `${BASE_URL}${isDna ? '/dna' : '/'}?gate=${entry.token}`,
+      product: isDna ? 'dna' : 'drug'
     });
     /* devCode keeps the walkthrough usable until POSTMARK_TOKEN is set */
     res.json({ ok: true, emailDryRun: EMAIL_DRY_RUN, devCode: EMAIL_DRY_RUN ? entry.code : undefined });
@@ -481,7 +484,7 @@ app.post('/api/fee-notes', async (req, res) => {
     /* The PDF describes the period and segments from the validated basket, not from the browser's copy of each line. */
     for (const line of p.panels) {
       const src = (p.basket || []).find(l => l && l.code === String(line.code || '').replace('H-EtG/FAEE', 'H-EtG-FAEE'));
-      if (src) { line.cm = src.cm; line.cuts = src.cuts; } else { delete line.cm; delete line.cuts; }
+      if (src) { line.cm = src.cm; line.cuts = src.cuts; line.addons = catalogue.cleanAddons(src.code, src.addons, new Set((p.basket || []).map(l => l && l.code))) || []; } else { delete line.cm; delete line.cuts; delete line.addons; }
     }
 
     const reference = await nextReference(p.route);
@@ -632,7 +635,10 @@ app.post('/api/stripe/webhook', async (req, res) => {
         /* Three payments share this endpoint: fee notes, policy orders and
            annual review renewals (payment links carry their metadata through
            to the Checkout session). */
-        if (meta.kind === 'policy') {
+        if (meta.kind === 'dna') {
+          await dnaCases.markPaid(BASE_URL, meta.recordId, session.payment_intent || session.id);
+          console.log(`stripe: DNA fee note ${meta.reference || '?'} paid`);
+        } else if (meta.kind === 'policy') {
           const out = await policyOrders.markPolicyPaid({ baseUrl: BASE_URL, session });
           console.log(`stripe: policy order ${out.orderRef || meta.orderRef || '?'} paid${out.alreadyPaid ? ' (already recorded)' : ''}`);
         } else if (meta.kind === 'policy_review_renewal') {
@@ -1063,6 +1069,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+dnaCases.register(app, { baseUrl: BASE_URL });
 
 const PUBLIC_PAGES = new Set(['/', '/index', '/index.html', '/dna', '/dna.html',
   '/policy', '/policy.html', '/policy-review', '/policy-review.html', '/policy-terms', '/policy-terms.html',
