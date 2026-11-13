@@ -364,7 +364,7 @@
       </div>
       <div class="gate-card snap-cta">
         <h2>Your snapshot PDF is on its way — the full policy is ${gbp(POLICY_PRICE)} + VAT</h2>
-        <p>The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as a Word and PDF document for your advisers to check and your organisation to adopt.</p>
+        <p>The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as an editable Word document for your advisers to check and your organisation to adopt.</p>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(POLICY_PRICE)} + VAT</span></div>
           <div class="sum-row"><span>Supporting document pack</span><span>${PACK_AVAILABLE ? 'optional, from ' + gbp(Math.min(...PACK_ITEMS.map(p => p.price))) + ' + VAT' : 'coming soon'}</span></div>
@@ -628,7 +628,7 @@
       ${state.details.billingCountry === 'roi' ? field('vatNumber', 'Irish VAT number', { hint: 'Optional, but it should appear on your invoice for the reverse charge.', placeholder: 'IE1234567X' }) : ''}
       <h2 class="form-section-head">Where we send the documents</h2>
       ${field('contactName', 'Your name', { required: true })}
-      ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your documents are delivered here as Word and PDF.' })}
+      ${field('contactEmail', 'Email address', { type: 'email', required: true, hint: 'Your documents are emailed here as editable Word files.' })}
       ${field('contactPhone', 'Phone number', { type: 'tel' })}
       ${devTools() ? `<div class="dev-fill-bar">
         <span>Test helper</span>
@@ -744,7 +744,7 @@
           <div class="sum-row"><span>${tot.reverseCharge ? 'VAT — reverse charge' : 'VAT at 20%'}</span><span>${gbp(tot.vat)}</span></div>
           <div class="sum-row grand"><span>Total</span><span>${gbp(tot.total)}</span></div>
         </div>
-        <p class="sum-note">${icon('doc', 14)} Delivered as a Word and PDF document, drafted from your answers.</p>
+        <p class="sum-note">${icon('doc', 14)} Delivered by email as an editable Word document, drafted from your answers.</p>
       </div>`;
   }
 
