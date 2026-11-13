@@ -45,9 +45,24 @@ test('policy only, invoice, UK: list price, no pay-now discount', () => {
   assert.strictEqual(o.promptDiscountPence, 0);
 });
 
+/* The supporting documents are switched off for launch (PACK_AVAILABLE in the
+   catalogue). These tests keep the pack pricing covered for when it returns. */
+const PACK_ON = { packAvailable: true };
+
+test('supporting documents are coming soon: an order cannot include them', () => {
+  const cat = require('../js/policy-catalogue');
+  assert.strictEqual(cat.PACK_AVAILABLE, false);
+  const crafted = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'invoice' });
+  assert.deepStrictEqual(crafted.lines.map(l => l.id), ['policy', 'contract_clauses']);
+  assert.strictEqual(crafted.subtotal, 125);
+  const withReview = pricing.computeOrder({ packItems: ['toolbox_talk'], reviewService: true, payMethod: 'invoice' });
+  assert.deepStrictEqual(withReview.lines.map(l => l.id), ['policy', 'contract_clauses', 'annual_review']);
+  assert.strictEqual(pricing.computeOrder({ policy: false, packItems: ['manager_guidance'], payMethod: 'card' }), null);
+});
+
 test('full pack is cheaper than the three items bought separately', () => {
-  const all = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'invoice' });
-  const two = pricing.computeOrder({ packItems: ['employee_awareness_leaflet', 'manager_guidance'], payMethod: 'invoice' });
+  const all = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'invoice' }, PACK_ON);
+  const two = pricing.computeOrder({ packItems: ['employee_awareness_leaflet', 'manager_guidance'], payMethod: 'invoice' }, PACK_ON);
   assert.ok(all.lines.some(l => l.id === 'full_pack'));
   assert.strictEqual(all.subtotal, 200);   /* 125 + 75 bundle */
   assert.strictEqual(two.subtotal, 170);   /* 125 + 10 + 35   */
@@ -57,7 +72,7 @@ test('client rate then pay-now, review excluded from both', () => {
   const o = pricing.computeOrder({
     packItems: pricing.PACK_IDS, reviewService: true, clientRate: true,
     payMethod: 'card', billingCountry: 'uk'
-  });
+  }, PACK_ON);
   assert.strictEqual(o.clientDiscountPence, 8000);
   assert.strictEqual(o.promptDiscountPence, 1200);
   assert.strictEqual(o.subtotal, 168);
@@ -74,7 +89,7 @@ test('an invoice never carries the pay-now discount, even at the client rate', (
 });
 
 test('Republic of Ireland billing: no VAT and the reverse charge note', () => {
-  const o = pricing.computeOrder({ packItems: ['employee_awareness_leaflet'], payMethod: 'invoice', billingCountry: 'roi' });
+  const o = pricing.computeOrder({ packItems: ['employee_awareness_leaflet'], payMethod: 'invoice', billingCountry: 'roi' }, PACK_ON);
   assert.strictEqual(o.vat, 0);
   assert.strictEqual(o.total, 135);
   assert.ok(o.reverseCharge);
@@ -88,7 +103,7 @@ test('contract clause wording is free and always with the policy', () => {
 });
 
 test('line totals reconcile to the order totals, to the penny', () => {
-  const o = pricing.computeOrder({ packItems: pricing.PACK_IDS, reviewService: true, clientRate: true, payMethod: 'card' });
+  const o = pricing.computeOrder({ packItems: pricing.PACK_IDS, reviewService: true, clientRate: true, payMethod: 'card' }, PACK_ON);
   const sum = o.lines.reduce((s, l) => s + l.grossPence, 0);
   assert.strictEqual(sum, o.totalPence);
   assert.strictEqual(o.subtotalPence + o.vatPence, o.totalPence);
@@ -104,7 +119,7 @@ test('client codes come from the environment; the demo code is refused in produc
 /* ---------------- Stripe parameters ---------------- */
 
 test('checkout parameters: gross amounts, policy metadata and return URLs', () => {
-  const order = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'card' });
+  const order = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'card' }, PACK_ON);
   const p = stripe.policySessionParams({
     baseUrl: 'https://example.test', orderRef: 'POL-ABCD', recordId: 'recABC1234567890',
     email: 'buyer@example.test', order
@@ -158,7 +173,7 @@ test('jurisdictions: uk expands, unknown values fall back to Northern Ireland', 
 });
 
 test('a two-jurisdiction order with the full pack produces one file set, no duplicates', async () => {
-  const order = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'card' });
+  const order = pricing.computeOrder({ packItems: pricing.PACK_IDS, payMethod: 'card' }, PACK_ON);
   const files = await fulfilment.buildOrderFiles({
     answers: { details: { company: 'Test Org Ltd' }, quiz: { jurisdiction: 'ni_gb' } }, order
   });
@@ -172,7 +187,7 @@ test('a two-jurisdiction order with the full pack produces one file set, no dupl
 });
 
 test('a pack-only order gets no policy document and no clause wording', async () => {
-  const order = pricing.computeOrder({ policy: false, packItems: ['manager_guidance'], payMethod: 'card' });
+  const order = pricing.computeOrder({ policy: false, packItems: ['manager_guidance'], payMethod: 'card' }, PACK_ON);
   const files = await fulfilment.buildOrderFiles({ answers: { details: { company: 'X' }, quiz: {} }, order });
   assert.deepStrictEqual(files.map(f => f.filename), ['nivha_pack_02_manager_guidance.docx']);
 });

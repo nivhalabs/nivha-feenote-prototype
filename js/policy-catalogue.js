@@ -12,6 +12,11 @@ const DEMO_CLIENT_CODE = 'NIVHA-CLIENT';
 const VAT_RATE = 0.2;
 
 /* ---------------- document pack ---------------- */
+/* One switch for the three supporting documents. While false they are shown
+   as "Coming soon" and cannot be added to an order: the browser hides the
+   tick boxes and lib/policy-pricing.js drops them from any order it prices.
+   Set to true once the documents are signed off for sale. */
+const PACK_AVAILABLE = false;
 const PACK_ITEMS = [
   { id: 'employee_awareness_leaflet', name: 'Employee awareness leaflet', price: 10, sub: 'The policy as your people will actually read it — one page, plain language.', includes: [
     'One-page summary written in the second person, for every member of staff',
@@ -29,7 +34,7 @@ const PACK_ITEMS = [
     'Word-for-word delivery script in the speaker notes — no clinical knowledge needed to deliver it',
     'Knowledge check on the slides, and a crib sheet for the questions teams ask',
     'Print-ready sign-off sheet — your evidence the policy was communicated'
-  ], link: 'https://nivha-website-production.up.railway.app/toolbox-talk', linkLabel: 'See what is inside the toolbox talk' }
+  ], link: 'https://www.nivha.net/toolbox-talk', linkLabel: 'See what is inside the toolbox talk' }
 ];
 const PACK_FULL_PRICE = PACK_ITEMS.reduce((s, p) => s + p.price, 0);
 
@@ -232,7 +237,7 @@ const DOC_SECTIONS = [
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     POLICY_PRICE, PACK_BUNDLE_PRICE, REVIEW_PRICE, CLIENT_DISCOUNT,
-    CARD_PROMPT_DISCOUNT, DEMO_CLIENT_CODE, VAT_RATE, PACK_ITEMS, PACK_FULL_PRICE,
+    CARD_PROMPT_DISCOUNT, DEMO_CLIENT_CODE, VAT_RATE, PACK_ITEMS, PACK_FULL_PRICE, PACK_AVAILABLE,
     QUIZ, JURISDICTIONS, SECTOR_NOTES, SC_TYPES, TESTING_TYPES, SAMPLE_TYPES, DOC_SECTIONS
   };
 }

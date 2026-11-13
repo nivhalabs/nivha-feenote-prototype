@@ -1189,6 +1189,15 @@ a, button, input, [role='button'] {
 .bundle-banner p { margin: 0; color: var(--color-text-muted, #5a6b72); }
 .bundle-banner .btn { flex-shrink: 0; white-space: nowrap; }
 .check-row .pack-price { margin-left: auto; font-weight: 600; font-size: var(--text-sm); color: var(--color-primary); flex-shrink: 0; }
+/* supporting documents shown but not yet on sale */
+.check-row.is-soon { cursor: default; padding: var(--space-3) var(--space-4); border: 1px dashed var(--color-border, #dfe6e9); border-radius: var(--radius-md, 10px); background: var(--color-surface-offset, #f3f5f6); }
+.check-row.is-soon strong, .check-row.is-soon p { color: var(--color-text-muted, #6b6b66); }
+.check-row.is-soon p { margin: 2px 0 0; }
+.soon-tag { margin-left: auto; flex-shrink: 0; white-space: nowrap; font-size: var(--text-xs, 0.8rem); font-weight: 600; letter-spacing: 0.02em; color: var(--color-text-muted, #5a6b72); background: #fff; border: 1px solid var(--color-border, #dfe6e9); border-radius: 999px; padding: 3px 10px; }
+@media (max-width: 520px) {
+  .check-row.is-soon { flex-direction: column; gap: var(--space-2); }
+  .soon-tag { margin-left: 0; }
+}
 @media (max-width: 640px) {
   .bundle-banner { flex-direction: column; align-items: flex-start; }
 }
