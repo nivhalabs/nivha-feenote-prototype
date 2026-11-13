@@ -519,6 +519,14 @@ a, button, input, [role='button'] {
 /* The BSI mark is shown unaltered (original colours, full opacity) on a light panel. */
 .footer-bsi { display: inline-block; background: #fff; padding: 10px 14px; border-radius: 6px; }
 .footer-bsi img { height: 60px; width: auto; display: block; }
+/* BSI guideline GP045 section 3.0: certificate number beneath the mark in Tahoma Regular (5pt minimum),
+   10% clear space below the mark, aligned to the left edge of the mark's text column. */
+.footer-bsi { text-decoration: none; }
+.footer-bsi-number {
+  display: block; margin: 6px 0 0 59px;
+  font-family: Tahoma, Verdana, Geneva, sans-serif; font-size: 11px; font-weight: 400; line-height: 1;
+  letter-spacing: 0; text-transform: none; color: #000;
+}
 .footer-bsi:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 .footer-inner .footer-bsi-scope { margin: 0; max-width: 34ch; font-size: var(--text-xs); line-height: 1.6; color: #b7c5ca; }
 .footer-inner .footer-accred-note { margin: var(--space-5) 0 0; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: #9db0b7; }
