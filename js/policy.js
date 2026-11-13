@@ -367,7 +367,7 @@
         <p>The snapshot shows the ground your policy needs to cover. The builder drafts it: about four minutes of questions and your answers become a tailored starter policy — fifteen sections, two appendices, structured with reference to EWDTS guidelines — delivered as a Word and PDF document for your advisers to check and your organisation to adopt.</p>
         <div class="sum-rows">
           <div class="sum-row"><span>Tailored policy document</span><span>${gbp(POLICY_PRICE)} + VAT</span></div>
-          <div class="sum-row"><span>Supporting document pack</span><span>optional, from ${gbp(Math.min(...PACK_ITEMS.map(p => p.price)))} + VAT</span></div>
+          <div class="sum-row"><span>Supporting document pack</span><span>${PACK_AVAILABLE ? 'optional, from ' + gbp(Math.min(...PACK_ITEMS.map(p => p.price))) + ' + VAT' : 'coming soon'}</span></div>
           <div class="sum-row"><span>Annual review service</span><span>optional, ${gbp(REVIEW_PRICE)} per year + VAT</span></div>
         </div>
         <button class="btn primary full" id="start-builder">Start building — ${gbp(POLICY_PRICE)} + VAT</button>
@@ -687,6 +687,8 @@
 
   /* ---------------- totals ---------------- */
   function computeTotals() {
+    /* Supporting documents are not on sale yet: nothing can be in the order. */
+    if (!PACK_AVAILABLE && state.packItems.length) state.packItems = [];
     const allPack = state.packItems.length === PACK_ITEMS.length;
     const itemsNet = state.packItems.reduce((s, id) => { const p = PACK_ITEMS.find(x => x.id === id); return s + (p ? p.price : 0); }, 0);
     const packNet = allPack ? PACK_BUNDLE_PRICE : itemsNet;
@@ -794,8 +796,47 @@
       </div>`;
   }
 
+  function reviewBlockHtml() {
+    return `
+      <h2 class="form-section-head">Keep it current</h2>
+      <p class="field-hint">Employment, safety and data protection law moves — the review service keeps your policy on the latest legal position without you watching for changes.</p>
+      <div class="check-items">
+        <label class="check-row">
+          <input type="checkbox" data-review ${state.reviewService ? 'checked' : ''}>
+          <div><strong>Annual review service</strong><p>Keeps your policy on the latest legal position, year after year. Renewal is by payment link each year — nothing is charged automatically.</p><ul class="pack-includes"><li>A yearly check of employment, safety and data protection law and regulator guidance across your policy's jurisdictions</li><li>Re-issue on the latest NIVHA master with a new version stamp and review date</li><li>A plain-English change note with every update — or confirmation that nothing needed to change</li></ul></div>
+          <span class="pack-price">${gbp(REVIEW_PRICE)}/yr</span>
+        </label>
+      </div>`;
+  }
+
+  function bindReview() {
+    document.querySelector('[data-review]').addEventListener('change', e => {
+      state.reviewService = e.target.checked;
+      /* The review service runs on a twelve-month cycle, so the policy's own
+         review date is pinned to match. */
+      if (state.reviewService) state.details.reviewCycle = '12';
+      renderPackUpsell(); renderClientCode(); renderDeclaration();
+    });
+  }
+
   function renderPackUpsell() {
     const tot = computeTotals();
+    const lede = document.getElementById('pack-lede');
+    if (lede) lede.hidden = !PACK_AVAILABLE;
+    if (!PACK_AVAILABLE) {
+      document.getElementById('pack-upsell').innerHTML = `
+      <h2 class="form-section-head">Supporting documents</h2>
+      <p class="field-hint">These three documents help the policy land with your teams. They will be available to add soon. Contract clause wording and adoption notes are already included with the policy itself.</p>
+      <div class="check-items pack-soon" aria-label="Supporting documents, coming soon">
+        ${PACK_ITEMS.map(p => `
+          <div class="check-row is-soon">
+            <div><strong>${p.name}</strong><p>${p.sub}</p></div>
+            <span class="soon-tag">Coming soon</span>
+          </div>`).join('')}
+      </div>` + reviewBlockHtml();
+      bindReview();
+      return;
+    }
     document.getElementById('pack-upsell').innerHTML = `
       <h2 class="form-section-head">Add the supporting documents</h2>
       <p class="field-hint">A policy only works once your people know about it. These are how it lands with your teams — each tailored with your organisation's name and choices. Contract clause wording and adoption notes are already included with the policy itself.</p>
