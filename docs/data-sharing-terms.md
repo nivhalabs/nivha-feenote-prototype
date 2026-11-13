@@ -4,9 +4,9 @@
 
 **NIVHA Laboratory Services Ltd**
 Unit 1B, Concourse 1, Catalyst, Queen's Road, Belfast BT3 9DT
-Contact: andy@nivha.net
+Contact: dataprotection@nivha.net
 
-Version 0.1 (draft) — July 2026 · CD number to be assigned · Classification: **PUBLIC (published terms)**
+Version 1.0 — 13 November 2026 · Classification: **PUBLIC (published terms)**
 Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 ---
@@ -24,7 +24,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 1.4 These Terms do not apply to private individuals who commission testing for personal reassurance. Private instructions are governed by NIVHA's private client terms and privacy notice, and are based on the client's explicit consent.
 
-1.5 A countersigned agreement containing these terms is available on request for organisations whose information governance procedures require an executed document — contact andy@nivha.net.
+1.5 A countersigned agreement containing these terms is available on request for organisations whose information governance procedures require an executed document — contact dataprotection@nivha.net.
 
 1.6 The version of these Terms in force at the date of each instruction applies to that instruction. NIVHA publishes the current version at all times and identifies changes by version number and date.
 
@@ -132,7 +132,7 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 8.2 NIVHA shall notify the Instructing Organisation of any material change to the categories of provider listed above where the change materially affects the protection of shared personal data. Changes are also reflected in the published version of these Terms.
 
-8.3 A confidential annex naming each provider, its location, and the transfer safeguard and risk assessment in place is available to the Instructing Organisation on request from andy@nivha.net. The named list is provided for the Instructing Organisation's due diligence and information governance purposes and is not for onward publication.
+8.3 A confidential annex naming each provider, its location, and the transfer safeguard and risk assessment in place is available to the Instructing Organisation on request from dataprotection@nivha.net. The named list is provided for the Instructing Organisation's due diligence and information governance purposes and is not for onward publication.
 
 8.3 NIVHA shall not transfer shared personal data outside the UK or EEA except under appropriate safeguards pursuant to Articles 44–49 of the Applicable Data Protection Law, as summarised above.
 
@@ -259,4 +259,4 @@ Dual jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 ---
 
 NIVHA Laboratory Services Ltd | Unit 1B, Concourse 1, Catalyst, Queen's Road, Belfast BT3 9DT
-andy@nivha.net | Version 0.1 (draft) — July 2026
+dataprotection@nivha.net | Version 1.0 — 13 November 2026

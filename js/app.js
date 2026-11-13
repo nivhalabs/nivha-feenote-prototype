@@ -25,7 +25,7 @@
   }
   /* Published Data Sharing Terms version accepted by Trust/solicitor routes.
      Keep in step with docs/data-sharing-terms.md and /data-sharing-terms. */
-  const DST_VERSION = 'v0.1 (draft, July 2026)';
+  const DST_VERSION = 'v1.0 (13 November 2026)';
 
   const API = {
     post: (path, body) => apiCall('POST', path, body),
