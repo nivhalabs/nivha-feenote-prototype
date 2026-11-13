@@ -12,7 +12,7 @@ Dual Jurisdiction: UK GDPR (Northern Ireland) & EU GDPR (Republic of Ireland)
 
 ## 1. Who We Are
 
-NIVHA Laboratory Services Ltd ("NIVHA", "we", "our") is a specialist drug and alcohol testing laboratory providing collection, analysis, expert reporting, and court attendance services. Our registered address is Unit 1B, Concourse 1, Catalyst, Queen's Road, Belfast BT3 9DT.
+NIVHA Laboratory Services Ltd ("NIVHA", "we", "our") is a specialist drug and alcohol testing company. We collect samples, arrange for them to be analysed by ISO 17025 accredited laboratories, provide the reports and attend court where required. Our registered address is Unit 1B, Concourse 1, Catalyst, Queen's Road, Belfast BT3 9DT.
 
 For any data protection queries, please contact Andy McDonald, Technology Manager, at andy@nivha.net. Andy McDonald acts as NIVHA's data protection lead; NIVHA has not appointed, and is not required to appoint, a statutory Data Protection Officer.
 
@@ -54,7 +54,7 @@ Samples are collected at our Belfast and Derry~Londonderry offices, or on site a
 - **Through the NIVHA fee note tool:** the instructing party (or private client) enters instruction, contact, and donor details when raising a fee note and booking a collection appointment.
 - **From the instructing party:** Trusts and solicitors provide donor details, case references, and instruction documents.
 - **Directly from the donor:** at the point of sample collection we verify identity, take the biological sample, and record the donor declaration and any medication disclosures.
-- **From laboratory analysis:** our laboratory and analytical partners generate test results from the collected sample.
+- **From laboratory analysis:** the accredited laboratories that analyse samples for us generate test results from the collected sample.
 
 ## 6. Why We Process Your Data — Lawful Basis
 
